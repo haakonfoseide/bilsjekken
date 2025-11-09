@@ -9,7 +9,7 @@ const vehicleSearchSchema = z.object({
   licensePlate: z.string().min(1),
 });
 
-export const vehicleSearchProcedure = publicProcedure
+const vehicleSearchProcedure = publicProcedure
   .input(vehicleSearchSchema)
   .mutation(async ({ input }) => {
     try {
@@ -286,3 +286,5 @@ export const vehicleSearchProcedure = publicProcedure
       });
     }
   });
+
+export default vehicleSearchProcedure;

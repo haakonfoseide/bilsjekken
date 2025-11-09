@@ -6,6 +6,9 @@ import { createContext } from "./trpc/create-context";
 
 const app = new Hono();
 
+console.log("[Backend] Hono server initializing...");
+console.log("[Backend] tRPC routes available:", Object.keys(appRouter._def.procedures));
+
 app.use("*", cors());
 
 app.use(
@@ -34,7 +37,17 @@ app.use(
 );
 
 app.get("/", (c) => {
+  console.log("[Backend] Root endpoint accessed");
   return c.json({ status: "ok", message: "API is running" });
+});
+
+app.get("/api", (c) => {
+  console.log("[Backend] /api endpoint accessed");
+  return c.json({ 
+    status: "ok", 
+    message: "Backend API is running",
+    routes: ["/ (health check)", "/api/trpc (tRPC endpoint)"]
+  });
 });
 
 app.onError((err, c) => {
