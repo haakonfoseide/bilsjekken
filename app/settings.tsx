@@ -99,7 +99,17 @@ export default function SettingsScreen() {
       
       if (error && typeof error === 'object') {
         if ('message' in error && typeof error.message === 'string') {
-          errorMessage = error.message;
+          const msg = error.message;
+          
+          if (msg.includes('Backend API route not found') || msg.includes('404')) {
+            errorTitle = "Backend ikke tilgjengelig";
+            errorMessage = "Kunne ikke koble til server. Kontakt support eller prøv igjen senere.";
+          } else if (msg.includes('Network') || msg.includes('fetch')) {
+            errorTitle = "Nettverksfeil";
+            errorMessage = "Sjekk internettforbindelsen din og prøv igjen.";
+          } else {
+            errorMessage = msg;
+          }
         }
         
         if ('data' in error && error.data && typeof error.data === 'object') {
