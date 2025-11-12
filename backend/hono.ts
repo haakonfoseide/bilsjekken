@@ -8,6 +8,14 @@ const app = new Hono();
 
 console.log("[Backend] Hono server initializing...");
 console.log("[Backend] tRPC routes available:", Object.keys(appRouter._def.procedures));
+console.log("[Backend] Checking router structure:");
+try {
+  const procedures = appRouter._def.procedures as any;
+  console.log("[Backend] - example routes:", procedures.example ? Object.keys(procedures.example._def.procedures || {}) : "not found");
+  console.log("[Backend] - vehicle routes:", procedures.vehicle ? Object.keys(procedures.vehicle._def.procedures || {}) : "not found");
+} catch (e) {
+  console.log("[Backend] Error checking routes:", e);
+}
 
 app.use("*", cors());
 
@@ -43,11 +51,24 @@ app.get("/", (c) => {
 
 app.get("/api", (c) => {
   console.log("[Backend] /api endpoint accessed");
+  const procedures = appRouter._def.procedures as any;
+  const exampleRoutes = procedures.example ? Object.keys(procedures.example._def.procedures || {}) : [];
+  const vehicleRoutes = procedures.vehicle ? Object.keys(procedures.vehicle._def.procedures || {}) : [];
+  
   return c.json({ 
     status: "ok", 
     message: "Backend API is running",
-    routes: ["/ (health check)", "/api/trpc (tRPC endpoint)"]
+    routes: ["/ (health check)", "/api/trpc (tRPC endpoint)"],
+    availableRoutes: {
+      example: exampleRoutes,
+      vehicle: vehicleRoutes
+    }
   });
+});
+
+app.all("*", (c) => {
+  console.log("[Backend] Unhandled request:", c.req.method, c.req.path);
+  return c.json({ error: "Route not found" }, 404);
 });
 
 app.onError((err, c) => {

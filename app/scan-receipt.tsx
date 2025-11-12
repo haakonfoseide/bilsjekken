@@ -24,7 +24,7 @@ import {
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { generateObject } from "@rork/toolkit-sdk";
+import { generateObject } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
 import Colors from "@/constants/colors";
 import { useCarData } from "@/contexts/car-context";
