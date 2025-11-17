@@ -40,7 +40,7 @@ const vehicleSearchProcedure = publicProcedure
         });
       }
 
-      const url = `https://akfell-datautlevering.atlas.vegvesen.no/enkeltoppslag/kjoretoydata?kjennemerke=${encodeURIComponent(cleanedPlate)}`;
+      const url = `https://autosys-kjoretoy-api.atlas.vegvesen.no/api/vehicle/${encodeURIComponent(cleanedPlate)}`;
       console.log("[Vehicle Search] Calling API:", url);
       console.log("[Vehicle Search] License plate:", cleanedPlate);
       console.log("[Vehicle Search] API key starts with:", apiKey.substring(0, 10) + "...");
@@ -51,7 +51,7 @@ const vehicleSearchProcedure = publicProcedure
           url,
           method: "GET",
           headers: {
-            "SVV-Authorization": `${apiKey.substring(0, 8)}...`,
+            "Authorization": `Bearer ${apiKey.substring(0, 8)}...`,
             "Accept": "application/json"
           }
         });
@@ -59,7 +59,7 @@ const vehicleSearchProcedure = publicProcedure
         response = await fetch(url, {
           method: "GET",
           headers: {
-            "SVV-Authorization": apiKey,
+            "Authorization": `Bearer ${apiKey}`,
             "Accept": "application/json",
             "Content-Type": "application/json"
           },
