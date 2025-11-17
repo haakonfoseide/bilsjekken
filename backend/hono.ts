@@ -17,9 +17,9 @@ try {
   console.log("[Backend] Error checking routes:", e);
 }
 
-app.use("*", cors());
+app.use("/*", cors());
 
-app.use("*", async (c, next) => {
+app.use("/*", async (c, next) => {
   console.log("[Backend] Incoming request:", c.req.method, c.req.path);
   console.log("[Backend] Headers:", Object.fromEntries(c.req.raw.headers.entries()));
   await next();
@@ -84,9 +84,9 @@ app.get("/api/health", (c) => {
   });
 });
 
-app.all("*", (c) => {
-  console.log("[Backend] Unhandled request:", c.req.method, c.req.path);
-  return c.json({ error: "Route not found" }, 404);
+app.notFound((c) => {
+  console.log("[Backend] Unhandled request (404):", c.req.method, c.req.path);
+  return c.json({ error: "Route not found", path: c.req.path }, 404);
 });
 
 app.onError((err, c) => {
