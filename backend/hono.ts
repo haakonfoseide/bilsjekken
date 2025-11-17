@@ -19,6 +19,15 @@ try {
 
 app.use("*", cors());
 
+app.use("*", async (c, next) => {
+  console.log("[Backend] Incoming request:", c.req.method, c.req.path);
+  console.log("[Backend] Headers:", Object.fromEntries(c.req.raw.headers.entries()));
+  await next();
+});
+
+console.log("[Backend] Setting up tRPC server at /api/trpc");
+console.log("[Backend] App router procedures:", Object.keys(appRouter._def.procedures));
+
 app.use(
   "/api/trpc/*",
   trpcServer({
@@ -63,6 +72,15 @@ app.get("/api", (c) => {
       example: exampleRoutes,
       vehicle: vehicleRoutes
     }
+  });
+});
+
+app.get("/api/health", (c) => {
+  console.log("[Backend] /api/health endpoint accessed");
+  return c.json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    message: "Backend is healthy" 
   });
 });
 

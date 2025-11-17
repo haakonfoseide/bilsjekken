@@ -49,17 +49,38 @@ export const trpcClient = trpc.createClient({
       transformer: superjson,
       fetch: async (url, options) => {
         console.log("[tRPC Client] Fetching:", url);
-        console.log("[tRPC Client] Request options:", JSON.stringify(options, null, 2));
+        console.log("[tRPC Client] Method:", options?.method || "GET");
+        console.log("[tRPC Client] Headers:", options?.headers || {});
         
         const response = await fetch(url, options);
         
         console.log("[tRPC Client] Response status:", response.status);
-        console.log("[tRPC Client] Response headers:", Object.fromEntries(response.headers.entries()));
+        console.log("[tRPC Client] Response OK:", response.ok);
         
-        if (!response.ok && response.status === 404) {
-          console.error("[tRPC Client] 404 Not Found - Backend route not found");
-          console.error("[tRPC Client] URL:", url);
-          throw new Error("Backend API route not found. Make sure the backend server is running.");
+        if (!response.ok) {
+          const responseText = await response.clone().text();
+          console.error("[tRPC Client] Error response:", responseText.substring(0, 500));
+          
+          if (response.status === 404) {
+            console.error("[tRPC Client] 404 Not Found - Backend route not found");
+            console.error("[tRPC Client] URL:", url);
+            console.error("[tRPC Client] Full URL breakdown:", {
+              baseUrl: getBaseUrl(),
+              tRPCPath,
+              fullUrl: url
+            });
+            
+            try {
+              const healthCheck = await fetch(`${getBaseUrl()}/api/health`);
+              console.error("[tRPC Client] Health check status:", healthCheck.status);
+              const healthData = await healthCheck.text();
+              console.error("[tRPC Client] Health check response:", healthData);
+            } catch (e) {
+              console.error("[tRPC Client] Health check failed:", e);
+            }
+            
+            throw new Error("Backend API route not found. The backend server might be starting up or unavailable.");
+          }
         }
         
         return response;
