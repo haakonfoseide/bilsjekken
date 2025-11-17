@@ -23,13 +23,12 @@ const vehicleSearchProcedure = publicProcedure
       }
       
       console.log("[Vehicle Search] Environment check:", {
-        hasVEGVESEN_API_KEY: !!process.env.VEGVESEN_API_KEY,
-        hasVegvesen_api_key: !!process.env.Vegvesen_api_key,
-        keyLength: (process.env.VEGVESEN_API_KEY || process.env.Vegvesen_api_key)?.length || 0,
+        hasEXPO_PUBLIC_VEGVESEN_API_KEY: !!process.env.EXPO_PUBLIC_VEGVESEN_API_KEY,
+        keyLength: process.env.EXPO_PUBLIC_VEGVESEN_API_KEY?.length || 0,
         allEnvKeys: Object.keys(process.env).filter(k => k.toUpperCase().includes('VEG') || k.toUpperCase().includes('API'))
       });
       
-      const apiKey = process.env.VEGVESEN_API_KEY || process.env.Vegvesen_api_key || "3743201f-02d6-4a28-b044-b84aac7e602b";
+      const apiKey = process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
       
       if (!apiKey || apiKey.trim() === "") {
         console.error("[Vehicle Search] API key not configured");
