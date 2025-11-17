@@ -17,9 +17,9 @@ try {
   console.log("[Backend] Error checking routes:", e);
 }
 
-app.use("/*", cors());
+app.use("*", cors());
 
-app.use("/*", async (c, next) => {
+app.use("*", async (c, next) => {
   console.log("[Backend] Incoming request:", c.req.method, c.req.path);
   console.log("[Backend] Headers:", Object.fromEntries(c.req.raw.headers.entries()));
   await next();
@@ -31,7 +31,6 @@ console.log("[Backend] App router procedures:", Object.keys(appRouter._def.proce
 app.use(
   "/api/trpc/*",
   trpcServer({
-    endpoint: "/api/trpc",
     router: appRouter,
     createContext,
     responseMeta() {
