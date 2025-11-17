@@ -47,11 +47,21 @@ export const vehicleSearchProcedure = publicProcedure
       
       let response;
       try {
+        console.log("[Vehicle Search] Making request with headers:", {
+          url,
+          method: "GET",
+          headers: {
+            "SVV-Authorization": `${apiKey.substring(0, 8)}...`,
+            "Accept": "application/json"
+          }
+        });
+        
         response = await fetch(url, {
           method: "GET",
           headers: {
             "SVV-Authorization": apiKey,
             "Accept": "application/json",
+            "Content-Type": "application/json"
           },
         });
       } catch (fetchError) {
