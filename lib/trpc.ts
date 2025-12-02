@@ -58,8 +58,26 @@ export const trpcClient = trpc.createClient({
         console.log("[tRPC Client] Response OK:", response.ok);
         
         if (!response.ok) {
-          const responseText = await response.clone().text();
+          let responseText = "";
+          try {
+            responseText = await response.clone().text();
+          } catch (e) {
+            console.error("[tRPC Client] Failed to read error response text:", e);
+          }
+          
           console.error("[tRPC Client] Error response:", responseText.substring(0, 500));
+
+          // Try to parse as JSON to see if it's a valid tRPC error
+          try {
+            const json = JSON.parse(responseText);
+            if (json && json.error) {
+              // It is a tRPC error (or similar JSON error), so we let it pass through
+              // The tRPC client will handle parsing it.
+              return response;
+            }
+          } catch (e) {
+            // Not JSON
+          }
           
           if (response.status === 404) {
             console.error("[tRPC Client] 404 Not Found - Backend route not found");
