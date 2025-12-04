@@ -6,6 +6,22 @@ import { createContext } from "./trpc/create-context";
 
 const app = new Hono();
 
+const createHealthResponse = () => ({
+  status: "ok",
+  timestamp: new Date().toISOString(),
+  message: "Backend is healthy",
+});
+
+const createTrpcHandler = (endpoint: string) =>
+  trpcServer({
+    router: appRouter,
+    endpoint,
+    createContext,
+    onError: ({ error, path }) => {
+      console.error(`[tRPC Error] Path: ${path}, Message: ${error.message}`);
+    },
+  });
+
 // Add CORS middleware
 app.use("/*", cors());
 
@@ -15,27 +31,13 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-// Health check - IMPORTANT: Keep this simple and first
-app.get("/api/health", (c) => {
-  return c.json({ 
-    status: "ok", 
-    timestamp: new Date().toISOString(),
-    message: "Backend is healthy" 
-  });
-});
+// Health check - supports both /health and /api/health
+app.get("/health", (c) => c.json(createHealthResponse()));
+app.get("/api/health", (c) => c.json(createHealthResponse()));
 
-// tRPC handler
-app.use(
-  "/api/trpc/*",
-  trpcServer({
-    router: appRouter,
-    endpoint: "/api/trpc",
-    createContext,
-    onError: ({ error, path }) => {
-      console.error(`[tRPC Error] Path: ${path}, Message: ${error.message}`);
-    },
-  })
-);
+// tRPC handlers for both path variants
+app.use("/trpc/*", createTrpcHandler("/trpc"));
+app.use("/api/trpc/*", createTrpcHandler("/api/trpc"));
 
 // 404 Handler
 app.notFound((c) => {
