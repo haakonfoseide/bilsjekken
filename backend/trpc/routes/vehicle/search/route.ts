@@ -23,10 +23,10 @@ const vehicleSearchProcedure = publicProcedure
         return cached.data;
       }
       
-      const apiKey = process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
+      const apiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
       
       if (!apiKey) {
-        console.error("[Vehicle Search] API key missing");
+        console.error("[Vehicle Search] API key missing. Checked VEGVESEN_API_KEY and EXPO_PUBLIC_VEGVESEN_API_KEY.");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Systemfeil: API-nøkkel mangler.",
@@ -50,8 +50,13 @@ const vehicleSearchProcedure = publicProcedure
       console.log("[Vehicle Search] Status:", response.status);
 
       if (!response.ok) {
-        const text = await response.text();
-        console.error("[Vehicle Search] API Error:", text);
+        let text = "";
+        try {
+             text = await response.text();
+        } catch (e) {
+             console.error("[Vehicle Search] Failed to read error text:", e);
+        }
+        console.error("[Vehicle Search] API Error Body:", text);
 
         if (response.status === 404 || response.status === 204) {
              throw new TRPCError({
