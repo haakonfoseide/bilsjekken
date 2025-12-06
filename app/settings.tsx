@@ -17,7 +17,7 @@ import * as Haptics from "expo-haptics";
 import * as Network from "expo-network";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
-import { trpc } from "@/lib/trpc";
+import { trpcClient } from "@/lib/trpc";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -60,8 +60,9 @@ export default function SettingsScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  const lookupMutation = trpc.vehicle.search.useMutation({
-    onSuccess: (data) => {
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleLookupSuccess = (data: any) => {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
@@ -86,8 +87,9 @@ export default function SettingsScreen() {
           "Data hentet, men noe informasjon mangler. Vennligst fyll ut manuelt."
         );
       }
-    },
-    onError: (error) => {
+  };
+
+  const handleLookupError = (error: any) => {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
@@ -126,8 +128,7 @@ export default function SettingsScreen() {
       }
       
       Alert.alert(errorTitle, errorMessage, [{ text: "OK" }]);
-    },
-  });
+  };
 
   const handleLookup = async () => {
     const trimmedPlate = searchPlate.trim();
@@ -162,7 +163,16 @@ export default function SettingsScreen() {
     console.log("[Settings] Starting lookup for:", trimmedPlate);
     Keyboard.dismiss();
     
-    lookupMutation.mutate({ licensePlate: trimmedPlate });
+    setIsSearching(true);
+    
+    try {
+      const data = await trpcClient.vehicle.search.query({ licensePlate: trimmedPlate });
+      handleLookupSuccess(data);
+    } catch (error) {
+      handleLookupError(error);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleSave = () => {
@@ -276,20 +286,20 @@ export default function SettingsScreen() {
                 placeholder="Skriv inn reg.nr. (f.eks. AB12345)"
                 placeholderTextColor={Colors.text.light}
                 autoCapitalize="characters"
-                editable={!lookupMutation.isPending}
+                editable={!isSearching}
                 returnKeyType="search"
                 onSubmitEditing={handleLookup}
               />
               <TouchableOpacity
                 style={[
                   styles.searchButton,
-                  (lookupMutation.isPending || !isOnline) && styles.searchButtonDisabled,
+                  (isSearching || !isOnline) && styles.searchButtonDisabled,
                 ]}
                 onPress={handleLookup}
                 activeOpacity={0.7}
-                disabled={lookupMutation.isPending || !isOnline}
+                disabled={isSearching || !isOnline}
               >
-                {lookupMutation.isPending ? (
+                {isSearching ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <>

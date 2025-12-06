@@ -9,9 +9,9 @@ const vehicleSearchSchema = z.object({
   licensePlate: z.string().min(1),
 });
 
-const vehicleSearchProcedure = publicProcedure
+export default publicProcedure
   .input(vehicleSearchSchema)
-  .mutation(async ({ input }) => {
+  .query(async ({ input }) => {
     try {
       const cleanedPlate = input.licensePlate.replace(/\s+/g, "").toUpperCase();
       console.log("[Vehicle Search] Searching for:", cleanedPlate);
@@ -123,5 +123,3 @@ const vehicleSearchProcedure = publicProcedure
       });
     }
   });
-
-export default vehicleSearchProcedure;
