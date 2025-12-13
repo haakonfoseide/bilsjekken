@@ -6,7 +6,6 @@ export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiProcedure,
   }),
-  vehicle: createTRPCRouter({
-    search: vehicleSearchProcedure,
-  }),
+  // Flattened to avoid dot in URL which causes 404 in some environments
+  searchVehicle: vehicleSearchProcedure,
 });
