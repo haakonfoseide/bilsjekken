@@ -1,5 +1,5 @@
 import { createTRPCReact, httpLink } from "@trpc/react-query";
-import type { AppRouter } from "@/backend/trpc/app-router";
+import type { AppRouter } from "@/backend/trpc/router-types";
 import superjson from "superjson";
 import Constants from "expo-constants";
 
@@ -75,7 +75,7 @@ export const trpcClient = trpc.createClient({
               // The tRPC client will handle parsing it.
               return response;
             }
-          } catch (e) {
+          } catch {
             // Not JSON
           }
           
