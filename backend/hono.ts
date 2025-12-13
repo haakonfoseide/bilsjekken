@@ -12,13 +12,10 @@ const createHealthResponse = () => ({
   message: "Backend is healthy",
 });
 
-const trpcHandler = trpcServer({
-  router: appRouter,
-  createContext,
-  onError: ({ error, path }) => {
-    console.error(`[tRPC Error] Path: ${path}, Message: ${error.message}`);
-  },
-});
+// Common error handler
+const onTRPCError = ({ error, path }: { error: Error; path?: string }) => {
+  console.error(`[tRPC Error] Path: ${path || 'unknown'}, Message: ${error.message}`);
+};
 
 // Add CORS middleware
 app.use("/*", cors());
@@ -33,9 +30,27 @@ app.use("*", async (c, next) => {
 app.get("/health", (c) => c.json(createHealthResponse()));
 app.get("/api/health", (c) => c.json(createHealthResponse()));
 
-// tRPC handlers for both path variants
-app.use("/trpc/*", trpcHandler);
-app.use("/api/trpc/*", trpcHandler);
+// tRPC handlers
+// We use specific endpoints to ensure the path is correctly stripped
+app.use(
+  "/trpc/*",
+  trpcServer({
+    router: appRouter,
+    createContext,
+    endpoint: "/trpc",
+    onError: onTRPCError,
+  })
+);
+
+app.use(
+  "/api/trpc/*",
+  trpcServer({
+    router: appRouter,
+    createContext,
+    endpoint: "/api/trpc",
+    onError: onTRPCError,
+  })
+);
 
 // 404 Handler
 app.notFound((c) => {
