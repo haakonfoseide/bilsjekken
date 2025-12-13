@@ -1,3 +1,1 @@
-import type { appRouter } from "./app-router";
-
-export type AppRouter = typeof appRouter;
+export type { AppRouter } from "./app-router";

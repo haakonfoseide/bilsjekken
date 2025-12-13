@@ -1,5 +1,5 @@
 import { createTRPCReact, httpLink } from "@trpc/react-query";
-import type { AppRouter } from "@/backend/trpc/router-types";
+import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import Constants from "expo-constants";
 
