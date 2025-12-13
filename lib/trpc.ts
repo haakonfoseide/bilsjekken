@@ -1,9 +1,11 @@
 import { createTRPCReact, httpLink } from "@trpc/react-query";
-import type { AppRouter } from "@/backend/trpc/app-router";
+// import type { AppRouter } from "@/backend/trpc/router-types";
 import superjson from "superjson";
 import Constants from "expo-constants";
 
-export const trpc = createTRPCReact<AppRouter>();
+// Using 'any' to prevent @trpc/server code from being bundled in the client
+// and casting to 'any' to avoid the "collision" check error from createTRPCReact
+export const trpc = createTRPCReact<any>() as any;
 
 const getBaseUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
