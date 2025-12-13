@@ -166,7 +166,7 @@ export default function SettingsScreen() {
     setIsSearching(true);
     
     try {
-      const data = await trpcClient.searchVehicle.query({ licensePlate: trimmedPlate });
+      const data = await trpcClient.vehicle.search.query({ licensePlate: trimmedPlate });
       handleLookupSuccess(data);
     } catch (error) {
       handleLookupError(error);
