@@ -44,8 +44,8 @@ export default publicProcedure
       }
 
       // 4. Call External API
-      // Using the Enkeltoppslag API
-      const apiUrl = "https://akfell-datautlevering.atlas.vegvesen.no/enkeltoppslag/kjoretoydata";
+      // Using the Enkeltoppslag API (Production URL)
+      const apiUrl = "https://www.vegvesen.no/ws/no/vegvesen/kjoretoy/felles/datautlevering/enkeltoppslag/kjoretoydata";
       const params = new URLSearchParams({ kjennemerke: cleanedPlate });
       const fullUrl = `${apiUrl}?${params.toString()}`;
 
@@ -61,12 +61,20 @@ export default publicProcedure
 
       console.log(`[Vehicle Search] Response status: ${response.status}`);
 
+      // Handle 204 No Content (Found but empty/no data)
+      if (response.status === 204) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Fant ingen kjøretøy med dette registreringsnummeret.",
+        });
+      }
+
       // 5. Handle Response
       if (!response.ok) {
         let errorText = await response.text().catch(() => "No error text");
         console.error(`[Vehicle Search] API Error: ${response.status} - ${errorText}`);
 
-        if (response.status === 404 || response.status === 204) {
+        if (response.status === 404) {
            throw new TRPCError({
             code: "NOT_FOUND",
             message: "Fant ingen kjøretøy med dette registreringsnummeret.",
