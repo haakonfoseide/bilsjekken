@@ -10,9 +10,10 @@ const app = new Hono();
 app.use("/*", cors());
 app.use("*", async (c, next) => {
   const start = Date.now();
+  console.log(`[Backend] Incoming Request: ${c.req.method} ${c.req.path}`);
   await next();
   const ms = Date.now() - start;
-  console.log(`[Backend] ${c.req.method} ${c.req.path} - ${c.res.status} (${ms}ms)`);
+  console.log(`[Backend] Finished ${c.req.method} ${c.req.path} - ${c.res.status} (${ms}ms)`);
 });
 
 // Health check

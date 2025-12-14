@@ -122,7 +122,7 @@ export default function SettingsScreen() {
     }
 
     try {
-      const data = await trpcClient.vehicle.search.query({ licensePlate: plate });
+      const data = await trpcClient.vehicleSearch.query({ licensePlate: plate });
       
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       
