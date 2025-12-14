@@ -12,10 +12,13 @@ const vehicleSearchSchema = z.object({
 
 export default publicProcedure
   .input(vehicleSearchSchema)
-  .query(async ({ input }) => {
+  .query(async ({ input, ctx }) => {
     const startTime = Date.now();
+    const requestId = (ctx as any)?.requestId ?? "(no-request-id)";
+
+    console.log("[Vehicle Search] --------------------------------------------------");
+    console.log("[Vehicle Search] requestId:", requestId);
     try {
-      // 1. Validate and clean input
       const cleanedPlate = input.licensePlate.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
       console.log(`[Vehicle Search] Starting search for plate: ${cleanedPlate}`);
 
@@ -35,6 +38,7 @@ export default publicProcedure
 
       // 3. Get API Key
       const apiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
+      console.log("[Vehicle Search] Has API key:", Boolean(apiKey));
       if (!apiKey) {
         console.error("[Vehicle Search] CRITICAL: Missing Vegvesenet API Key");
         throw new TRPCError({
@@ -50,16 +54,19 @@ export default publicProcedure
       const fullUrl = `${apiUrl}?${params.toString()}`;
 
       console.log(`[Vehicle Search] Fetching from Vegvesenet: ${apiUrl}`);
+      console.log("[Vehicle Search] Full URL:", fullUrl);
 
       const response = await fetch(fullUrl, {
         method: "GET",
         headers: {
           "X-API-KEY": apiKey,
-          "Accept": "application/json",
+          Accept: "application/json",
+          "x-rork-request-id": requestId,
         },
       });
 
       console.log(`[Vehicle Search] Response status: ${response.status}`);
+      console.log("[Vehicle Search] Response content-type:", response.headers.get("content-type"));
 
       // Handle 204 No Content (Found but empty/no data)
       if (response.status === 204) {
@@ -72,7 +79,7 @@ export default publicProcedure
       // 5. Handle Response
       if (!response.ok) {
         let errorText = await response.text().catch(() => "No error text");
-        console.error(`[Vehicle Search] API Error: ${response.status} - ${errorText}`);
+        console.error(`[Vehicle Search] API Error: ${response.status} - ${errorText.substring(0, 1200)}`);
 
         if (response.status === 404) {
            throw new TRPCError({
@@ -94,7 +101,22 @@ export default publicProcedure
         });
       }
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (e) {
+        const raw = await response.text().catch(() => "");
+        console.error("[Vehicle Search] Failed to parse JSON from Vegvesenet", {
+          status: response.status,
+          contentType: response.headers.get("content-type"),
+          bodyPreview: raw.substring(0, 1200),
+        });
+        throw new TRPCError({
+          code: "BAD_GATEWAY",
+          message: "Ugyldig svar fra Vegvesenet (ikke JSON).",
+          cause: e,
+        });
+      }
 
       // 6. Validate Response Data
       if (!data || !data.kjoretoydataListe || data.kjoretoydataListe.length === 0) {
@@ -130,6 +152,8 @@ export default publicProcedure
       };
 
       console.log(`[Vehicle Search] Success! Found: ${result.make} ${result.model}`);
+      console.log("[Vehicle Search] durationMs:", Date.now() - startTime);
+      console.log("[Vehicle Search] requestId:", requestId);
 
       // 8. Cache Success
       vehicleCache.set(cleanedPlate, {
@@ -141,7 +165,7 @@ export default publicProcedure
 
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(`[Vehicle Search] Failed after ${duration}ms`, error);
+      console.error(`[Vehicle Search] Failed after ${duration}ms. requestId=${requestId}`, error);
       
       if (error instanceof TRPCError) throw error;
       

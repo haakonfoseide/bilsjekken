@@ -10,10 +10,30 @@ const app = new Hono();
 app.use("/*", cors());
 app.use("*", async (c, next) => {
   const start = Date.now();
+  const requestId = c.req.header("x-rork-request-id") ?? `req_${start}_${Math.random().toString(16).slice(2)}`;
+
+  console.log("[Backend] --------------------------------------------------");
+  console.log(`[Backend] RequestId: ${requestId}`);
   console.log(`[Backend] Incoming Request: ${c.req.method} ${c.req.path}`);
-  await next();
-  const ms = Date.now() - start;
-  console.log(`[Backend] Finished ${c.req.method} ${c.req.path} - ${c.res.status} (${ms}ms)`);
+  console.log("[Backend] Query:", c.req.query());
+  console.log("[Backend] Headers:", {
+    "x-rork-request-id": c.req.header("x-rork-request-id"),
+    "x-rork-trpc-client": c.req.header("x-rork-trpc-client"),
+    "content-type": c.req.header("content-type"),
+    accept: c.req.header("accept"),
+    origin: c.req.header("origin"),
+    referer: c.req.header("referer"),
+    host: c.req.header("host"),
+  });
+
+  c.header("x-rork-request-id", requestId);
+
+  try {
+    await next();
+  } finally {
+    const ms = Date.now() - start;
+    console.log(`[Backend] Finished ${c.req.method} ${c.req.path} - ${c.res.status} (${ms}ms) RequestId=${requestId}`);
+  }
 });
 
 // Health check

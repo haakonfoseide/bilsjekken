@@ -95,19 +95,32 @@ export default function SettingsScreen() {
   }, []);
 
   const handleSearch = async () => {
+    const attemptId = `search_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const plateRaw = searchQuery;
     const plate = searchQuery.trim().replace(/\s+/g, "").toUpperCase();
-    
+
+    console.log("[Settings][VehicleLookup] ------------------------------");
+    console.log("[Settings][VehicleLookup] attemptId:", attemptId);
+    console.log("[Settings][VehicleLookup] platform:", Platform.OS);
+    console.log("[Settings][VehicleLookup] isOnline:", isOnline);
+    console.log("[Settings][VehicleLookup] input.raw:", plateRaw);
+    console.log("[Settings][VehicleLookup] input.cleaned:", plate);
+    console.log("[Settings][VehicleLookup] trpcBaseUrl:", (trpcClient as any)?.links?.[0]?.url ?? "(unknown)");
+
     if (!plate) {
       setSearchError("Skriv inn registreringsnummer");
+      console.log("[Settings][VehicleLookup] aborted: empty plate");
       return;
     }
-    
+
     if (plate.length < 2) {
       setSearchError("For kort registreringsnummer");
+      console.log("[Settings][VehicleLookup] aborted: plate too short");
       return;
     }
 
     if (!isOnline) {
+      console.log("[Settings][VehicleLookup] aborted: offline");
       Alert.alert("Ingen nettverk", "Du må være på nett for å søke opp kjøretøy.");
       return;
     }
@@ -121,37 +134,68 @@ export default function SettingsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
+    const startedAt = Date.now();
+
     try {
+      console.log("[Settings][VehicleLookup] calling trpc procedure: vehicleSearch.query");
       const data = await trpcClient.vehicleSearch.query({ licensePlate: plate });
-      
+      const durationMs = Date.now() - startedAt;
+      console.log("[Settings][VehicleLookup] success durationMs:", durationMs);
+      console.log("[Settings][VehicleLookup] result:", data);
+
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      
+
       if (data) {
         setMake(data.make || "");
         setModel(data.model || "");
         setYear(data.year || "");
         setLicensePlate(data.licensePlate || plate);
         setVin(data.vin || "");
-        
-        // Auto-fill other fields if available in future
+
         setSearchSuccess(true);
-        
+
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       }
     } catch (err: any) {
-      console.error(err);
+      const durationMs = Date.now() - startedAt;
+      console.error("[Settings][VehicleLookup] FAILED durationMs:", durationMs);
+      console.error("[Settings][VehicleLookup] raw error:", err);
+
+      const trpcData = err?.data;
+      const trpcShape = err?.shape;
+      const httpStatus = trpcShape?.data?.httpStatus ?? trpcData?.httpStatus;
+      const trpcCode = trpcShape?.data?.code ?? trpcData?.code;
+
+      console.error("[Settings][VehicleLookup] parsed:", {
+        attemptId,
+        message: err?.message,
+        name: err?.name,
+        httpStatus,
+        trpcCode,
+        shape: trpcShape,
+        data: trpcData,
+        cause: err?.cause,
+        stack: err?.stack,
+      });
+
       let msg = "Kunne ikke finne kjøretøyet.";
-      
-      if (err?.message?.includes("NOT_FOUND")) {
+
+      if (trpcCode === "NOT_FOUND" || err?.message?.includes("NOT_FOUND")) {
         msg = "Fant ingen kjøretøy med dette nummeret.";
-      } else if (err?.message?.includes("UNAUTHORIZED")) {
+      } else if (trpcCode === "UNAUTHORIZED" || err?.message?.includes("UNAUTHORIZED")) {
         msg = "Tjenesten er midlertidig utilgjengelig (Auth).";
+      } else if (httpStatus === 404 || err?.message?.includes("route not found")) {
+        msg = "Backend-ruten ble ikke funnet (404). Se console logg for URL + RequestId.";
+      } else if (httpStatus === 401 || httpStatus === 403) {
+        msg = "Vegvesenet API-nøkkel mangler/er ugyldig. Se backend logg.";
+      } else if (httpStatus === 429) {
+        msg = "For mange forespørsler. Vent litt og prøv igjen.";
       }
-      
+
       setSearchError(msg);
-      
+
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }

@@ -44,21 +44,45 @@ const tRPCPath = "/api/trpc";
 const baseUrl = `${getBaseUrl()}${tRPCPath}`;
 console.log("[tRPC] Final base URL:", baseUrl);
 
+const createRequestId = () => {
+  const rand = Math.random().toString(16).slice(2);
+  return `req_${Date.now()}_${rand}`;
+};
+
 export const trpcClient = trpc.createClient({
   links: [
     httpLink({
       url: baseUrl,
       transformer: superjson,
       fetch: async (url, options) => {
+        const requestId = createRequestId();
+
+        const mergedHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+          "x-rork-request-id": requestId,
+          "x-rork-trpc-client": "expo",
+          ...(options?.headers as Record<string, string> | undefined),
+        };
+
+        const finalOptions: RequestInit = {
+          ...options,
+          headers: mergedHeaders,
+        };
+
+        console.log("[tRPC Client] --------------------------------------------------");
+        console.log("[tRPC Client] RequestId:", requestId);
         console.log("[tRPC Client] Fetching:", url);
-        console.log("[tRPC Client] Method:", options?.method || "GET");
-        console.log("[tRPC Client] Headers:", options?.headers || {});
-        
-        const response = await fetch(url, options);
-        
+        console.log("[tRPC Client] Method:", finalOptions?.method || "GET");
+        console.log("[tRPC Client] Headers:", mergedHeaders);
+
+        const startedAt = Date.now();
+        const response = await fetch(url, finalOptions);
+        const durationMs = Date.now() - startedAt;
+
         console.log("[tRPC Client] Response status:", response.status);
         console.log("[tRPC Client] Response OK:", response.ok);
-        
+        console.log("[tRPC Client] Duration (ms):", durationMs);
+
         if (!response.ok) {
           let responseText = "";
           try {
@@ -66,43 +90,45 @@ export const trpcClient = trpc.createClient({
           } catch (e) {
             console.error("[tRPC Client] Failed to read error response text:", e);
           }
-          
-          console.error("[tRPC Client] Error response:", responseText.substring(0, 500));
 
-          // Try to parse as JSON to see if it's a valid tRPC error
+          console.error("[tRPC Client] Error response (first 800 chars):", responseText.substring(0, 800));
+
           try {
             const json = JSON.parse(responseText);
             if (json && json.error) {
-              // It is a tRPC error (or similar JSON error), so we let it pass through
-              // The tRPC client will handle parsing it.
+              console.error("[tRPC Client] Parsed JSON error:", json.error);
               return response;
             }
           } catch {
             // Not JSON
           }
-          
+
           if (response.status === 404) {
             console.error("[tRPC Client] 404 Not Found - Backend route not found");
             console.error("[tRPC Client] URL:", url);
             console.error("[tRPC Client] Full URL breakdown:", {
               baseUrl: getBaseUrl(),
               tRPCPath,
-              fullUrl: url
+              fullUrl: url,
             });
-            
+
             try {
-              const healthCheck = await fetch(`${getBaseUrl()}/api/health`);
+              const healthCheck = await fetch(`${getBaseUrl()}/api/health`, {
+                headers: { "x-rork-request-id": requestId },
+              });
               console.error("[tRPC Client] Health check status:", healthCheck.status);
               const healthData = await healthCheck.text();
-              console.error("[tRPC Client] Health check response:", healthData);
+              console.error("[tRPC Client] Health check response:", healthData.substring(0, 800));
             } catch (e) {
               console.error("[tRPC Client] Health check failed:", e);
             }
-            
-            throw new Error("Backend API route not found. The backend server might be starting up or unavailable.");
+
+            throw new Error(
+              `Backend API route not found. RequestId=${requestId}. The backend server might be starting up or unavailable.`
+            );
           }
         }
-        
+
         return response;
       },
       headers() {
