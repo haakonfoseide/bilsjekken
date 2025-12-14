@@ -2,8 +2,9 @@ import { publicProcedure } from "../../../create-context";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
+// Simple in-memory cache
 const vehicleCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 24 * 60 * 60 * 1000;
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const vehicleSearchSchema = z.object({
   licensePlate: z.string().min(1),
@@ -12,114 +13,134 @@ const vehicleSearchSchema = z.object({
 export default publicProcedure
   .input(vehicleSearchSchema)
   .query(async ({ input }) => {
+    const startTime = Date.now();
     try {
-      const cleanedPlate = input.licensePlate.replace(/\s+/g, "").toUpperCase();
-      console.log("[Vehicle Search] Searching for:", cleanedPlate);
-      
-      // Check cache
-      const cached = vehicleCache.get(cleanedPlate);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log("[Vehicle Search] Returning cached data");
-        return cached.data;
-      }
-      
-      const apiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
-      
-      if (!apiKey) {
-        console.error("[Vehicle Search] API key missing. Checked VEGVESEN_API_KEY and EXPO_PUBLIC_VEGVESEN_API_KEY.");
+      // 1. Validate and clean input
+      const cleanedPlate = input.licensePlate.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      console.log(`[Vehicle Search] Starting search for plate: ${cleanedPlate}`);
+
+      if (cleanedPlate.length < 2) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Systemfeil: API-nøkkel mangler.",
+          code: "BAD_REQUEST",
+          message: "Ugyldig registreringsnummer.",
         });
       }
 
-      // Using the URL structure for Vegvesen API
-      // Based on: https://akfell-datautlevering.atlas.vegvesen.no/swagger-ui/index.html
-      const url = `https://akfell-datautlevering.atlas.vegvesen.no/enkeltoppslag/kjoretoydata?kjennemerke=${encodeURIComponent(cleanedPlate)}`;
-      
-      console.log("[Vehicle Search] Fetching from:", url);
-      
-      const response = await fetch(url, {
+      // 2. Check Cache
+      const cached = vehicleCache.get(cleanedPlate);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log(`[Vehicle Search] Cache hit for ${cleanedPlate}`);
+        return cached.data;
+      }
+
+      // 3. Get API Key
+      const apiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
+      if (!apiKey) {
+        console.error("[Vehicle Search] CRITICAL: Missing Vegvesenet API Key");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Systemfeil: Mangler konfigurasjon for kjøretøyoppslag.",
+        });
+      }
+
+      // 4. Call External API
+      // Using the Enkeltoppslag API
+      const apiUrl = "https://akfell-datautlevering.atlas.vegvesen.no/enkeltoppslag/kjoretoydata";
+      const params = new URLSearchParams({ kjennemerke: cleanedPlate });
+      const fullUrl = `${apiUrl}?${params.toString()}`;
+
+      console.log(`[Vehicle Search] Fetching from Vegvesenet: ${apiUrl}`);
+
+      const response = await fetch(fullUrl, {
         method: "GET",
         headers: {
           "X-API-KEY": apiKey,
-          "Accept": "application/json"
+          "Accept": "application/json",
         },
       });
 
-      console.log("[Vehicle Search] Status:", response.status);
+      console.log(`[Vehicle Search] Response status: ${response.status}`);
 
+      // 5. Handle Response
       if (!response.ok) {
-        let text = "";
-        try {
-             text = await response.text();
-        } catch (e) {
-             console.error("[Vehicle Search] Failed to read error text:", e);
-        }
-        console.error("[Vehicle Search] API Error Body:", text);
+        let errorText = await response.text().catch(() => "No error text");
+        console.error(`[Vehicle Search] API Error: ${response.status} - ${errorText}`);
 
         if (response.status === 404 || response.status === 204) {
-             throw new TRPCError({
+           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Fant ikke kjøretøy med dette skiltet.",
+            message: "Fant ingen kjøretøy med dette registreringsnummeret.",
           });
         }
-        
+
         if (response.status === 401 || response.status === 403) {
            throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "Tilgang til Vegvesenet feilet (API-nøkkel).",
+            message: "Kunne ikke autentisere mot Vegvesenet. Vennligst kontakt support.",
           });
         }
 
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: `Feil fra Vegvesenet: ${response.status}`,
+          code: "BAD_GATEWAY",
+          message: `Feil mot Vegvesenet (Status: ${response.status})`,
         });
       }
 
       const data = await response.json();
-      
-      // Validate structure
+
+      // 6. Validate Response Data
       if (!data || !data.kjoretoydataListe || data.kjoretoydataListe.length === 0) {
-        throw new TRPCError({
+        console.log("[Vehicle Search] Valid JSON but no vehicle list found");
+         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Ingen data funnet for dette skiltet.",
+          message: "Ingen kjøretøydata funnet.",
         });
       }
 
       const vehicle = data.kjoretoydataListe[0];
-      const godkjenning = vehicle.godkjenning;
-      const tekniskGodkjenning = godkjenning?.tekniskGodkjenning;
-      const tekniskeData = tekniskGodkjenning?.tekniskeData;
+      
+      // 7. Map Data
+      // Safely access nested properties
+      const teknisk = vehicle.godkjenning?.tekniskGodkjenning?.tekniskeData;
+      const generelt = teknisk?.generelt;
+      const karosseri = teknisk?.karosseriOgLasteplan;
+      const godkjenning = vehicle.godkjenning?.forstegangsGodkjenning;
+      const vekter = teknisk?.vekter;
 
       const result = {
-        licensePlate: cleanedPlate,
-        make: tekniskeData?.generelt?.merke?.[0]?.merke || "Ukjent",
-        model: tekniskeData?.generelt?.handelsbetegnelse?.[0] || "Ukjent",
-        year: godkjenning?.forstegangsGodkjenning?.forstegangRegistrertDato?.split("-")[0] || "Ukjent",
+        licensePlate: vehicle.kjoretoyId?.kjennemerke || cleanedPlate,
+        make: generelt?.merke?.[0]?.merke || "Ukjent",
+        model: generelt?.handelsbetegnelse?.[0] || "Ukjent",
+        year: godkjenning?.forstegangRegistrertDato?.split("-")[0] || "Ukjent",
         vin: vehicle.kjoretoyId?.understellsnummer || "",
-        color: tekniskeData?.karosseriOgLasteplan?.farge?.[0]?.kodeNavn || "Ukjent",
-        registrationDate: godkjenning?.forstegangsGodkjenning?.forstegangRegistrertDato || null,
-        vehicleType: tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
-        weight: tekniskeData?.vekter?.egenvekt || null,
+        color: karosseri?.farge?.[0]?.kodeNavn || "Ukjent",
+        registrationDate: godkjenning?.forstegangRegistrertDato || null,
+        vehicleType: vehicle.godkjenning?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
+        weight: vekter?.egenvekt || null,
+        power: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.maksNettoEffekt || null,
+        fuelType: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.drivstoffKode?.navn || "Ukjent",
       };
 
-      // Cache result
+      console.log(`[Vehicle Search] Success! Found: ${result.make} ${result.model}`);
+
+      // 8. Cache Success
       vehicleCache.set(cleanedPlate, {
         data: result,
         timestamp: Date.now(),
       });
-      
+
       return result;
 
     } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`[Vehicle Search] Failed after ${duration}ms`, error);
+      
       if (error instanceof TRPCError) throw error;
       
-      console.error("[Vehicle Search] Unexpected error:", error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "En uventet feil oppstod under søket.",
+        message: "Det oppstod en uventet feil under søket.",
+        cause: error,
       });
     }
   });

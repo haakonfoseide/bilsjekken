@@ -5,6 +5,7 @@ export interface CarInfo {
   licensePlate: string;
   insurance: string;
   currentMileage: number;
+  vin?: string;
 }
 
 export interface WashRecord {

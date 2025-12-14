@@ -6,64 +6,57 @@ import { createContext } from "./trpc/create-context";
 
 const app = new Hono();
 
-const createHealthResponse = () => ({
+// Global middleware
+app.use("/*", cors());
+app.use("*", async (c, next) => {
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  console.log(`[Backend] ${c.req.method} ${c.req.path} - ${c.res.status} (${ms}ms)`);
+});
+
+// Health check
+const healthHandler = (c: any) => c.json({
   status: "ok",
   timestamp: new Date().toISOString(),
-  message: "Backend is healthy",
+  message: "Backend is healthy"
 });
 
-// Common error handler
-const onTRPCError = ({ error, path }: { error: Error; path?: string }) => {
-  console.error(`[tRPC Error] Path: ${path || 'unknown'}, Message: ${error.message}`);
-};
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
-// Add CORS middleware
-app.use("/*", cors());
-
-// Logging middleware
-app.use("*", async (c, next) => {
-  console.log(`[Backend] ${c.req.method} ${c.req.path}`);
-  await next();
-});
-
-// Health check - supports both /health and /api/health
-app.get("/health", (c) => c.json(createHealthResponse()));
-app.get("/api/health", (c) => c.json(createHealthResponse()));
-
-// tRPC handlers
-// We use specific endpoints to ensure the path is correctly stripped
-app.use(
-  "/trpc/*",
-  trpcServer({
-    router: appRouter,
-    createContext,
-    endpoint: "/trpc",
-    onError: onTRPCError,
-  })
-);
-
+// tRPC Handler
+// We mount it at /api/trpc and let Hono handle the routing
+// The endpoint option tells tRPC where it is mounted so it can strip the prefix correctly
 app.use(
   "/api/trpc/*",
   trpcServer({
     router: appRouter,
     createContext,
     endpoint: "/api/trpc",
-    onError: onTRPCError,
+    onError: ({ error, path }) => {
+      console.error(`[tRPC Error] Path: ${path}, Message: ${error.message}`);
+      if (error.cause) console.error(error.cause);
+    },
   })
 );
 
-// 404 Handler
+// Fallback for 404
 app.notFound((c) => {
-  console.log(`[Backend] 404 Not Found: ${c.req.path}`);
-  return c.json({ error: "Route not found", path: c.req.path }, 404);
+  return c.json({ 
+    error: "Not Found", 
+    path: c.req.path,
+    message: "The requested route was not found on this server."
+  }, 404);
 });
 
-// Error Handler
+// Global Error Handler
 app.onError((err, c) => {
-  console.error("[Backend] Error:", err);
-  return c.json({ error: err.message || "Internal server error" }, 500);
+  console.error("[Backend] Unhandled Error:", err);
+  return c.json({ 
+    error: "Internal Server Error",
+    message: err.message 
+  }, 500);
 });
-
-console.log("[Backend] Server initialized");
 
 export default app;
