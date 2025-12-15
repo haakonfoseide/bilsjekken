@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppState, AppStateStatus } from "react-native";
 import { CarProvider } from "@/contexts/car-context";
-import { trpc, trpcClient } from "@/lib/trpc";
+import { trpc, trpcProviderClient } from "@/lib/trpc";
 import AppSplash from "@/components/AppSplash";
 
 SplashScreen.preventAutoHideAsync();
@@ -67,7 +67,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <trpc.Provider client={trpcProviderClient} queryClient={queryClient}>
         <CarProvider>
           <GestureHandlerRootView style={{ flex: 1 }} testID="gesture-root">
             {isReady ? <RootLayoutNav /> : <AppSplash testID="app-splash" />}
