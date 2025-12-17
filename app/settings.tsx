@@ -13,7 +13,7 @@ import {
   LayoutAnimation,
   UIManager,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { 
   Search, 
@@ -61,6 +61,13 @@ export default function SettingsScreen() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchSuccess, setSearchSuccess] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Initialize form with existing data
   useEffect(() => {
@@ -139,6 +146,9 @@ export default function SettingsScreen() {
     try {
       console.log("[Settings][VehicleLookup] calling trpc procedure: vehicleSearch.query");
       const data = await trpcClient.vehicleSearch.query({ licensePlate: plate });
+      
+      if (!isMounted.current) return;
+
       const durationMs = Date.now() - startedAt;
       console.log("[Settings][VehicleLookup] success durationMs:", durationMs);
       console.log("[Settings][VehicleLookup] result:", data);
@@ -159,6 +169,7 @@ export default function SettingsScreen() {
         }
       }
     } catch (err: any) {
+      if (!isMounted.current) return;
       const durationMs = Date.now() - startedAt;
       console.error("[Settings][VehicleLookup] FAILED durationMs:", durationMs);
       console.error("[Settings][VehicleLookup] raw error:", err);
@@ -200,7 +211,9 @@ export default function SettingsScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } finally {
-      setIsSearching(false);
+      if (isMounted.current) {
+        setIsSearching(false);
+      }
     }
   };
 

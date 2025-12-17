@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
 import {
   Camera,
@@ -80,6 +80,13 @@ export default function ScanReceiptScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ReceiptAnalysis | null>(null);
+  
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -185,6 +192,9 @@ export default function ScanReceiptScreen() {
         });
 
         console.log("[Receipt] Analysis complete:", result);
+        
+        if (!isMounted.current) return;
+
         setAnalysis(result);
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -192,6 +202,7 @@ export default function ScanReceiptScreen() {
         setAnalyzing(false);
         return;
       } catch (error: any) {
+        if (!isMounted.current) return;
         lastError = error;
         console.error(`[Receipt] Analysis error (attempt ${attempt + 1}):`, error);
         
@@ -208,6 +219,8 @@ export default function ScanReceiptScreen() {
       name: lastError?.name,
     });
     
+    if (!isMounted.current) return;
+
     let errorMessage = "Kunne ikke analysere kvitteringen etter flere forsøk. Legg til manuelt i riktig kategori.";
     
     if (lastError?.message?.includes("JSON Parse") || lastError?.message?.includes("parse")) {

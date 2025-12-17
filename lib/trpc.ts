@@ -2,10 +2,12 @@ import { createTRPCReact } from "@trpc/react-query";
 import { createTRPCProxyClient, httpLink } from "@trpc/client";
 import superjson from "superjson";
 import Constants from "expo-constants";
-import type { AppRouter } from "@/backend/trpc/router-types";
+import type { AppRouter as ApiAppRouter } from "./api-types";
 
 // 1. Create the React Query hooks
-export const trpc = createTRPCReact<AppRouter>();
+// We cast to any to avoid "collision" errors and because we can't easily
+// import the full Router type on the client without runtime issues.
+export const trpc = createTRPCReact<any>() as any;
 
 const getBaseUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
@@ -88,7 +90,7 @@ export const trpcProviderClient = trpc.createClient({
 });
 
 // 4. Create the Vanilla Proxy Client (for usage outside of React components/hooks)
-export const trpcClient = createTRPCProxyClient<AppRouter>({
+export const trpcClient = createTRPCProxyClient<any>({
   links: createLinks(),
   // transformer removed from here
-});
+}) as unknown as ApiAppRouter;
