@@ -13,7 +13,7 @@ import {
   StatusBar,
   Keyboard,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   CircleSlash2,
   Save,
@@ -52,6 +52,14 @@ export default function TiresScreen() {
   const [hasBalancing, setHasBalancing] = useState(false);
   const [hasRemounting, setHasRemounting] = useState(false);
 
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const resetForm = () => {
     setTireType("summer");
     setBrand("");
@@ -71,6 +79,8 @@ export default function TiresScreen() {
         const data = JSON.parse(params.prefillData as string);
         console.log("[Tires] Prefilling with data:", data);
         
+        if (!isMounted.current) return;
+
         if (data.merchant) setBrand(data.merchant);
         if (data.date) setPurchaseDate(data.date);
         if (data.description) setNotes(data.description);
@@ -185,6 +195,8 @@ export default function TiresScreen() {
       quality: 0.8,
     });
 
+    if (!isMounted.current) return;
+
     if (!result.canceled && result.assets) {
       const newImages = result.assets.map((asset) => asset.uri);
       setReceiptImages([...receiptImages, ...newImages]);
@@ -208,6 +220,8 @@ export default function TiresScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
     });
+
+    if (!isMounted.current) return;
 
     if (!result.canceled && result.assets && result.assets[0]) {
       setReceiptImages([...receiptImages, result.assets[0].uri]);

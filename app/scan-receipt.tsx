@@ -104,6 +104,8 @@ export default function ScanReceiptScreen() {
       allowsEditing: false,
     });
 
+    if (!isMounted.current) return;
+
     if (!result.canceled && result.assets && result.assets[0]) {
       setSelectedImage(result.assets[0].uri);
       if (Platform.OS !== "web") {
@@ -128,6 +130,8 @@ export default function ScanReceiptScreen() {
       quality: 0.8,
       allowsEditing: false,
     });
+
+    if (!isMounted.current) return;
 
     if (!result.canceled && result.assets && result.assets[0]) {
       setSelectedImage(result.assets[0].uri);

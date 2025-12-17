@@ -10,7 +10,7 @@ import {
   Image,
   Keyboard,
 } from "react-native";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Wrench, Plus, Trash2, Camera, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -28,6 +28,14 @@ export default function ServiceScreen() {
   const [cost, setCost] = useState("");
   const [location, setLocation] = useState("");
   const [receiptImages, setReceiptImages] = useState<string[]>([]);
+
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const handleAdd = () => {
     if (!date || !mileage || !type || !description) {
@@ -104,6 +112,8 @@ export default function ServiceScreen() {
       quality: 0.8,
     });
 
+    if (!isMounted.current) return;
+
     if (!result.canceled && result.assets) {
       const newImages = result.assets.map((asset) => asset.uri);
       setReceiptImages([...receiptImages, ...newImages]);
@@ -127,6 +137,8 @@ export default function ServiceScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
     });
+
+    if (!isMounted.current) return;
 
     if (!result.canceled && result.assets && result.assets[0]) {
       setReceiptImages([...receiptImages, result.assets[0].uri]);
