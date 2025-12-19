@@ -7,10 +7,12 @@ import Constants from "expo-constants";
 // import the full Router type on the client without runtime issues.
 export const trpc = createTRPCReact<any>() as any;
 
+const normalizeNoTrailingSlash = (value: string) => (value.endsWith("/") ? value.slice(0, -1) : value);
+
 const getBaseUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   if (envUrl && envUrl.length > 0) {
-    const url = envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+    const url = normalizeNoTrailingSlash(envUrl);
     console.log("[tRPC] Using env URL:", url);
     return url;
   }
@@ -40,12 +42,34 @@ const getBaseUrl = () => {
   return "http://127.0.0.1:3000";
 };
 
-const getFullUrl = () => `${getBaseUrl()}/api/trpc`;
+export const getTrpcHttpUrl = () => {
+  const base = normalizeNoTrailingSlash(getBaseUrl());
+
+  // Accept several common shapes to avoid double-prefixing that causes 404s:
+  // - https://example.com/api/trpc
+  // - https://example.com/api
+  // - https://example.com
+  if (base.endsWith("/api/trpc")) {
+    const url = base;
+    console.log("[tRPC] Resolved tRPC URL (already full):", url);
+    return url;
+  }
+
+  if (base.endsWith("/api")) {
+    const url = `${base}/trpc`;
+    console.log("[tRPC] Resolved tRPC URL (base ends with /api):", url);
+    return url;
+  }
+
+  const url = `${base}/api/trpc`;
+  console.log("[tRPC] Resolved tRPC URL:", url);
+  return url;
+};
 
 // 2. Define the links configuration
 const createLinks = () => [
   httpLink({
-    url: getFullUrl(),
+    url: getTrpcHttpUrl(),
     // transformer: superjson,
     // Custom fetch to log requests/responses
     fetch: async (url, options) => {

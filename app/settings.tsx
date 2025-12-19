@@ -120,7 +120,7 @@ export default function SettingsScreen() {
     console.log("[Settings][VehicleLookup] isOnline:", isOnline);
     console.log("[Settings][VehicleLookup] input.raw:", plateRaw);
     console.log("[Settings][VehicleLookup] input.cleaned:", plate);
-    console.log("[Settings][VehicleLookup] trpcBaseUrl:", (trpcClient as any)?.links?.[0]?.url ?? "(unknown)");
+    console.log("[Settings][VehicleLookup] trpcUrl:", process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? process.env.EXPO_PUBLIC_TOOLKIT_URL ?? "(auto)");
 
     if (!plate) {
       setSearchError("Skriv inn registreringsnummer");
