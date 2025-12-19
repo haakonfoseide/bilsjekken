@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,6 +17,7 @@ import {
   CircleSlash2,
   ChevronRight,
   ScanLine,
+  RefreshCw,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -30,6 +32,8 @@ export default function DashboardScreen() {
     getNextService,
     getTireAge,
     tireInfo,
+    cars,
+    setActiveCar,
   } = useCarData();
 
   const lastWash = getLastWash();
@@ -41,6 +45,43 @@ export default function DashboardScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     router.push(route as never);
+  };
+
+  const handleSwitchCar = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    if (cars.length === 0) {
+      handlePress("/settings");
+      return;
+    }
+
+    if (cars.length === 1) {
+      Alert.alert(
+        "Legg til flere biler",
+        "Du har bare én bil. Vil du legge til en ny bil?",
+        [
+          { text: "Avbryt", style: "cancel" },
+          { text: "Legg til", onPress: () => handlePress("/settings") }
+        ]
+      );
+      return;
+    }
+
+    const options = cars.map(car => ({
+      text: `${car.make} ${car.model} (${car.licensePlate})`,
+      onPress: () => {
+        setActiveCar(car.id);
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    }));
+
+    options.push({ text: "Avbryt", onPress: () => {} });
+
+    Alert.alert("Velg bil", "Hvilken bil vil du se?", options);
   };
 
   const formatDate = (dateString: string) => {
@@ -80,6 +121,15 @@ export default function DashboardScreen() {
                     {carInfo.year} • {carInfo.licensePlate}
                   </Text>
                 </View>
+                {cars.length > 0 && (
+                  <TouchableOpacity 
+                    style={styles.switchButton}
+                    onPress={handleSwitchCar}
+                    activeOpacity={0.7}
+                  >
+                    <RefreshCw size={20} color={Colors.primary} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
@@ -369,5 +419,13 @@ const styles = StyleSheet.create({
   scanButtonSubtitle: {
     fontSize: 13,
     color: Colors.text.secondary,
+  },
+  switchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
