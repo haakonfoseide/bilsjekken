@@ -9,8 +9,6 @@ import {
   Alert,
   Switch,
   Image,
-  Modal,
-  StatusBar,
   Keyboard,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
@@ -39,7 +37,7 @@ export default function TiresScreen() {
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const [tireType, setTireType] = useState<"summer" | "winter">("summer");
   const [brand, setBrand] = useState("");
@@ -73,6 +71,7 @@ export default function TiresScreen() {
     setReceiptImages([]);
     setHasBalancing(false);
     setHasRemounting(false);
+    setShowAddForm(false);
   };
 
   useEffect(() => {
@@ -95,7 +94,7 @@ export default function TiresScreen() {
           setNotes((prev) => prev ? `${prev}\n\nPoster: ${itemsText}` : `Poster: ${itemsText}`);
         }
         
-        setModalVisible(true);
+        setShowAddForm(true);
         
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -108,8 +107,10 @@ export default function TiresScreen() {
   }, [params.prefillData]);
 
   const handleAddNew = () => {
-    resetForm();
-    setModalVisible(true);
+    setShowAddForm(!showAddForm);
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   };
 
   const handleSave = () => {
@@ -136,7 +137,6 @@ export default function TiresScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
-    setModalVisible(false);
     resetForm();
     Alert.alert("Lagret", "Dekksettet er lagt til");
   };
@@ -266,220 +266,26 @@ export default function TiresScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent, 
-          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 100 : 100 }
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {tireSets.length === 0 ? (
-          <View style={styles.emptyState}>
-            <CircleSlash2
-              size={64}
-              color={Colors.text.light}
-              strokeWidth={1.5}
-            />
-            <Text style={styles.emptyTitle}>Ingen dekksett registrert</Text>
-            <Text style={styles.emptyText}>
-              Legg til dine sommer- og vinterdekk for å holde oversikt
-            </Text>
-          </View>
-        ) : (
-          <>
-            {summerTires.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Sun size={20} color={Colors.warning} strokeWidth={2} />
-                  <Text style={styles.sectionTitle}>Sommerdekk</Text>
-                </View>
-
-                {summerTires.map((tire) => {
-                  const age = getTireAge(tire.purchaseDate);
-                  return (
-                    <TouchableOpacity
-                      key={tire.id}
-                      style={[
-                        styles.tireCard,
-                        tire.isActive && styles.tireCardActive,
-                      ]}
-                      onPress={() => handleSetActive(tire.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.tireCardHeader}>
-                        <View style={styles.tireCardTitle}>
-                          {tire.isActive ? (
-                            <CheckCircle2
-                              size={24}
-                              color={Colors.primary}
-                              strokeWidth={2}
-                            />
-                          ) : (
-                            <Circle
-                              size={24}
-                              color={Colors.text.light}
-                              strokeWidth={2}
-                            />
-                          )}
-                          <View>
-                            <Text style={styles.tireBrand}>{tire.brand}</Text>
-                            <Text style={styles.tireSize}>{tire.size}</Text>
-                          </View>
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => handleDelete(tire.id)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <Trash2
-                            size={20}
-                            color={Colors.danger}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                      </View>
-
-                      <View style={styles.tireCardDetails}>
-                        <Text style={styles.tireDetail}>
-                          Alder: {age.years} år {age.months} mnd
-                        </Text>
-                        {age.years >= 6 && (
-                          <Text style={styles.tireWarning}>
-                            ⚠️ Bør byttes
-                          </Text>
-                        )}
-                        {tire.isAtTireHotel && (
-                          <Text style={styles.tireDetail}>
-                            📍 {tire.hotelLocation || "Dekkhotell"}
-                          </Text>
-                        )}
-                        {(tire.hasBalancing || tire.hasRemounting) && (
-                          <Text style={styles.tireDetail}>
-                            {tire.hasBalancing && "✓ Avbalansering"}
-                            {tire.hasBalancing && tire.hasRemounting && ", "}
-                            {tire.hasRemounting && "✓ Omlegging"}
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-
-            {winterTires.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Snowflake size={20} color="#60A5FA" strokeWidth={2} />
-                  <Text style={styles.sectionTitle}>Vinterdekk</Text>
-                </View>
-
-                {winterTires.map((tire) => {
-                  const age = getTireAge(tire.purchaseDate);
-                  return (
-                    <TouchableOpacity
-                      key={tire.id}
-                      style={[
-                        styles.tireCard,
-                        tire.isActive && styles.tireCardActive,
-                      ]}
-                      onPress={() => handleSetActive(tire.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.tireCardHeader}>
-                        <View style={styles.tireCardTitle}>
-                          {tire.isActive ? (
-                            <CheckCircle2
-                              size={24}
-                              color={Colors.primary}
-                              strokeWidth={2}
-                            />
-                          ) : (
-                            <Circle
-                              size={24}
-                              color={Colors.text.light}
-                              strokeWidth={2}
-                            />
-                          )}
-                          <View>
-                            <Text style={styles.tireBrand}>{tire.brand}</Text>
-                            <Text style={styles.tireSize}>{tire.size}</Text>
-                          </View>
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => handleDelete(tire.id)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <Trash2
-                            size={20}
-                            color={Colors.danger}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                      </View>
-
-                      <View style={styles.tireCardDetails}>
-                        <Text style={styles.tireDetail}>
-                          Alder: {age.years} år {age.months} mnd
-                        </Text>
-                        {age.years >= 6 && (
-                          <Text style={styles.tireWarning}>
-                            ⚠️ Bør byttes
-                          </Text>
-                        )}
-                        {tire.isAtTireHotel && (
-                          <Text style={styles.tireDetail}>
-                            📍 {tire.hotelLocation || "Dekkhotell"}
-                          </Text>
-                        )}
-                        {(tire.hasBalancing || tire.hasRemounting) && (
-                          <Text style={styles.tireDetail}>
-                            {tire.hasBalancing && "✓ Avbalansering"}
-                            {tire.hasBalancing && tire.hasRemounting && ", "}
-                            {tire.hasRemounting && "✓ Omlegging"}
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
-
-      <View style={[styles.floatingButtonContainer, { paddingBottom: insets.bottom }]}>
         <TouchableOpacity
           style={styles.addButton}
           onPress={handleAddNew}
           activeOpacity={0.8}
         >
-          <Plus size={24} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>Legg til dekksett</Text>
+          <Plus size={20} color="#fff" strokeWidth={2} />
+          <Text style={styles.addButtonText}>
+            {showAddForm ? "Avbryt" : "Legg til dekksett"}
+          </Text>
         </TouchableOpacity>
-      </View>
 
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer} testID="tires-add-modal">
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Nytt dekksett</Text>
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              testID="close-add-tires"
-            >
-              <X size={28} color={Colors.text.primary} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
+        {showAddForm && (
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Nytt dekksett</Text>
 
-          <ScrollView
-            style={styles.modalScrollView}
-            contentContainerStyle={styles.modalContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
                 Type <Text style={styles.required}>*</Text>
@@ -724,16 +530,190 @@ export default function TiresScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.saveButton}
+              style={styles.submitButton}
               onPress={handleSave}
               activeOpacity={0.8}
             >
               <Save size={20} color="#fff" strokeWidth={2} />
-              <Text style={styles.saveButtonText}>Lagre dekksett</Text>
+              <Text style={styles.submitButtonText}>Lagre dekksett</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
+        )}
+
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>Dekksett</Text>
+          {tireSets.length === 0 ? (
+            <View style={styles.emptyState}>
+              <CircleSlash2
+                size={48}
+                color={Colors.text.light}
+                strokeWidth={1.5}
+              />
+              <Text style={styles.emptyText}>Ingen dekksett registrert</Text>
+            </View>
+          ) : (
+          <>
+            {summerTires.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Sun size={20} color={Colors.warning} strokeWidth={2} />
+                  <Text style={styles.sectionTitle}>Sommerdekk</Text>
+                </View>
+
+                {summerTires.map((tire) => {
+                  const age = getTireAge(tire.purchaseDate);
+                  return (
+                    <TouchableOpacity
+                      key={tire.id}
+                      style={[
+                        styles.tireCard,
+                        tire.isActive && styles.tireCardActive,
+                      ]}
+                      onPress={() => handleSetActive(tire.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.tireCardHeader}>
+                        <View style={styles.tireCardTitle}>
+                          {tire.isActive ? (
+                            <CheckCircle2
+                              size={24}
+                              color={Colors.primary}
+                              strokeWidth={2}
+                            />
+                          ) : (
+                            <Circle
+                              size={24}
+                              color={Colors.text.light}
+                              strokeWidth={2}
+                            />
+                          )}
+                          <View>
+                            <Text style={styles.tireBrand}>{tire.brand}</Text>
+                            <Text style={styles.tireSize}>{tire.size}</Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleDelete(tire.id)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Trash2
+                            size={20}
+                            color={Colors.danger}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.tireCardDetails}>
+                        <Text style={styles.tireDetail}>
+                          Alder: {age.years} år {age.months} mnd
+                        </Text>
+                        {age.years >= 6 && (
+                          <Text style={styles.tireWarning}>
+                            ⚠️ Bør byttes
+                          </Text>
+                        )}
+                        {tire.isAtTireHotel && (
+                          <Text style={styles.tireDetail}>
+                            📍 {tire.hotelLocation || "Dekkhotell"}
+                          </Text>
+                        )}
+                        {(tire.hasBalancing || tire.hasRemounting) && (
+                          <Text style={styles.tireDetail}>
+                            {tire.hasBalancing && "✓ Avbalansering"}
+                            {tire.hasBalancing && tire.hasRemounting && ", "}
+                            {tire.hasRemounting && "✓ Omlegging"}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
+            {winterTires.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Snowflake size={20} color="#60A5FA" strokeWidth={2} />
+                  <Text style={styles.sectionTitle}>Vinterdekk</Text>
+                </View>
+
+                {winterTires.map((tire) => {
+                  const age = getTireAge(tire.purchaseDate);
+                  return (
+                    <TouchableOpacity
+                      key={tire.id}
+                      style={[
+                        styles.tireCard,
+                        tire.isActive && styles.tireCardActive,
+                      ]}
+                      onPress={() => handleSetActive(tire.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.tireCardHeader}>
+                        <View style={styles.tireCardTitle}>
+                          {tire.isActive ? (
+                            <CheckCircle2
+                              size={24}
+                              color={Colors.primary}
+                              strokeWidth={2}
+                            />
+                          ) : (
+                            <Circle
+                              size={24}
+                              color={Colors.text.light}
+                              strokeWidth={2}
+                            />
+                          )}
+                          <View>
+                            <Text style={styles.tireBrand}>{tire.brand}</Text>
+                            <Text style={styles.tireSize}>{tire.size}</Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleDelete(tire.id)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Trash2
+                            size={20}
+                            color={Colors.danger}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.tireCardDetails}>
+                        <Text style={styles.tireDetail}>
+                          Alder: {age.years} år {age.months} mnd
+                        </Text>
+                        {age.years >= 6 && (
+                          <Text style={styles.tireWarning}>
+                            ⚠️ Bør byttes
+                          </Text>
+                        )}
+                        {tire.isAtTireHotel && (
+                          <Text style={styles.tireDetail}>
+                            📍 {tire.hotelLocation || "Dekkhotell"}
+                          </Text>
+                        )}
+                        {(tire.hasBalancing || tire.hasRemounting) && (
+                          <Text style={styles.tireDetail}>
+                            {tire.hasBalancing && "✓ Avbalansering"}
+                            {tire.hasBalancing && tire.hasRemounting && ", "}
+                            {tire.hasRemounting && "✓ Omlegging"}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </>
+          )}
         </View>
-      </Modal>
+      </ScrollView>
     </View>
   );
 }
@@ -751,23 +731,16 @@ const styles = StyleSheet.create({
     paddingBottom: 90,
   },
   emptyState: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 80,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
-    color: Colors.text.primary,
-    marginTop: 16,
+    paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 16,
     color: Colors.text.secondary,
-    textAlign: "center",
-    paddingHorizontal: 40,
+    marginTop: 16,
+  },
+  listSection: {
+    marginTop: 8,
   },
   section: {
     marginBottom: 24,
@@ -829,17 +802,6 @@ const styles = StyleSheet.create({
     color: Colors.warning,
     fontWeight: "600" as const,
   },
-  floatingButtonContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    backgroundColor: Colors.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
   addButton: {
     backgroundColor: Colors.primary,
     flexDirection: "row",
@@ -848,6 +810,7 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 16,
     borderRadius: 12,
+    marginBottom: 20,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -859,31 +822,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700" as const,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0,
+  formCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    paddingTop: Platform.OS === "ios" ? 60 : 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  modalTitle: {
-    fontSize: 20,
+  formTitle: {
+    fontSize: 18,
     fontWeight: "700" as const,
     color: Colors.text.primary,
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalContent: {
-    padding: 16,
-    paddingBottom: 32,
+    marginBottom: 16,
   },
   inputGroup: {
     marginBottom: 16,
@@ -898,7 +852,7 @@ const styles = StyleSheet.create({
     color: Colors.danger,
   },
   input: {
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -921,7 +875,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     padding: 16,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: Colors.background,
     borderWidth: 2,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -942,7 +896,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: Colors.background,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -955,22 +909,16 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     marginTop: 4,
   },
-  saveButton: {
-    backgroundColor: Colors.primary,
+  submitButton: {
+    backgroundColor: Colors.success,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     padding: 16,
     borderRadius: 12,
-    marginTop: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  saveButtonText: {
+  submitButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700" as const,
