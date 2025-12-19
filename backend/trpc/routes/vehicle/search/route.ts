@@ -37,15 +37,17 @@ export default publicProcedure
       }
 
       // 3. Get API Key
-      const apiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
-      console.log("[Vehicle Search] Has API key:", Boolean(apiKey));
-      if (!apiKey) {
+      const envApiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
+      console.log("[Vehicle Search] Has API key:", Boolean(envApiKey));
+      if (!envApiKey) {
         console.error("[Vehicle Search] CRITICAL: Missing Vegvesenet API Key");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Systemfeil: Mangler konfigurasjon for kjøretøyoppslag.",
         });
       }
+
+      const apiKey = envApiKey.startsWith("Apikey ") ? envApiKey : `Apikey ${envApiKey}`;
 
       // 4. Call External API
       // Using the Enkeltoppslag API (Production URL)
@@ -59,7 +61,7 @@ export default publicProcedure
       const response = await fetch(fullUrl, {
         method: "GET",
         headers: {
-          "X-API-KEY": apiKey,
+          "SVV-Authorization": apiKey,
           Accept: "application/json",
           "x-rork-request-id": requestId,
         },
