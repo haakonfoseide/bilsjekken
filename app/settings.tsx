@@ -28,7 +28,13 @@ import {
   ChevronRight,
   WifiOff,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  FileKey,
+  HelpCircle,
+  Download,
+  Smartphone,
+  Mail,
+  Shield
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as Network from "expo-network";
@@ -451,6 +457,23 @@ export default function SettingsScreen() {
                 />
               </View>
             </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <FileKey size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>VIN / Understellsnummer</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={vin}
+                  onChangeText={setVin}
+                  placeholder="1HGBH41JXMN109186"
+                  autoCapitalize="characters"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
           </View>
 
           <Text style={styles.sectionHeader}>Drift og Vedlikehold</Text>
@@ -486,6 +509,97 @@ export default function SettingsScreen() {
                 />
               </View>
             </View>
+          </View>
+
+          <Text style={styles.sectionHeader}>App & Data</Text>
+
+          <View style={styles.formCard}>
+            <TouchableOpacity style={styles.inputRow}>
+              <Smartphone size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.settingTitle}>App versjon</Text>
+                <Text style={styles.settingValue}>1.0.0</Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity 
+              style={styles.inputRow}
+              onPress={() => {
+                Alert.alert(
+                  "Eksporter data",
+                  "Denne funksjonen lar deg eksportere all bildata til en fil.",
+                  [{ text: "OK" }]
+                );
+              }}
+            >
+              <Download size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.settingTitle}>Eksporter data</Text>
+                <Text style={styles.settingValue}>Last ned en kopi</Text>
+              </View>
+              <ChevronRight size={20} color={Colors.text.tertiary} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.sectionHeader}>Support</Text>
+
+          <View style={styles.formCard}>
+            <TouchableOpacity 
+              style={styles.inputRow}
+              onPress={() => {
+                Alert.alert(
+                  "Hjelp",
+                  "Trenger du hjelp? Ta kontakt på support@bilapp.no",
+                  [{ text: "OK" }]
+                );
+              }}
+            >
+              <HelpCircle size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.settingTitle}>Hjelp & Support</Text>
+              </View>
+              <ChevronRight size={20} color={Colors.text.tertiary} />
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity 
+              style={styles.inputRow}
+              onPress={() => {
+                Alert.alert(
+                  "Kontakt oss",
+                  "E-post: support@bilapp.no\nTelefon: +47 123 45 678",
+                  [{ text: "OK" }]
+                );
+              }}
+            >
+              <Mail size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.settingTitle}>Kontakt oss</Text>
+              </View>
+              <ChevronRight size={20} color={Colors.text.tertiary} />
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity 
+              style={styles.inputRow}
+              onPress={() => {
+                Alert.alert(
+                  "Personvern",
+                  "Vi tar ditt personvern på alvor. All data lagres lokalt på enheten din.",
+                  [{ text: "OK" }]
+                );
+              }}
+            >
+              <Shield size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.settingTitle}>Personvern & Vilkår</Text>
+              </View>
+              <ChevronRight size={20} color={Colors.text.tertiary} />
+            </TouchableOpacity>
           </View>
 
           {carInfo && carInfo.make && (
@@ -693,5 +807,15 @@ const styles = StyleSheet.create({
     color: Colors.danger,
     fontSize: 16,
     fontWeight: "600",
+  },
+  settingTitle: {
+    fontSize: 16,
+    color: Colors.text.primary,
+    fontWeight: "500",
+  },
+  settingValue: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    marginTop: 2,
   },
 });
