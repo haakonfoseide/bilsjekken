@@ -47,10 +47,10 @@ app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
 
 // tRPC Handler
-// We mount it at /api/trpc and let Hono handle the routing
-// The endpoint option tells tRPC where it is mounted so it can strip the prefix correctly
+// The Hono app is mounted at /api by default, so we mount tRPC at /trpc
+// This makes it available at /api/trpc/*
 app.use(
-  "/api/trpc/*",
+  "/trpc/*",
   trpcServer({
     router: appRouter,
     createContext,
