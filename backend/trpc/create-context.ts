@@ -1,6 +1,5 @@
 import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { initTRPC } from "@trpc/server";
-import superjson from "superjson";
 
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
   const requestId = opts.req.headers.get("x-rork-request-id") ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -29,7 +28,7 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
 export type Context = Awaited<ReturnType<typeof createContext>>;
 
 const t = initTRPC.context<Context>().create({
-  transformer: superjson,
+  // transformer: superjson,
 });
 
 export const createTRPCRouter = t.router;

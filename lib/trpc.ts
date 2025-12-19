@@ -1,6 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
 import { createTRPCProxyClient, httpLink } from "@trpc/client";
-import superjson from "superjson";
 import Constants from "expo-constants";
 import type { AppRouter as ApiAppRouter } from "./api-types";
 
@@ -48,7 +47,7 @@ const getFullUrl = () => `${getBaseUrl()}/api/trpc`;
 const createLinks = () => [
   httpLink({
     url: getFullUrl(),
-    transformer: superjson, // Correct placement: Inside the link options
+    // transformer: superjson,
     // Custom fetch to log requests/responses
     fetch: async (url, options) => {
       const requestId = `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -86,11 +85,9 @@ const createLinks = () => [
 // 3. Create the client for the Provider (React Query integration)
 export const trpcProviderClient = trpc.createClient({
   links: createLinks(),
-  // transformer removed from here
 });
 
 // 4. Create the Vanilla Proxy Client (for usage outside of React components/hooks)
 export const trpcClient = createTRPCProxyClient<any>({
   links: createLinks(),
-  // transformer removed from here
 }) as unknown as ApiAppRouter;
