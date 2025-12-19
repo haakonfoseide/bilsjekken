@@ -1,4 +1,5 @@
 export interface CarInfo {
+  id: string;
   make: string;
   model: string;
   year: string;
@@ -10,6 +11,7 @@ export interface CarInfo {
 
 export interface WashRecord {
   id: string;
+  carId: string;
   date: string;
   mileage?: number;
   type?: string;
@@ -18,6 +20,7 @@ export interface WashRecord {
 
 export interface ServiceRecord {
   id: string;
+  carId: string;
   date: string;
   mileage: number;
   type: string;
@@ -29,6 +32,7 @@ export interface ServiceRecord {
 
 export interface TireSet {
   id: string;
+  carId: string;
   type: 'summer' | 'winter';
   brand: string;
   purchaseDate: string;
@@ -54,6 +58,7 @@ export interface TireInfo {
 
 export interface MileageRecord {
   id?: string;
+  carId: string;
   date: string;
   mileage: number;
 }

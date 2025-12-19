@@ -13,31 +13,47 @@ import type {
 
 const STORAGE_KEY = "@car_data";
 const STORAGE_BACKUP_KEY = "@car_data_backup";
-const STORAGE_VERSION = "1.0";
+const STORAGE_VERSION = "2.0"; // Bump version for migration
 
 interface CarData {
-  carInfo: CarInfo | null;
+  // New structure
+  cars: CarInfo[];
+  activeCarId: string | null;
+  
+  // Records now include carId
   washRecords: WashRecord[];
   serviceRecords: ServiceRecord[];
-  tireInfo: TireInfo | null;
   tireSets: TireSet[];
   mileageRecords: MileageRecord[];
+  
+  // Legacy/Singular support (mapped by carId in memory, or just kept for compatibility?)
+  // We'll try to support tireInfo per car.
+  // Storing as a map in the state for easier access?
+  // Or just array? Let's use array or map. 
+  // For simplicity in JSON, maybe just an array of objects that have carId?
+  // But TireInfo doesn't have ID.
+  // Let's create a wrapper or just rely on TireSets which seems to be the "modern" way in this app.
+  // The Dashboard uses tireInfo. Let's provide a way to get tire info for active car.
+  // Maybe we can derive tireInfo from tireSets?
+  // Or we just persist a map: carId -> TireInfo
+  tireInfos: Record<string, TireInfo>;
 }
 
 const defaultData: CarData = {
-  carInfo: null,
+  cars: [],
+  activeCarId: null,
   washRecords: [],
   serviceRecords: [],
-  tireInfo: null,
   tireSets: [],
   mileageRecords: [],
+  tireInfos: {},
 };
 
 export const [CarProvider, useCarData] = createContextHook(() => {
   const [data, setData] = useState<CarData>(defaultData);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const { data: loadedData, error: loadError, isLoading } = useQuery({
+  const { data: loadedData, isLoading } = useQuery({
     queryKey: ["carData"],
     queryFn: async () => {
       try {
@@ -49,29 +65,41 @@ export const [CarProvider, useCarData] = createContextHook(() => {
 
         const parsed = JSON.parse(stored);
         console.log("[CarContext] Successfully loaded data from storage");
+        
+        // MIGRATION LOGIC
+        if (!parsed.cars && parsed.carInfo) {
+           console.log("[CarContext] Migrating from v1 to v2");
+           const oldCar = parsed.carInfo;
+           const carId = "default-car";
+           const migratedCar: CarInfo = { ...oldCar, id: carId };
+           
+           // Migrate records
+           const migrateRecord = (r: any) => ({ ...r, carId });
+           
+           return {
+             cars: [migratedCar],
+             activeCarId: carId,
+             washRecords: (parsed.washRecords || []).map(migrateRecord),
+             serviceRecords: (parsed.serviceRecords || []).map(migrateRecord),
+             tireSets: (parsed.tireSets || []).map(migrateRecord),
+             mileageRecords: (parsed.mileageRecords || []).map(migrateRecord),
+             tireInfos: parsed.tireInfo ? { [carId]: parsed.tireInfo } : {},
+           };
+        }
+
         return parsed;
       } catch (error) {
         console.error("[CarContext] Error loading data:", error);
-        
+        // Try backup...
         try {
-          const backup = await AsyncStorage.getItem(STORAGE_BACKUP_KEY);
-          if (backup) {
-            console.log("[CarContext] Restoring from backup");
-            const parsed = JSON.parse(backup);
-            await AsyncStorage.setItem(STORAGE_KEY, backup);
-            return parsed;
-          }
-        } catch (backupError) {
-          console.error("[CarContext] Backup restore failed:", backupError);
-        }
-        
+           const backup = await AsyncStorage.getItem(STORAGE_BACKUP_KEY);
+           if (backup) return JSON.parse(backup); // Note: might need migration too if backup is old
+        } catch {}
         return defaultData;
       }
     },
     staleTime: Infinity,
     gcTime: Infinity,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const saveMutation = useMutation({
@@ -87,7 +115,6 @@ export const [CarProvider, useCarData] = createContextHook(() => {
         const existing = await AsyncStorage.getItem(STORAGE_KEY);
         if (existing) {
           await AsyncStorage.setItem(STORAGE_BACKUP_KEY, existing);
-          console.log("[CarContext] Backup created");
         }
         
         await AsyncStorage.setItem(STORAGE_KEY, serialized);
@@ -95,7 +122,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
         return newData;
       } catch (error) {
         console.error("[CarContext] Save error:", error);
-        throw new Error("Kunne ikke lagre data. Sjekk lagringsplass.");
+        throw error;
       }
     },
     retry: 2,
@@ -103,190 +130,321 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   });
 
   useEffect(() => {
-    if (loadError) {
-      console.error("[CarContext] Load error:", loadError);
-    }
-  }, [loadError]);
-
-  useEffect(() => {
     if (loadedData) {
-      setData({
-        ...defaultData,
+      setData((prev) => ({
+        ...prev,
         ...loadedData,
-        tireSets: loadedData.tireSets || [],
+        // Ensure arrays are initialized
+        cars: loadedData.cars || [],
         washRecords: loadedData.washRecords || [],
         serviceRecords: loadedData.serviceRecords || [],
+        tireSets: loadedData.tireSets || [],
         mileageRecords: loadedData.mileageRecords || [],
-      });
+        tireInfos: loadedData.tireInfos || {},
+      }));
       
-      if (isInitialLoad) {
-        setIsInitialLoad(false);
-        console.log("[CarContext] Initial load complete");
-      }
+      if (isInitialLoad) setIsInitialLoad(false);
     }
   }, [loadedData, isInitialLoad]);
 
   const { mutate } = saveMutation;
 
-  const saveData = useCallback(
-    (newData: CarData) => {
-      setData(newData);
-      mutate(newData, {
-        onError: (error) => {
-          console.error("[CarContext] Failed to persist data:", error);
-        },
+  // -- CAR ACTIONS --
+
+  const addCar = useCallback((car: Omit<CarInfo, "id">) => {
+    const id = Date.now().toString();
+    const newCar = { ...car, id };
+    
+    setData((prev) => {
+       const newCars = [...prev.cars, newCar];
+       const newData = {
+         ...prev,
+         cars: newCars,
+         activeCarId: prev.activeCarId || id, // Auto select if first car
+       };
+       mutate(newData);
+       return newData;
+    });
+  }, [mutate]);
+
+  const updateCarInfo = useCallback((carInfo: CarInfo) => {
+      // In v2, carInfo must have ID.
+      // If the user passes a carInfo, we update it in the cars array.
+      setData((prev) => {
+         const newCars = prev.cars.map(c => c.id === carInfo.id ? carInfo : c);
+         const newData = { ...prev, cars: newCars };
+         mutate(newData);
+         return newData;
+      });
+  }, [mutate]);
+
+  const deleteCar = useCallback((carId: string) => {
+      setData((prev) => {
+         const newCars = prev.cars.filter(c => c.id !== carId);
+         // Filter out records for this car?
+         const newWash = prev.washRecords.filter(r => r.carId !== carId);
+         const newService = prev.serviceRecords.filter(r => r.carId !== carId);
+         const newTires = prev.tireSets.filter(r => r.carId !== carId);
+         const newMileage = prev.mileageRecords.filter(r => r.carId !== carId);
+         const newTireInfos = { ...prev.tireInfos };
+         delete newTireInfos[carId];
+
+         let newActiveId = prev.activeCarId;
+         if (newActiveId === carId) {
+            newActiveId = newCars.length > 0 ? newCars[0].id : null;
+         }
+
+         const newData = {
+            ...prev,
+            cars: newCars,
+            activeCarId: newActiveId,
+            washRecords: newWash,
+            serviceRecords: newService,
+            tireSets: newTires,
+            mileageRecords: newMileage,
+            tireInfos: newTireInfos,
+         };
+         mutate(newData);
+         return newData;
+      });
+  }, [mutate]);
+
+  const setActiveCar = useCallback((carId: string) => {
+      setData((prev) => {
+         const newData = { ...prev, activeCarId: carId };
+         mutate(newData);
+         return newData;
+      });
+  }, [mutate]);
+
+  // -- RECORD ACTIONS --
+  // All actions now depend on activeCarId
+
+  const activeCarId = data.activeCarId;
+
+  const addWashRecord = useCallback(
+    (record: Omit<WashRecord, "id" | "carId">) => {
+      if (!activeCarId) return;
+      const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
+      setData((prev) => {
+        const newData = {
+            ...prev,
+            washRecords: [newRecord, ...prev.washRecords],
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
+  const deleteWashRecord = useCallback(
+    (id: string) => {
+      setData((prev) => {
+        const newData = {
+            ...prev,
+            washRecords: prev.washRecords.filter(r => r.id !== id),
+        };
+        mutate(newData);
+        return newData;
       });
     },
     [mutate]
   );
 
-  const updateCarInfo = useCallback(
-    (carInfo: CarInfo) => {
-      const newData = { ...data, carInfo };
-      saveData(newData);
-    },
-    [data, saveData]
-  );
-
-  const addWashRecord = useCallback(
-    (record: Omit<WashRecord, "id">) => {
-      const newRecord = { ...record, id: Date.now().toString() };
-      const newData = {
-        ...data,
-        washRecords: [newRecord, ...data.washRecords],
-      };
-      saveData(newData);
-    },
-    [data, saveData]
-  );
-
-  const deleteWashRecord = useCallback(
-    (id: string) => {
-      const newData = {
-        ...data,
-        washRecords: data.washRecords.filter((r) => r.id !== id),
-      };
-      saveData(newData);
-    },
-    [data, saveData]
-  );
-
   const addServiceRecord = useCallback(
-    (record: Omit<ServiceRecord, "id">) => {
-      const newRecord = { ...record, id: Date.now().toString() };
-      const newData = {
-        ...data,
-        serviceRecords: [newRecord, ...data.serviceRecords],
-      };
-      saveData(newData);
+    (record: Omit<ServiceRecord, "id" | "carId">) => {
+       if (!activeCarId) return;
+       const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
+       setData((prev) => {
+        const newData = {
+            ...prev,
+            serviceRecords: [newRecord, ...prev.serviceRecords],
+        };
+        mutate(newData);
+        return newData;
+      });
     },
-    [data, saveData]
+    [activeCarId, mutate]
   );
 
   const deleteServiceRecord = useCallback(
     (id: string) => {
-      const newData = {
-        ...data,
-        serviceRecords: data.serviceRecords.filter((r) => r.id !== id),
-      };
-      saveData(newData);
+      setData((prev) => {
+        const newData = {
+            ...prev,
+            serviceRecords: prev.serviceRecords.filter(r => r.id !== id),
+        };
+        mutate(newData);
+        return newData;
+      });
     },
-    [data, saveData]
-  );
-
-  const updateTireInfo = useCallback(
-    (tireInfo: TireInfo) => {
-      const newData = { ...data, tireInfo };
-      saveData(newData);
-    },
-    [data, saveData]
+    [mutate]
   );
 
   const addTireSet = useCallback(
-    (tireSet: Omit<TireSet, "id">) => {
-      const newTireSet = { ...tireSet, id: Date.now().toString() };
-      const newData = {
-        ...data,
-        tireSets: [newTireSet, ...data.tireSets],
-      };
-      saveData(newData);
+    (record: Omit<TireSet, "id" | "carId">) => {
+       if (!activeCarId) return;
+       const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
+       setData((prev) => {
+        const newData = {
+            ...prev,
+            tireSets: [newRecord, ...prev.tireSets],
+        };
+        mutate(newData);
+        return newData;
+      });
     },
-    [data, saveData]
+    [activeCarId, mutate]
   );
 
   const deleteTireSet = useCallback(
     (id: string) => {
-      const newData = {
-        ...data,
-        tireSets: data.tireSets.filter((t) => t.id !== id),
-      };
-      saveData(newData);
+      setData((prev) => {
+        const newData = {
+            ...prev,
+            tireSets: prev.tireSets.filter(r => r.id !== id),
+        };
+        mutate(newData);
+        return newData;
+      });
     },
-    [data, saveData]
-  );
-
-  const updateTireSet = useCallback(
-    (id: string, updates: Partial<TireSet>) => {
-      const newData = {
-        ...data,
-        tireSets: data.tireSets.map((t) =>
-          t.id === id ? { ...t, ...updates } : t
-        ),
-      };
-      saveData(newData);
-    },
-    [data, saveData]
+    [mutate]
   );
 
   const setActiveTireSet = useCallback(
     (id: string) => {
-      const newData = {
-        ...data,
-        tireSets: data.tireSets.map((t) => ({
-          ...t,
-          isActive: t.id === id,
-        })),
-      };
-      saveData(newData);
+      // Logic: set this tire set as active for its car?
+      // Or just globally? TireSet has carId.
+      setData((prev) => {
+        // Find the tire set to know its carId
+        const target = prev.tireSets.find(t => t.id === id);
+        if (!target) return prev;
+
+        const newData = {
+            ...prev,
+            tireSets: prev.tireSets.map(t => {
+                if (t.carId === target.carId) {
+                    return { ...t, isActive: t.id === id };
+                }
+                return t;
+            }),
+        };
+        mutate(newData);
+        return newData;
+      });
     },
-    [data, saveData]
+    [mutate]
   );
 
-  const addMileageRecord = useCallback(
-    (record: Omit<MileageRecord, "id">) => {
-      const newRecord = { ...record, id: Date.now().toString() };
-      const newData = {
-        ...data,
-        mileageRecords: [newRecord, ...data.mileageRecords],
-      };
-      if (data.carInfo) {
-        newData.carInfo = { ...data.carInfo, currentMileage: record.mileage };
-      }
-      saveData(newData);
+  const updateTireInfo = useCallback(
+    (info: TireInfo) => {
+       if (!activeCarId) return;
+       setData((prev) => {
+          const newData = {
+              ...prev,
+              tireInfos: { ...prev.tireInfos, [activeCarId]: info },
+          };
+          mutate(newData);
+          return newData;
+       });
     },
-    [data, saveData]
+    [activeCarId, mutate]
+  );
+  
+  const addMileageRecord = useCallback(
+    (record: Omit<MileageRecord, "id" | "carId">) => {
+      if (!activeCarId) return;
+      const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
+      
+      setData((prev) => {
+         const newMileageRecords = [newRecord, ...prev.mileageRecords];
+         
+         // Update car info current mileage
+         const newCars = prev.cars.map(c => 
+            c.id === activeCarId ? { ...c, currentMileage: record.mileage } : c
+         );
+         
+         const newData = {
+             ...prev,
+             cars: newCars,
+             mileageRecords: newMileageRecords,
+         };
+         mutate(newData);
+         return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
+  // -- GETTERS --
+  // Filter by activeCarId
+
+  const activeCar = useMemo(() => 
+    data.cars.find(c => c.id === data.activeCarId) || null, 
+    [data.cars, data.activeCarId]
+  );
+
+  const filteredWashRecords = useMemo(() => 
+    data.washRecords.filter(r => r.carId === activeCarId),
+    [data.washRecords, activeCarId]
+  );
+
+  const filteredServiceRecords = useMemo(() =>
+    data.serviceRecords.filter(r => r.carId === activeCarId),
+    [data.serviceRecords, activeCarId]
+  );
+
+  const filteredTireSets = useMemo(() =>
+    data.tireSets.filter(r => r.carId === activeCarId),
+    [data.tireSets, activeCarId]
+  );
+  
+  const filteredMileageRecords = useMemo(() =>
+    data.mileageRecords.filter(r => r.carId === activeCarId),
+    [data.mileageRecords, activeCarId]
+  );
+
+  const currentTireInfo = useMemo(() => 
+    activeCarId ? data.tireInfos[activeCarId] || null : null,
+    [data.tireInfos, activeCarId]
   );
 
   const getLastWash = useCallback(() => {
-    if (data.washRecords.length === 0) return null;
-    return data.washRecords[0];
-  }, [data.washRecords]);
+    if (filteredWashRecords.length === 0) return null;
+    // Assuming sorted by new->old
+    return filteredWashRecords[0];
+  }, [filteredWashRecords]);
 
   const getNextService = useCallback(() => {
-    if (data.serviceRecords.length === 0) return null;
-    const lastService = data.serviceRecords[0];
-    const currentMileage = data.carInfo?.currentMileage || 0;
+    if (filteredServiceRecords.length === 0) return null;
+    const lastService = filteredServiceRecords[0];
+    const currentMileage = activeCar?.currentMileage || 0;
     const serviceInterval = 15000;
     const mileageUntilService = lastService.mileage + serviceInterval - currentMileage;
     return {
       mileage: mileageUntilService,
       estimated: mileageUntilService > 0,
     };
-  }, [data.serviceRecords, data.carInfo]);
+  }, [filteredServiceRecords, activeCar]);
 
   const getTireAge = useCallback(() => {
-    if (!data.tireInfo) return null;
-    const purchaseDate = new Date(data.tireInfo.purchaseDate);
+    if (!currentTireInfo) {
+        // Fallback to active tire set?
+        const activeSet = filteredTireSets.find(t => t.isActive);
+        if (activeSet) {
+             const purchaseDate = new Date(activeSet.purchaseDate);
+             const now = new Date();
+             const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
+             const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
+             const diffMonths = Math.floor(
+               (diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30)
+             );
+             return { years: diffYears, months: diffMonths };
+        }
+        return null;
+    }
+    const purchaseDate = new Date(currentTireInfo.purchaseDate);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
     const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
@@ -294,17 +452,25 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       (diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30)
     );
     return { years: diffYears, months: diffMonths };
-  }, [data.tireInfo]);
+  }, [currentTireInfo, filteredTireSets]);
 
-  return useMemo(
-    () => ({
-      carInfo: data.carInfo,
-      washRecords: data.washRecords,
-      serviceRecords: data.serviceRecords,
-      tireInfo: data.tireInfo,
-      tireSets: data.tireSets,
-      mileageRecords: data.mileageRecords,
+  return {
+      // State
+      cars: data.cars,
+      activeCarId: data.activeCarId,
+      carInfo: activeCar, // Alias for backward compatibility (mostly)
+      washRecords: filteredWashRecords,
+      serviceRecords: filteredServiceRecords,
+      tireSets: filteredTireSets,
+      mileageRecords: filteredMileageRecords,
+      tireInfo: currentTireInfo, // Alias
+
+      // Actions
+      addCar,
       updateCarInfo,
+      deleteCar,
+      setActiveCar,
+      
       addWashRecord,
       deleteWashRecord,
       addServiceRecord,
@@ -312,37 +478,18 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       updateTireInfo,
       addTireSet,
       deleteTireSet,
-      updateTireSet,
       setActiveTireSet,
       addMileageRecord,
+      
+      // Helpers
       getLastWash,
       getNextService,
       getTireAge,
+      
+      // Meta
       isLoading: saveMutation.isPending || isLoading,
       isSaving: saveMutation.isPending,
       isInitializing: isInitialLoad,
       saveError: saveMutation.error,
-    }),
-    [
-      data,
-      updateCarInfo,
-      addWashRecord,
-      deleteWashRecord,
-      addServiceRecord,
-      deleteServiceRecord,
-      updateTireInfo,
-      addTireSet,
-      deleteTireSet,
-      updateTireSet,
-      setActiveTireSet,
-      addMileageRecord,
-      getLastWash,
-      getNextService,
-      getTireAge,
-      saveMutation.isPending,
-      isLoading,
-      isInitialLoad,
-      saveMutation.error,
-    ]
-  );
+  };
 });
