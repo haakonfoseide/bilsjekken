@@ -71,7 +71,24 @@ const createLinks = () => [
           headers: mergedHeaders,
         });
 
-        console.log(`[tRPC] ${requestId} <- ${response.status}`);
+        console.log(`[tRPC] ${requestId} <- Status: ${response.status}`);
+        console.log(`[tRPC] ${requestId} <- Content-Type: ${response.headers.get('content-type')}`);
+        
+        // Clone response to peek at body for debugging
+        const clonedResponse = response.clone();
+        try {
+          const textBody = await clonedResponse.text();
+          const isJson = response.headers.get('content-type')?.includes('application/json');
+          
+          if (!response.ok || !isJson) {
+            console.error(`[tRPC] ${requestId} <- BODY (first 800 chars):`, textBody.substring(0, 800));
+          } else {
+            console.log(`[tRPC] ${requestId} <- Body preview:`, textBody.substring(0, 200));
+          }
+        } catch (peekError) {
+          console.error(`[tRPC] ${requestId} <- Could not peek at body:`, peekError);
+        }
+        
         return response;
       } catch (error) {
         console.error(`[tRPC] ${requestId} Error:`, error);
