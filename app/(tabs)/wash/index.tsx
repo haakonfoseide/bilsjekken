@@ -10,6 +10,7 @@ import {
   Keyboard,
 } from "react-native";
 import { useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Droplet, Plus, Trash2 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -17,6 +18,7 @@ import Colors from "@/constants/colors";
 
 export default function WashScreen() {
   const { washRecords, addWashRecord, deleteWashRecord } = useCarData();
+  const insets = useSafeAreaInsets();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -74,7 +76,10 @@ export default function WashScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity

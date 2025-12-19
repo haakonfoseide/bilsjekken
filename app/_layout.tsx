@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppState, AppStateStatus } from "react-native";
@@ -70,6 +71,7 @@ export default function RootLayout() {
       <trpc.Provider client={trpcProviderClient} queryClient={queryClient}>
         <CarProvider>
           <GestureHandlerRootView style={{ flex: 1 }} testID="gesture-root">
+            <StatusBar style="auto" />
             {isReady ? <RootLayoutNav /> : <AppSplash testID="app-splash" />}
           </GestureHandlerRootView>
         </CarProvider>

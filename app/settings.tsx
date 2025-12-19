@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { 
   Search, 
   Trash2, 
@@ -45,6 +46,7 @@ if (Platform.OS === 'android') {
 export default function SettingsScreen() {
   const router = useRouter();
   const { carInfo, updateCarInfo, addMileageRecord } = useCarData();
+  const insets = useSafeAreaInsets();
 
   // Form State
   const [make, setMake] = useState("");
@@ -300,7 +302,10 @@ export default function SettingsScreen() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
         <ScrollView 
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + 20 }
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

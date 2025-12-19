@@ -11,6 +11,7 @@ import {
   Keyboard,
 } from "react-native";
 import { useState, useRef, useEffect } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Wrench, Plus, Trash2, Camera, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -19,6 +20,7 @@ import Colors from "@/constants/colors";
 
 export default function ServiceScreen() {
   const { serviceRecords, addServiceRecord, deleteServiceRecord } = useCarData();
+  const insets = useSafeAreaInsets();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -176,7 +178,10 @@ export default function ServiceScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

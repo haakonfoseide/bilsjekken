@@ -7,6 +7,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Car,
   Droplet,
@@ -22,6 +23,7 @@ import Colors from "@/constants/colors";
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     carInfo,
     getLastWash,
@@ -59,7 +61,10 @@ export default function DashboardScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {carInfo ? (

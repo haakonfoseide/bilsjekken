@@ -14,6 +14,7 @@ import {
   Keyboard,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CircleSlash2,
   Save,
@@ -36,6 +37,7 @@ export default function TiresScreen() {
   const { tireSets, addTireSet, deleteTireSet, setActiveTireSet } =
     useCarData();
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -262,7 +264,10 @@ export default function TiresScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 120 : 90 }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {tireSets.length === 0 ? (
@@ -441,7 +446,7 @@ export default function TiresScreen() {
       </ScrollView>
 
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { bottom: Platform.OS === "ios" ? insets.bottom + 80 : 20 }]}
         onPress={handleAddNew}
         activeOpacity={0.8}
       >
