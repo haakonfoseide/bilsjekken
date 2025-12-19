@@ -266,7 +266,7 @@ export default function TiresScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent, 
-          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 120 : 90 }
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 100 : 100 }
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -445,14 +445,16 @@ export default function TiresScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={[styles.addButton, { bottom: Platform.OS === "ios" ? insets.bottom + 80 : 20 }]}
-        onPress={handleAddNew}
-        activeOpacity={0.8}
-      >
-        <Plus size={24} color="#fff" strokeWidth={2} />
-        <Text style={styles.addButtonText}>Legg til dekksett</Text>
-      </TouchableOpacity>
+      <View style={[styles.floatingButtonContainer, { paddingBottom: insets.bottom }]}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddNew}
+          activeOpacity={0.8}
+        >
+          <Plus size={24} color="#fff" strokeWidth={2} />
+          <Text style={styles.addButtonText}>Legg til dekksett</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal
         visible={modalVisible}
@@ -827,11 +829,18 @@ const styles = StyleSheet.create({
     color: Colors.warning,
     fontWeight: "600" as const,
   },
-  addButton: {
+  floatingButtonContainer: {
     position: "absolute",
-    bottom: 20,
-    left: 16,
-    right: 16,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: Colors.background,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  addButton: {
     backgroundColor: Colors.primary,
     flexDirection: "row",
     alignItems: "center",
