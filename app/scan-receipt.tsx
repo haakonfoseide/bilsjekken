@@ -23,6 +23,7 @@ import {
   CircleSlash2,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import { generateObject } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
@@ -151,17 +152,27 @@ export default function ScanReceiptScreen() {
       try {
         console.log(`[Receipt] Starting analysis (attempt ${attempt + 1}/${maxRetries + 1})...`);
         
-        const base64Image = await fetch(imageUri)
-          .then((r) => r.blob())
-          .then(
-            (blob) =>
-              new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = () => reject(new Error("Failed to read image"));
-                reader.readAsDataURL(blob);
-              })
-          );
+        let base64Image = "";
+        if (Platform.OS === "web") {
+            base64Image = await fetch(imageUri)
+            .then((r) => r.blob())
+            .then(
+                (blob) =>
+                new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = () => reject(new Error("Failed to read image"));
+                    reader.readAsDataURL(blob);
+                })
+            );
+        } else {
+            // Native: Use expo-file-system for better performance and stability
+            const base64 = await FileSystem.readAsStringAsync(imageUri, {
+                encoding: "base64",
+            });
+            // Append data URI scheme if not present (usually readAsStringAsync returns just the raw base64)
+            base64Image = `data:image/jpeg;base64,${base64}`;
+        }
 
         console.log("[Receipt] Image converted to base64, calling AI...");
 
