@@ -4,12 +4,20 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, InteractionManager } from "react-native";
+import { enableFreeze, enableScreens } from "react-native-screens";
 import { CarProvider } from "@/contexts/car-context";
 import { trpc, trpcProviderClient } from "@/lib/trpc";
+import { log } from "@/lib/logger";
+import AppErrorBoundary from "@/components/AppErrorBoundary";
 import AppSplash from "@/components/AppSplash";
 
-SplashScreen.preventAutoHideAsync();
+enableScreens(true);
+enableFreeze(true);
+
+void SplashScreen.preventAutoHideAsync().catch((e: unknown) => {
+  log("[SplashScreen] preventAutoHideAsync failed", e);
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,15 +62,30 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState<boolean>(false);
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    let didCancel = false;
+
+    const hide = () => {
+      void SplashScreen.hideAsync().catch((e: unknown) => {
+        log("[SplashScreen] hideAsync failed", e);
+      });
+    };
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (didCancel) return;
       setIsReady(true);
-      SplashScreen.hideAsync();
-    }, 2500);
-    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
-      console.log("[RootLayout] AppState:", state);
+      requestAnimationFrame(() => {
+        if (didCancel) return;
+        hide();
+      });
     });
+
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      log("[RootLayout] AppState:", state);
+    });
+
     return () => {
-      clearTimeout(t);
+      didCancel = true;
+      task.cancel();
       sub.remove();
     };
   }, []);
@@ -73,7 +96,9 @@ export default function RootLayout() {
         <CarProvider>
           <GestureHandlerRootView style={{ flex: 1 }} testID="gesture-root">
             <StatusBar style="auto" />
-            {isReady ? <RootLayoutNav /> : <AppSplash testID="app-splash" />}
+            <AppErrorBoundary>
+              {isReady ? <RootLayoutNav /> : <AppSplash testID="app-splash" />}
+            </AppErrorBoundary>
           </GestureHandlerRootView>
         </CarProvider>
       </trpc.Provider>
