@@ -333,7 +333,7 @@ export default publicProcedure
       const buildField = (label: string, value: unknown, unit?: string) => {
         if (value === null || value === undefined) return null;
         const str = String(value).trim();
-        if (!str || str === "Ukjent") return null;
+        if (!str) return null;
         return { label, value: str, unit };
       };
 

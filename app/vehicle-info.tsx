@@ -8,10 +8,11 @@ import {
   Platform,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp, ArrowLeft, AlertCircle } from "lucide-react-native";
+import { ChevronDown, ChevronUp, ArrowLeft, AlertCircle, ExternalLink } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { useCarData } from "@/contexts/car-context";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import type { VehicleSection } from "@/types/car";
 
 type SectionKey =
@@ -80,6 +81,10 @@ export default function VehicleInfoScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     refreshCarInfo();
+  };
+
+  const handleOpenVegvesenet = () => {
+    Linking.openURL("https://www.vegvesen.no/minside/");
   };
 
   return (
@@ -176,6 +181,20 @@ export default function VehicleInfoScreen() {
             </View>
           );
         })}
+
+        <TouchableOpacity
+          style={styles.externalLinkBtn}
+          onPress={handleOpenVegvesenet}
+          activeOpacity={0.8}
+        >
+          <View style={styles.externalLinkIcon}>
+            <ExternalLink size={20} color={Colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.externalLinkTitle}>Åpne Min side</Text>
+            <Text style={styles.externalLinkSubtitle}>Logg inn hos Vegvesenet for å se flere detaljer</Text>
+          </View>
+        </TouchableOpacity>
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -308,5 +327,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.primary,
     fontWeight: "700" as const,
+  },
+  externalLinkBtn: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+  },
+  externalLinkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+  },
+  externalLinkTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+    marginBottom: 2,
+  },
+  externalLinkSubtitle: {
+    fontSize: 12,
+    color: Colors.text.secondary,
   },
 });

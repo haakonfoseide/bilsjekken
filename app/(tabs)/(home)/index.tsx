@@ -135,12 +135,13 @@ export default function DashboardScreen() {
       >
         {cars.length > 0 ? (
           <>
-            <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+            <View style={[styles.header, { paddingTop: insets.top + 24, paddingBottom: 16 }]}>
               <Text style={styles.headerTitle}>Min bil</Text>
               <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => handlePress("/add-car")}
                 activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Plus size={22} color={Colors.primary} strokeWidth={2.5} />
               </TouchableOpacity>
