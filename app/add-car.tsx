@@ -29,6 +29,8 @@ import {
   CheckCircle2,
   AlertCircle,
   FileKey,
+  Fuel,
+  Palette,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as Network from "expo-network";
@@ -472,6 +474,38 @@ export default function AddCarScreen() {
                   onChangeText={setVin}
                   placeholder="1HGBH41JXMN109186"
                   autoCapitalize="characters"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Palette size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Farge</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={color}
+                  onChangeText={setColor}
+                  placeholder="Svart"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Fuel size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Drivstoff</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={fuelType}
+                  onChangeText={setFuelType}
+                  placeholder="Bensin"
                   placeholderTextColor={Colors.text.light}
                 />
               </View>

@@ -27,7 +27,9 @@ import {
   Smartphone,
   Mail,
   Shield,
-  Trash2
+  Trash2,
+  Palette,
+  Fuel,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
@@ -54,6 +56,8 @@ export default function SettingsScreen() {
   const [insurance, setInsurance] = useState("");
   const [currentMileage, setCurrentMileage] = useState("");
   const [vin, setVin] = useState("");
+  const [color, setColor] = useState("");
+  const [fuelType, setFuelType] = useState("");
   const [euControlDate, setEuControlDate] = useState("");
   const [nextEuControlDate, setNextEuControlDate] = useState("");
 
@@ -73,6 +77,8 @@ export default function SettingsScreen() {
       setInsurance(carInfo.insurance);
       setCurrentMileage(carInfo.currentMileage.toString());
       if (carInfo.vin) setVin(carInfo.vin);
+      if (carInfo.color) setColor(carInfo.color);
+      if (carInfo.fuelType) setFuelType(carInfo.fuelType);
       if (carInfo.euControlDate) setEuControlDate(carInfo.euControlDate);
       if (carInfo.nextEuControlDate) setNextEuControlDate(carInfo.nextEuControlDate);
     }
@@ -99,6 +105,8 @@ export default function SettingsScreen() {
       insurance: insurance || "",
       currentMileage: mileageNum,
       vin,
+      color,
+      fuelType,
       euControlDate: euControlDate || undefined,
       nextEuControlDate: nextEuControlDate || undefined,
     });
@@ -252,6 +260,38 @@ export default function SettingsScreen() {
                   onChangeText={setVin}
                   placeholder="1HGBH41JXMN109186"
                   autoCapitalize="characters"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Palette size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Farge</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={color}
+                  onChangeText={setColor}
+                  placeholder="Svart"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Fuel size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Drivstoff</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={fuelType}
+                  onChangeText={setFuelType}
+                  placeholder="Bensin"
                   placeholderTextColor={Colors.text.light}
                 />
               </View>
