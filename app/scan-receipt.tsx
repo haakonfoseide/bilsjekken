@@ -24,6 +24,7 @@ import {
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as Haptics from "expo-haptics";
 import { generateObject } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
@@ -89,6 +90,22 @@ export default function ScanReceiptScreen() {
     };
   }, []);
 
+  const processImage = async (uri: string) => {
+    try {
+      // Optimize image for iOS and network performance
+      // Resize to max 1024px width/height and compress to jpeg 0.6
+      const manipulatedResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      return manipulatedResult.uri;
+    } catch (error) {
+      console.warn("Image manipulation failed, using original:", error);
+      return uri;
+    }
+  };
+
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
@@ -108,11 +125,18 @@ export default function ScanReceiptScreen() {
     if (!isMounted.current) return;
 
     if (!result.canceled && result.assets && result.assets[0]) {
-      setSelectedImage(result.assets[0].uri);
+      const originalUri = result.assets[0].uri;
+      
+      // Show local preview immediately
+      setSelectedImage(originalUri);
+      
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      analyzeReceipt(result.assets[0].uri);
+      
+      // Process and analyze
+      const processedUri = await processImage(originalUri);
+      analyzeReceipt(processedUri);
     }
   };
 
@@ -135,11 +159,16 @@ export default function ScanReceiptScreen() {
     if (!isMounted.current) return;
 
     if (!result.canceled && result.assets && result.assets[0]) {
-      setSelectedImage(result.assets[0].uri);
+      const originalUri = result.assets[0].uri;
+      
+      setSelectedImage(originalUri);
+      
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      analyzeReceipt(result.assets[0].uri);
+      
+      const processedUri = await processImage(originalUri);
+      analyzeReceipt(processedUri);
     }
   };
 
