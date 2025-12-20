@@ -9,6 +9,7 @@ import {
   Alert,
   Pressable,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
@@ -318,7 +319,10 @@ export default function MileageHistoryScreen() {
                 <Text style={styles.inputLabel}>Dato</Text>
                 <TouchableOpacity 
                   style={styles.dateInputContainer}
-                  onPress={() => setShowCalendar(!showCalendar)}
+                  onPress={() => {
+                    if (!showCalendar) Keyboard.dismiss();
+                    setShowCalendar(!showCalendar);
+                  }}
                 >
                   <CalendarIcon size={20} color={Colors.text.secondary} />
                   <Text style={styles.dateInputText}>{formatDate(newDate)}</Text>
@@ -326,6 +330,7 @@ export default function MileageHistoryScreen() {
                 {showCalendar && (
                   <View style={styles.calendarContainer}>
                     <Calendar
+                      enableSwipeMonths={true}
                       current={newDate}
                       onDayPress={(day: { dateString: string }) => {
                         setNewDate(day.dateString);
@@ -398,7 +403,10 @@ export default function MileageHistoryScreen() {
                 <Text style={styles.inputLabel}>Dato</Text>
                 <TouchableOpacity 
                   style={styles.dateInputContainer}
-                  onPress={() => setShowCalendar(!showCalendar)}
+                  onPress={() => {
+                    if (!showCalendar) Keyboard.dismiss();
+                    setShowCalendar(!showCalendar);
+                  }}
                 >
                   <CalendarIcon size={20} color={Colors.text.secondary} />
                   <Text style={styles.dateInputText}>{formatDate(newDate)}</Text>
@@ -406,6 +414,7 @@ export default function MileageHistoryScreen() {
                 {showCalendar && (
                   <View style={styles.calendarContainer}>
                     <Calendar
+                      enableSwipeMonths={true}
                       current={newDate}
                       onDayPress={(day: { dateString: string }) => {
                         setNewDate(day.dateString);
