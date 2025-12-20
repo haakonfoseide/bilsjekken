@@ -6,11 +6,10 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
-  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import {
   Car,
   Droplet,
@@ -18,24 +17,13 @@ import {
   Gauge,
   CircleSlash2,
   ChevronRight,
-  ChevronDown,
   ScanLine,
   Plus,
   Settings,
   RefreshCw,
   Calendar,
-  Fuel,
-  Weight,
-  Zap,
   CheckCircle2,
   AlertCircle,
-  Factory,
-  GaugeCircle,
-  Users,
-  DoorOpen,
-  Truck,
-  Grip,
-  Palette,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -44,8 +32,7 @@ import Colors from "@/constants/colors";
 export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [specsExpanded, setSpecsExpanded] = useState(false);
-  const specsAnimation = useRef(new Animated.Value(0)).current;
+
   
   const {
     carInfo,
@@ -69,18 +56,7 @@ export default function DashboardScreen() {
     router.push(route as never);
   }, [router]);
 
-  const toggleSpecs = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    const toValue = specsExpanded ? 0 : 1;
-    Animated.spring(specsAnimation, {
-      toValue,
-      useNativeDriver: false,
-      friction: 10,
-    }).start();
-    setSpecsExpanded(!specsExpanded);
-  }, [specsExpanded, specsAnimation]);
+
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -113,15 +89,7 @@ export default function DashboardScreen() {
     refreshCarInfo();
   }, [refreshCarInfo]);
 
-  const specsHeight = useMemo(() => specsAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 320],
-  }), [specsAnimation]);
 
-  const chevronRotate = useMemo(() => specsAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "180deg"],
-  }), [specsAnimation]);
 
   return (
     <View style={styles.container}>
@@ -343,98 +311,6 @@ export default function DashboardScreen() {
                   </View>
                   <ChevronRight size={18} color={Colors.text.light} />
                 </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.specsHeader}
-                  onPress={toggleSpecs}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.sectionTitle}>Spesifikasjoner</Text>
-                  <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
-                    <ChevronDown size={20} color={Colors.text.secondary} />
-                  </Animated.View>
-                </TouchableOpacity>
-
-                <Animated.View style={[styles.specsContainer, { height: specsHeight, overflow: "hidden" }]}>
-                  <View style={styles.specsGrid}>
-                    <View style={styles.specItem}>
-                      <Zap size={16} color={Colors.warning} />
-                      <Text style={styles.specLabel}>Effekt</Text>
-                      <Text style={styles.specValue}>{carInfo.power ? `${carInfo.power} kW` : "-"}</Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Weight size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Vekt</Text>
-                      <Text style={styles.specValue}>{carInfo.weight ? `${carInfo.weight} kg` : "-"}</Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Fuel size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Drivstoff</Text>
-                      <Text style={styles.specValue}>{carInfo.fuelType || "-"}</Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Factory size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>CO₂</Text>
-                      <Text style={styles.specValue}>
-                        {Number.isFinite(carInfo.co2Emission) ? `${carInfo.co2Emission} g/km` : "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <GaugeCircle size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Slagvolum</Text>
-                      <Text style={styles.specValue}>
-                        {Number.isFinite(carInfo.engineDisplacement) ? `${carInfo.engineDisplacement} cm³` : "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Grip size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Drivlinje</Text>
-                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.driveType || "-"}</Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Gauge size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Gir</Text>
-                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.transmission || "-"}</Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Truck size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Tilhenger</Text>
-                      <Text style={styles.specValue}>
-                        {Number.isFinite(carInfo.maxTowWeight) ? `${carInfo.maxTowWeight} kg` : "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Users size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Seter</Text>
-                      <Text style={styles.specValue}>
-                        {Number.isFinite(carInfo.numberOfSeats) ? carInfo.numberOfSeats : "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <DoorOpen size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Dører</Text>
-                      <Text style={styles.specValue}>
-                        {Number.isFinite(carInfo.numberOfDoors) ? carInfo.numberOfDoors : "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Palette size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Farge</Text>
-                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.color || "-"}</Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Car size={16} color={Colors.text.secondary} />
-                      <Text style={styles.specLabel}>Type</Text>
-                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.vehicleType || "-"}</Text>
-                    </View>
-                  </View>
-                  {carInfo.vin && (
-                    <View style={styles.vinContainer}>
-                      <Text style={styles.vinLabel}>VIN</Text>
-                      <Text style={styles.vinValue}>{carInfo.vin}</Text>
-                    </View>
-                  )}
-                </Animated.View>
                 
                 <TouchableOpacity
                   style={styles.scanButton}
@@ -700,7 +576,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 14,
-    marginBottom: 14,
+    marginBottom: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -738,67 +614,6 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontWeight: "500" as const,
     marginTop: 2,
-  },
-
-  specsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700" as const,
-    color: Colors.text.primary,
-  },
-  specsContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    marginBottom: 20,
-  },
-  specsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    padding: 12,
-  },
-  specItem: {
-    width: "33.33%",
-    padding: 10,
-    alignItems: "center",
-  },
-  specLabel: {
-    fontSize: 11,
-    color: Colors.text.light,
-    marginTop: 6,
-    marginBottom: 2,
-    textAlign: "center",
-  },
-  specValue: {
-    fontSize: 13,
-    fontWeight: "600" as const,
-    color: Colors.text.primary,
-    textAlign: "center",
-  },
-  vinContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-  },
-  vinLabel: {
-    fontSize: 12,
-    color: Colors.text.secondary,
-    fontWeight: "500" as const,
-  },
-  vinValue: {
-    fontSize: 12,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    color: Colors.text.primary,
-    fontWeight: "500" as const,
   },
 
   scanButton: {
