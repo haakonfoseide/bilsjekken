@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,9 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  TextInput,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp, ArrowLeft, AlertCircle, ExternalLink } from "lucide-react-native";
+import { ChevronDown, ChevronUp, ArrowLeft, AlertCircle, ExternalLink, Pencil } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { useCarData } from "@/contexts/car-context";
 import * as Haptics from "expo-haptics";
@@ -40,7 +42,16 @@ function formatValue(value: string, unit?: string) {
 
 export default function VehicleInfoScreen() {
   const router = useRouter();
-  const { carInfo, refreshCarInfo, isRefreshing } = useCarData();
+  const { carInfo, refreshCarInfo, isRefreshing, updateCarInfo } = useCarData();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempSections, setTempSections] = useState<any>({});
+
+  useEffect(() => {
+    if (carInfo?.vehicleSections && !isEditing) {
+      setTempSections(JSON.parse(JSON.stringify(carInfo.vehicleSections)));
+    }
+  }, [carInfo?.vehicleSections, isEditing]);
 
   const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
     euKontroll: true,
@@ -52,7 +63,7 @@ export default function VehicleInfoScreen() {
   });
 
   const sections = useMemo(() => {
-    const raw = carInfo?.vehicleSections;
+    const raw = isEditing ? tempSections : carInfo?.vehicleSections;
     const result: { key: SectionKey; section: VehicleSection }[] = [];
 
     for (const o of ORDER) {
@@ -62,7 +73,7 @@ export default function VehicleInfoScreen() {
       }
     }
     return result;
-  }, [carInfo?.vehicleSections]);
+  }, [carInfo?.vehicleSections, tempSections, isEditing]);
 
   const hasAny = sections.length > 0;
 
@@ -73,6 +84,35 @@ export default function VehicleInfoScreen() {
     });
     if (Platform.OS !== "web") {
       Haptics.selectionAsync();
+    }
+  };
+
+  const handleChangeText = (sectionKey: SectionKey, fieldIndex: number, text: string) => {
+    setTempSections((prev: any) => {
+      const next = JSON.parse(JSON.stringify(prev));
+      if (next[sectionKey]?.fields?.[fieldIndex]) {
+        next[sectionKey].fields[fieldIndex].value = text;
+      }
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    if (!carInfo) return;
+    updateCarInfo({
+      ...carInfo,
+      vehicleSections: tempSections,
+    });
+    setIsEditing(false);
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    if (carInfo?.vehicleSections) {
+      setTempSections(JSON.parse(JSON.stringify(carInfo.vehicleSections)));
     }
   };
 
@@ -104,24 +144,51 @@ export default function VehicleInfoScreen() {
             </TouchableOpacity>
           ),
           headerRight: () => (
-            <TouchableOpacity
-              onPress={handleRefresh}
-              style={[styles.headerPill, isRefreshing && styles.headerPillDisabled]}
-              disabled={isRefreshing}
-              testID="vehicle-info-refresh"
-            >
-              <Text style={styles.headerPillText}>{isRefreshing ? "Oppdaterer…" : "Oppdater"}</Text>
-            </TouchableOpacity>
+            <View style={styles.headerRight}>
+              {isEditing ? (
+                <>
+                  <TouchableOpacity onPress={handleCancel} style={styles.headerBtnSecondary}>
+                    <Text style={styles.headerBtnSecondaryText}>Avbryt</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleSave} style={styles.headerBtnPrimary}>
+                    <Text style={styles.headerBtnPrimaryText}>Lagre</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    onPress={handleRefresh}
+                    style={[styles.headerPill, isRefreshing && styles.headerPillDisabled]}
+                    disabled={isRefreshing}
+                    testID="vehicle-info-refresh"
+                  >
+                    <Text style={styles.headerPillText}>{isRefreshing ? "…" : "Oppdater"}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setIsEditing(true)}
+                    style={styles.headerIconBtn}
+                    testID="vehicle-info-edit"
+                  >
+                    <Pencil size={20} color={Colors.primary} />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           ),
         }}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        testID="vehicle-info-scroll"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
-        <View style={styles.heroCard}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          testID="vehicle-info-scroll"
+        >
+          <View style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View style={{ flex: 1 }}>
               <Text style={styles.heroTitle}>{carInfo ? `${carInfo.make} ${carInfo.model}` : "Kjøretøy"}</Text>
@@ -171,9 +238,22 @@ export default function VehicleInfoScreen() {
                       <Text style={styles.label} numberOfLines={1}>
                         {f.label}
                       </Text>
-                      <Text style={styles.value} numberOfLines={2}>
-                        {formatValue(f.value, f.unit)}
-                      </Text>
+                      {isEditing ? (
+                        <View style={styles.inputContainer}>
+                          <TextInput
+                            style={styles.input}
+                            value={f.value}
+                            onChangeText={(text) => handleChangeText(key, idx, text)}
+                            placeholder="Verdi"
+                            placeholderTextColor={Colors.text.light}
+                          />
+                          {f.unit && <Text style={styles.unitText}>{f.unit}</Text>}
+                        </View>
+                      ) : (
+                        <Text style={styles.value} numberOfLines={2}>
+                          {formatValue(f.value, f.unit)}
+                        </Text>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -197,7 +277,8 @@ export default function VehicleInfoScreen() {
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -229,6 +310,65 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700" as const,
     color: Colors.primary,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBtnPrimary: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  headerBtnPrimaryText: {
+    fontSize: 13,
+    fontWeight: "700" as const,
+    color: "#fff",
+  },
+  headerBtnSecondary: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  headerBtnSecondaryText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.text.secondary,
+  },
+  inputContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+  input: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.text.primary,
+    fontWeight: "600" as const,
+    textAlign: "right",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+    minHeight: 32,
+  },
+  unitText: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+    fontWeight: "500" as const,
   },
   content: {
     padding: 16,
