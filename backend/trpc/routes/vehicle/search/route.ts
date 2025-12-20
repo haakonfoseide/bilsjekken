@@ -132,9 +132,8 @@ export default publicProcedure
       const vehicle = data.kjoretoydataListe[0];
       
       // 7. Map Data
-      // Safely access nested properties
       console.log("[Vehicle Search] Mapping data...");
-      
+
       const teknisk = vehicle.godkjenning?.tekniskGodkjenning?.tekniskeData;
       const generelt = teknisk?.generelt;
       const karosseri = teknisk?.karosseriOgLasteplan;
@@ -143,37 +142,61 @@ export default publicProcedure
       const periodiskKjoretoyKontroll = vehicle.periodiskKjoretoyKontroll;
       const nextEuControl = periodiskKjoretoyKontroll?.kontrollfrist;
       const lastEuControl = periodiskKjoretoyKontroll?.sistGodkjent;
-      
+
       console.log("[Vehicle Search] PKK data:", JSON.stringify(periodiskKjoretoyKontroll, null, 2));
 
-      // Ensure kjorelengder is an array
+      const toIntOrNull = (value: unknown): number | null => {
+        if (value === null || value === undefined) return null;
+        if (typeof value === "number") return Number.isFinite(value) ? Math.trunc(value) : null;
+        const cleaned = String(value).replace(/[^0-9-]/g, "");
+        if (!cleaned) return null;
+        const parsed = parseInt(cleaned, 10);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+
+      const toIsoOrNull = (value: unknown): string | null => {
+        if (!value) return null;
+        const d = new Date(String(value));
+        const ms = d.getTime();
+        if (!Number.isFinite(ms)) return null;
+        return d.toISOString();
+      };
+
+      const getMileageDateRaw = (item: any): unknown =>
+        item?.maalingDato ?? item?.maalingdato ?? item?.dato ?? item?.registrertDato ?? item?.registreringsdato;
+
+      const getMileageValueRaw = (item: any): unknown =>
+        item?.kilometerstand ?? item?.kjorelengde ?? item?.kjoreLengde ?? item?.avlestKjorelengde ?? item?.avlestKjorelengdeKm;
+
+      // Ensure kjorelengder is an array (Vegvesenet sometimes returns single object)
       let kjorelengder: any[] = [];
       const rawKjorelengder = vehicle.kjorelengdeMaalinger?.kjorelengdeMaaling;
-      
+
       if (Array.isArray(rawKjorelengder)) {
         kjorelengder = rawKjorelengder;
       } else if (rawKjorelengder) {
-        // Single object case
         kjorelengder = [rawKjorelengder];
       }
 
-      console.log(`[Vehicle Search] Found ${kjorelengder.length} mileage entries`);
+      const firstMileageKeys = kjorelengder[0] ? Object.keys(kjorelengder[0]) : [];
+      console.log(`[Vehicle Search] Found ${kjorelengder.length} mileage entries. First keys:`, firstMileageKeys);
 
-      // Sort mileage history by date descending (newest first) to ensure accuracy
-      const sortedMileageHistory = kjorelengder.sort((a: any, b: any) => {
-        return new Date(b.maalingDato).getTime() - new Date(a.maalingDato).getTime();
-      });
+      const normalizedMileageHistory = kjorelengder
+        .map((item: any) => {
+          const mileage = toIntOrNull(getMileageValueRaw(item));
+          const dateIso = toIsoOrNull(getMileageDateRaw(item));
+          if (!mileage || !dateIso) return null;
+          return { mileage, date: dateIso, source: "vegvesen" as const };
+        })
+        .filter(Boolean) as { mileage: number; date: string; source: "vegvesen" }[];
 
-      const sisteKjorelengde = sortedMileageHistory.length > 0 ? sortedMileageHistory[0] : null;
+      normalizedMileageHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      const mileageHistory = sortedMileageHistory.map((item: any) => ({
-        mileage: parseInt(item.kilometerstand, 10),
-        date: item.maalingDato,
-        source: 'vegvesen',
-      }));
+      const sisteKjorelengde = normalizedMileageHistory.length > 0 ? normalizedMileageHistory[0] : null;
+      const mileageHistory = normalizedMileageHistory;
 
-      const registeredMileage = sisteKjorelengde ? parseInt(sisteKjorelengde.kilometerstand, 10) : null;
-      const registeredMileageDate = sisteKjorelengde?.maalingDato || null;
+      const registeredMileage = sisteKjorelengde?.mileage ?? null;
+      const registeredMileageDate = sisteKjorelengde?.date ?? null;
 
       const result = {
         licensePlate: vehicle.kjoretoyId?.kjennemerke || cleanedPlate,

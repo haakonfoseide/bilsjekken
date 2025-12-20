@@ -238,20 +238,26 @@ export default function DashboardScreen() {
                         <ChevronRight size={12} color={Colors.text.secondary} />
                       </View>
                       <Text style={styles.statusValue}>
-                        {carInfo.currentMileage.toLocaleString("no-NO")} km
+                        {Number.isFinite(carInfo.currentMileage)
+                          ? `${carInfo.currentMileage.toLocaleString("no-NO")} km`
+                          : "—"}
                       </Text>
-                      {carInfo.registeredMileage && carInfo.registeredMileage > carInfo.currentMileage && (
-                        <View style={styles.warningContainer}>
-                           <AlertCircle size={12} color={Colors.danger} />
-                           <Text style={styles.warningText}>
-                             Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
-                           </Text>
-                        </View>
-                      )}
-                      {carInfo.registeredMileage && carInfo.registeredMileage <= carInfo.currentMileage && (
-                         <Text style={styles.statusSubtext}>
-                           Sist sjekket: {formatDateSimple(carInfo.registeredMileageDate || new Date().toISOString())}
-                        </Text>
+
+                      {carInfo.registeredMileage ? (
+                        carInfo.registeredMileage > carInfo.currentMileage ? (
+                          <View style={styles.warningContainer}>
+                            <AlertCircle size={12} color={Colors.danger} />
+                            <Text style={styles.warningText}>
+                              Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.statusSubtext}>
+                            Vegvesenet sist: {formatDateSimple(carInfo.registeredMileageDate)}
+                          </Text>
+                        )
+                      ) : (
+                        <Text style={styles.statusSubtext}>Ingen km-data fra Vegvesenet ennå</Text>
                       )}
                     </TouchableOpacity>
 
@@ -282,37 +288,35 @@ export default function DashboardScreen() {
 
                 {/* Quick Actions / Maintenance */}
                 <Text style={styles.sectionTitle}>Vedlikehold</Text>
-                
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.maintenanceList}
-                >
+
+                <View style={styles.maintenanceGrid}>
                   <TouchableOpacity
-                    style={[styles.maintenanceCard, { backgroundColor: "#EFF6FF" }]}
+                    style={[styles.maintenanceCard, styles.maintenanceCardGrid, { backgroundColor: "#EFF6FF" }]}
                     onPress={() => handlePress("/wash")}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
+                    testID="home-maintenance-wash"
                   >
                     <View style={[styles.maintenanceIcon, { backgroundColor: "#DBEAFE" }]}>
-                      <Droplet size={24} color={Colors.primary} strokeWidth={2.5} />
+                      <Droplet size={22} color={Colors.primary} strokeWidth={2.5} />
                     </View>
                     <Text style={[styles.maintenanceTitle, { color: "#1E3A8A" }]}>Vask</Text>
-                    <Text style={[styles.maintenanceValue, { color: "#1E40AF" }]}>
+                    <Text style={[styles.maintenanceValue, { color: "#1E40AF" }]} numberOfLines={1}>
                       {lastWash ? formatDate(lastWash.date) : "Aldri"}
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.maintenanceCard, { backgroundColor: "#ECFDF5" }]}
+                    style={[styles.maintenanceCard, styles.maintenanceCardGrid, { backgroundColor: "#ECFDF5" }]}
                     onPress={() => handlePress("/service")}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
+                    testID="home-maintenance-service"
                   >
                     <View style={[styles.maintenanceIcon, { backgroundColor: "#D1FAE5" }]}>
-                      <Wrench size={24} color="#059669" strokeWidth={2.5} />
+                      <Wrench size={22} color="#059669" strokeWidth={2.5} />
                     </View>
                     <Text style={[styles.maintenanceTitle, { color: "#064E3B" }]}>Service</Text>
-                    <Text style={[styles.maintenanceValue, { color: "#065F46" }]}>
-                       {nextService
+                    <Text style={[styles.maintenanceValue, { color: "#065F46" }]} numberOfLines={1}>
+                      {nextService
                         ? nextService.mileage > 0
                           ? `${nextService.mileage} km til`
                           : "Forfalt"
@@ -321,21 +325,20 @@ export default function DashboardScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.maintenanceCard, { backgroundColor: "#FEF2F2" }]}
+                    style={[styles.maintenanceCard, styles.maintenanceCardGrid, { backgroundColor: "#FEF2F2" }]}
                     onPress={() => handlePress("/tires")}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
+                    testID="home-maintenance-tires"
                   >
                     <View style={[styles.maintenanceIcon, { backgroundColor: "#FEE2E2" }]}>
-                      <CircleSlash2 size={24} color="#DC2626" strokeWidth={2.5} />
+                      <CircleSlash2 size={22} color="#DC2626" strokeWidth={2.5} />
                     </View>
                     <Text style={[styles.maintenanceTitle, { color: "#7F1D1D" }]}>Dekk</Text>
-                    <Text style={[styles.maintenanceValue, { color: "#991B1B" }]}>
-                      {tireAge
-                        ? `${tireAge.years} år`
-                        : "Ingen info"}
+                    <Text style={[styles.maintenanceValue, { color: "#991B1B" }]} numberOfLines={1}>
+                      {tireAge ? `${tireAge.years} år` : "Ingen info"}
                     </Text>
                   </TouchableOpacity>
-                </ScrollView>
+                </View>
 
                 {/* Technical Specs Collapsible-ish */}
                 <Text style={styles.sectionTitle}>Spesifikasjoner</Text>
@@ -714,20 +717,23 @@ const styles = StyleSheet.create({
   },
 
   // Maintenance
-  maintenanceList: {
+  maintenanceGrid: {
+    flexDirection: "row",
     gap: 12,
-    paddingRight: 20,
     marginBottom: 24,
   },
   maintenanceCard: {
     padding: 16,
     borderRadius: 20,
-    width: 140,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 6,
     elevation: 2,
+  },
+  maintenanceCardGrid: {
+    flex: 1,
+    minWidth: 0,
   },
   maintenanceIcon: {
     width: 40,
