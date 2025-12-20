@@ -54,6 +54,16 @@ export default function AddCarScreen() {
   const [insurance, setInsurance] = useState("");
   const [currentMileage, setCurrentMileage] = useState("");
   const [vin, setVin] = useState("");
+  const [color, setColor] = useState("");
+  const [fuelType, setFuelType] = useState("");
+  const [registrationDate, setRegistrationDate] = useState("");
+  const [vehicleType, setVehicleType] = useState("");
+  const [weight, setWeight] = useState<number | null>(null);
+  const [power, setPower] = useState<number | null>(null);
+  const [registeredMileage, setRegisteredMileage] = useState<number | null>(null);
+  const [registeredMileageDate, setRegisteredMileageDate] = useState("");
+  const [euControlDate, setEuControlDate] = useState("");
+  const [nextEuControlDate, setNextEuControlDate] = useState("");
   
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -142,6 +152,20 @@ export default function AddCarScreen() {
         setYear(data.year || "");
         setLicensePlate(data.licensePlate || plate);
         setVin(data.vin || "");
+        setColor(data.color || "");
+        setFuelType(data.fuelType || "");
+        setRegistrationDate(data.registrationDate || "");
+        setVehicleType(data.vehicleType || "");
+        setWeight(data.weight || null);
+        setPower(data.power || null);
+        setRegisteredMileage(data.registeredMileage || null);
+        setRegisteredMileageDate(data.registeredMileageDate || "");
+        setEuControlDate(data.euControlDate || "");
+        setNextEuControlDate(data.nextEuControlDate || "");
+        
+        if (data.registeredMileage && !currentMileage) {
+          setCurrentMileage(data.registeredMileage.toString());
+        }
 
         setSearchSuccess(true);
 
@@ -214,6 +238,16 @@ export default function AddCarScreen() {
       insurance: insurance || "",
       currentMileage: mileageNum,
       vin,
+      color,
+      fuelType,
+      registrationDate,
+      vehicleType,
+      weight: weight || undefined,
+      power: power || undefined,
+      registeredMileage: registeredMileage || undefined,
+      registeredMileageDate,
+      euControlDate,
+      nextEuControlDate,
     };
 
     addCar(carData);
