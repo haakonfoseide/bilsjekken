@@ -143,6 +143,23 @@ export default publicProcedure
       const nextEuControl = periodiskKjoretoyKontroll?.kontrollfrist;
       const lastEuControl = periodiskKjoretoyKontroll?.sistGodkjent;
 
+      const motorOgDrivverk = teknisk?.motorOgDrivverk;
+      const motor = motorOgDrivverk?.motor?.[0];
+      const drivstoff = motor?.drivstoff?.[0];
+      const miljo = teknisk?.miljodata;
+      const miljoKilde = miljo?.miljodataWLTP ?? miljo?.miljodataNEDC ?? miljo;
+      const seter = teknisk?.personOgLast?.sitteplasserAntall ?? teknisk?.personOgLast?.sitteplasser ?? teknisk?.personOgLast?.antallSitteplasser;
+      const dorAntall = teknisk?.karosseriOgLasteplan?.dorerAntall ?? teknisk?.karosseriOgLasteplan?.antallDorer;
+      const tilhenger = teknisk?.tilhengerkopling;
+      const gir = motorOgDrivverk?.girKasse;
+      const drivlinje = motorOgDrivverk?.drivlinje;
+
+      console.log("[Vehicle Search] Technical keys:", {
+        tekniskKeys: Object.keys(teknisk || {}),
+        motorKeys: Object.keys(motor || {}),
+        miljoKeys: Object.keys(miljo || {}),
+      });
+
       console.log("[Vehicle Search] PKK data:", JSON.stringify(periodiskKjoretoyKontroll, null, 2));
 
       const toIntOrNull = (value: unknown): number | null => {
@@ -263,6 +280,56 @@ export default publicProcedure
       const registeredMileage = sisteKjorelengde?.mileage ?? null;
       const registeredMileageDate = sisteKjorelengde?.date ?? null;
 
+      const toNumberOrNull = (value: unknown): number | null => {
+        if (value === null || value === undefined) return null;
+        if (typeof value === "number") return Number.isFinite(value) ? value : null;
+        const cleaned = String(value).replace(/[^0-9.,-]/g, "");
+        if (!cleaned) return null;
+        const normalized = cleaned.replace(/,/g, ".");
+        const parsed = parseFloat(normalized);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+
+      const co2Emission =
+        toNumberOrNull(miljoKilde?.co2UtslippBlandetKjoring) ??
+        toNumberOrNull(miljoKilde?.co2Utslipp) ??
+        toNumberOrNull(miljoKilde?.co2) ??
+        null;
+
+      const engineDisplacement =
+        toNumberOrNull(motor?.slagvolum) ??
+        toNumberOrNull(motor?.slagvolumCm3) ??
+        toNumberOrNull(motor?.slagvolumcc) ??
+        null;
+
+      const transmission =
+        gir?.girKasseType?.navn ??
+        gir?.girkasseType?.navn ??
+        gir?.type?.navn ??
+        gir?.type ??
+        null;
+
+      const driveType =
+        drivlinje?.driftstype?.navn ??
+        drivlinje?.driftstype ??
+        motorOgDrivverk?.hjuldrift?.navn ??
+        motorOgDrivverk?.hjuldrift ??
+        null;
+
+      const totalWeight =
+        toIntOrNull(vekter?.tillattTotalvekt) ??
+        toIntOrNull(vekter?.totalvekt) ??
+        null;
+
+      const maxTowWeight =
+        toIntOrNull(tilhenger?.tillattTilhengervektBrems) ??
+        toIntOrNull(tilhenger?.maksTilhengervektBrems) ??
+        toIntOrNull(tilhenger?.tillattTilhengervekt) ??
+        null;
+
+      const numberOfSeats = toIntOrNull(seter);
+      const numberOfDoors = toIntOrNull(dorAntall);
+
       const result = {
         licensePlate: vehicle.kjoretoyId?.kjennemerke || cleanedPlate,
         make: generelt?.merke?.[0]?.merke || "Ukjent",
@@ -273,8 +340,16 @@ export default publicProcedure
         registrationDate: godkjenning?.forstegangRegistrertDato || null,
         vehicleType: vehicle.godkjenning?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
         weight: vekter?.egenvekt || null,
-        power: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.maksNettoEffekt || null,
-        fuelType: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.drivstoffKode?.navn || "Ukjent",
+        totalWeight,
+        power: drivstoff?.maksNettoEffekt ?? null,
+        fuelType: drivstoff?.drivstoffKode?.navn || "Ukjent",
+        co2Emission,
+        engineDisplacement,
+        transmission,
+        driveType,
+        numberOfSeats,
+        numberOfDoors,
+        maxTowWeight,
         registeredMileage: registeredMileage,
         registeredMileageDate: registeredMileageDate,
         mileageHistory,

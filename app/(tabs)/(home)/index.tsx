@@ -27,6 +27,12 @@ import {
   Zap,
   CheckCircle2,
   AlertCircle,
+  Factory,
+  Grip,
+  GaugeCircle,
+  Users,
+  DoorOpen,
+  Truck,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -353,7 +359,7 @@ export default function DashboardScreen() {
                     </View>
                     <View style={styles.specDivider} />
                     <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Vekt</Text>
+                      <Text style={styles.specLabel}>Egenvekt</Text>
                       <View style={styles.specValueRow}>
                         <Weight size={14} color={Colors.text.secondary} />
                         <Text style={styles.specValue}>{carInfo.weight ? `${carInfo.weight} kg` : "-"}</Text>
@@ -368,24 +374,136 @@ export default function DashboardScreen() {
                       </View>
                     </View>
                   </View>
-                  
+
                   <View style={styles.specsDividerHorizontal} />
-                  
+
                   <View style={styles.specRow}>
                     <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Farge</Text>
+                      <Text style={styles.specLabel}>CO₂</Text>
                       <View style={styles.specValueRow}>
-                        <Palette size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue} numberOfLines={1}>{carInfo.color || "-"}</Text>
+                        <Factory size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue}>
+                          {Number.isFinite(carInfo.co2Emission)
+                            ? `${carInfo.co2Emission?.toLocaleString("no-NO")} g/km`
+                            : "-"}
+                        </Text>
                       </View>
                     </View>
                     <View style={styles.specDivider} />
                     <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Slagvolum</Text>
+                      <View style={styles.specValueRow}>
+                        <GaugeCircle size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue}>
+                          {Number.isFinite(carInfo.engineDisplacement)
+                            ? `${carInfo.engineDisplacement?.toLocaleString("no-NO")} cm³`
+                            : "-"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.specDivider} />
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Drivlinje</Text>
+                      <View style={styles.specValueRow}>
+                        <Grip size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue} numberOfLines={1}>
+                          {carInfo.driveType || "-"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.specsDividerHorizontal} />
+
+                  <View style={styles.specRow}>
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Gir</Text>
+                      <View style={styles.specValueRow}>
+                        <Gauge size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue} numberOfLines={1}>
+                          {carInfo.transmission || "-"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.specDivider} />
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Totalvekt</Text>
+                      <View style={styles.specValueRow}>
+                        <Weight size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue}>
+                          {Number.isFinite(carInfo.totalWeight)
+                            ? `${carInfo.totalWeight?.toLocaleString("no-NO")} kg`
+                            : "-"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.specDivider} />
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Tilhenger</Text>
+                      <View style={styles.specValueRow}>
+                        <Truck size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue}>
+                          {Number.isFinite(carInfo.maxTowWeight)
+                            ? `${carInfo.maxTowWeight?.toLocaleString("no-NO")} kg`
+                            : "-"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.specsDividerHorizontal} />
+
+                  <View style={styles.specRow}>
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Seter</Text>
+                      <View style={styles.specValueRow}>
+                        <Users size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue}>
+                          {Number.isFinite(carInfo.numberOfSeats) ? `${carInfo.numberOfSeats}` : "-"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.specDivider} />
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Dører</Text>
+                      <View style={styles.specValueRow}>
+                        <DoorOpen size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue}>
+                          {Number.isFinite(carInfo.numberOfDoors) ? `${carInfo.numberOfDoors}` : "-"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.specDivider} />
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Farge</Text>
+                      <View style={styles.specValueRow}>
+                        <Palette size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue} numberOfLines={1}>
+                          {carInfo.color || "-"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.specsDividerHorizontal} />
+
+                  <View style={styles.specRow}>
+                    <View style={styles.specItem}>
                       <Text style={styles.specLabel}>Reg. dato</Text>
-                       <View style={styles.specValueRow}>
+                      <View style={styles.specValueRow}>
                         <Calendar size={14} color={Colors.text.secondary} />
                         <Text style={styles.specValue}>
                           {carInfo.registrationDate ? new Date(carInfo.registrationDate).getFullYear() : "-"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.specDivider} />
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Type</Text>
+                      <View style={styles.specValueRow}>
+                        <Car size={14} color={Colors.text.secondary} />
+                        <Text style={styles.specValue} numberOfLines={1}>
+                          {carInfo.vehicleType || "-"}
                         </Text>
                       </View>
                     </View>
@@ -395,8 +513,8 @@ export default function DashboardScreen() {
                     <>
                       <View style={styles.specsDividerHorizontal} />
                       <View style={styles.vinRow}>
-                         <Text style={styles.specLabel}>VIN</Text>
-                         <Text style={styles.vinText}>{carInfo.vin}</Text>
+                        <Text style={styles.specLabel}>VIN</Text>
+                        <Text style={styles.vinText}>{carInfo.vin}</Text>
                       </View>
                     </>
                   )}

@@ -6,20 +6,33 @@ export interface CarInfo {
   licensePlate: string;
   insurance: string;
   currentMileage: number;
+
   vin?: string;
   color?: string;
   fuelType?: string;
   registrationDate?: string;
   vehicleType?: string;
+
   weight?: number;
   power?: number;
+
+  co2Emission?: number;
+  engineDisplacement?: number;
+  transmission?: string;
+  driveType?: string;
+  numberOfSeats?: number;
+  numberOfDoors?: number;
+  maxTowWeight?: number;
+  totalWeight?: number;
+
   registeredMileage?: number;
   registeredMileageDate?: string;
   mileageHistory?: {
     mileage: number;
     date: string;
-    source?: 'vegvesen' | 'user';
+    source?: "vegvesen" | "user";
   }[];
+
   euControlDate?: string;
   nextEuControlDate?: string;
 }

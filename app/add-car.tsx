@@ -59,7 +59,16 @@ export default function AddCarScreen() {
   const [registrationDate, setRegistrationDate] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [weight, setWeight] = useState<number | null>(null);
+  const [totalWeight, setTotalWeight] = useState<number | null>(null);
   const [power, setPower] = useState<number | null>(null);
+  const [co2Emission, setCo2Emission] = useState<number | null>(null);
+  const [engineDisplacement, setEngineDisplacement] = useState<number | null>(null);
+  const [transmission, setTransmission] = useState("");
+  const [driveType, setDriveType] = useState("");
+  const [numberOfSeats, setNumberOfSeats] = useState<number | null>(null);
+  const [numberOfDoors, setNumberOfDoors] = useState<number | null>(null);
+  const [maxTowWeight, setMaxTowWeight] = useState<number | null>(null);
+
   const [registeredMileage, setRegisteredMileage] = useState<number | null>(null);
   const [registeredMileageDate, setRegisteredMileageDate] = useState("");
   const [mileageHistory, setMileageHistory] = useState<any[]>([]);
@@ -158,7 +167,15 @@ export default function AddCarScreen() {
         setRegistrationDate(data.registrationDate || "");
         setVehicleType(data.vehicleType || "");
         setWeight(data.weight || null);
+        setTotalWeight((data as any).totalWeight || null);
         setPower(data.power || null);
+        setCo2Emission((data as any).co2Emission || null);
+        setEngineDisplacement((data as any).engineDisplacement || null);
+        setTransmission((data as any).transmission || "");
+        setDriveType((data as any).driveType || "");
+        setNumberOfSeats((data as any).numberOfSeats || null);
+        setNumberOfDoors((data as any).numberOfDoors || null);
+        setMaxTowWeight((data as any).maxTowWeight || null);
         setRegisteredMileage(data.registeredMileage || null);
         setRegisteredMileageDate(data.registeredMileageDate || "");
         setMileageHistory(data.mileageHistory || []);
@@ -245,7 +262,15 @@ export default function AddCarScreen() {
       registrationDate,
       vehicleType,
       weight: weight || undefined,
+      totalWeight: totalWeight || undefined,
       power: power || undefined,
+      co2Emission: co2Emission || undefined,
+      engineDisplacement: engineDisplacement || undefined,
+      transmission: transmission || undefined,
+      driveType: driveType || undefined,
+      numberOfSeats: numberOfSeats || undefined,
+      numberOfDoors: numberOfDoors || undefined,
+      maxTowWeight: maxTowWeight || undefined,
       registeredMileage: registeredMileage || undefined,
       registeredMileageDate,
       mileageHistory,
