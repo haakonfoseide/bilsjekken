@@ -507,6 +507,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
             mileageHistory: vvHistory ?? c.mileageHistory,
             euControlDate: vehicleData.euControlDate ?? c.euControlDate,
             nextEuControlDate: vehicleData.nextEuControlDate ?? c.nextEuControlDate,
+            vehicleSections: (vehicleData as any).vehicleSections ?? c.vehicleSections,
           };
         });
 

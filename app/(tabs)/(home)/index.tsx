@@ -323,6 +323,26 @@ export default function DashboardScreen() {
                   </TouchableOpacity>
                 </View>
 
+                <TouchableOpacity
+                  style={styles.vehicleInfoCta}
+                  onPress={() => handlePress("/vehicle-info")}
+                  activeOpacity={0.8}
+                  testID="vehicle-info-cta"
+                >
+                  <View style={styles.vehicleInfoCtaLeft}>
+                    <View style={styles.vehicleInfoCtaIcon}>
+                      <Car size={18} color={Colors.primary} strokeWidth={2.5} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.vehicleInfoCtaTitle}>Kjøretøydata fra Vegvesenet</Text>
+                      <Text style={styles.vehicleInfoCtaSubtitle} numberOfLines={1}>
+                        EU-kontroll • Registreringsdata • Utslipp • Mål/vekt
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={18} color={Colors.text.light} />
+                </TouchableOpacity>
+
                 <TouchableOpacity 
                   style={styles.specsHeader}
                   onPress={toggleSpecs}
@@ -674,6 +694,50 @@ const styles = StyleSheet.create({
   quickActionValue: {
     fontSize: 13,
     fontWeight: "500" as const,
+  },
+
+  vehicleInfoCta: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  vehicleInfoCtaLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+    paddingRight: 12,
+  },
+  vehicleInfoCtaIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+  },
+  vehicleInfoCtaTitle: {
+    fontSize: 14,
+    fontWeight: "800" as const,
+    color: Colors.text.primary,
+    letterSpacing: -0.2,
+  },
+  vehicleInfoCtaSubtitle: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+    fontWeight: "500" as const,
+    marginTop: 2,
   },
 
   specsHeader: {

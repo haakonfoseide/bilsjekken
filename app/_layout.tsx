@@ -45,6 +45,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: true }} />
       <Stack.Screen name="scan-receipt" options={{ headerShown: true, presentation: "modal" }} />
+      <Stack.Screen name="vehicle-info" options={{ headerShown: true, title: "Kjøretøydata" }} />
     </Stack>
   );
 }

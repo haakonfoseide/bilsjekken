@@ -330,6 +330,64 @@ export default publicProcedure
       const numberOfSeats = toIntOrNull(seter);
       const numberOfDoors = toIntOrNull(dorAntall);
 
+      const buildField = (label: string, value: unknown, unit?: string) => {
+        if (value === null || value === undefined) return null;
+        const str = String(value).trim();
+        if (!str || str === "Ukjent") return null;
+        return { label, value: str, unit };
+      };
+
+      const buildSection = (title: string, fields: ReturnType<typeof buildField>[]) => {
+        const filtered = fields.filter(Boolean) as { label: string; value: string; unit?: string }[];
+        if (filtered.length === 0) return null;
+        return { title, fields: filtered };
+      };
+
+      const registrationDateRaw = godkjenning?.forstegangRegistrertDato || null;
+
+      const euKontrollSection = buildSection("EU-kontroll", [
+        buildField("Sist godkjent", lastEuControl || null),
+        buildField("Kontrollfrist", nextEuControl || null),
+      ]);
+
+      const registreringsdataSection = buildSection("Registreringsdata", [
+        buildField("Kjennemerke", vehicle.kjoretoyId?.kjennemerke || cleanedPlate),
+        buildField("Merke", generelt?.merke?.[0]?.merke || null),
+        buildField("Modell", generelt?.handelsbetegnelse?.[0] || null),
+        buildField("Årsmodell", godkjenning?.forstegangRegistrertDato?.split("-")[0] || null),
+        buildField("Førstegangsregistrert", registrationDateRaw),
+        buildField("VIN", vehicle.kjoretoyId?.understellsnummer || null),
+        buildField("Farge", karosseri?.farge?.[0]?.kodeNavn || null),
+        buildField(
+          "Kjøretøytype",
+          vehicle.godkjenning?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || null
+        ),
+      ]);
+
+      const utslippSection = buildSection("Utslipp", [
+        buildField("Drivstoff", drivstoff?.drivstoffKode?.navn || null),
+        buildField("CO₂", co2Emission, "g/km"),
+      ]);
+
+      const malOgVektSection = buildSection("Mål og vekt", [
+        buildField("Egenvekt", vekter?.egenvekt ?? null, "kg"),
+        buildField("Tillatt totalvekt", totalWeight, "kg"),
+        buildField("Tilhengervekt (brems)", maxTowWeight, "kg"),
+        buildField("Seter", numberOfSeats),
+        buildField("Dører", numberOfDoors),
+      ]);
+
+      const motorKraftSection = buildSection("Motor / kraftoverføring", [
+        buildField("Effekt", drivstoff?.maksNettoEffekt ?? null, "kW"),
+        buildField("Slagvolum", engineDisplacement, "cm³"),
+        buildField("Drivlinje", driveType),
+        buildField("Gir", transmission),
+      ]);
+
+      const dekkFelgSection = buildSection("Dekk og felg", [
+        buildField("(ikke tilgjengelig i enkeltoppslag)", "Legges inn manuelt"),
+      ]);
+
       const result = {
         licensePlate: vehicle.kjoretoyId?.kjennemerke || cleanedPlate,
         make: generelt?.merke?.[0]?.merke || "Ukjent",
@@ -337,7 +395,7 @@ export default publicProcedure
         year: godkjenning?.forstegangRegistrertDato?.split("-")[0] || "Ukjent",
         vin: vehicle.kjoretoyId?.understellsnummer || "",
         color: karosseri?.farge?.[0]?.kodeNavn || "Ukjent",
-        registrationDate: godkjenning?.forstegangRegistrertDato || null,
+        registrationDate: registrationDateRaw,
         vehicleType: vehicle.godkjenning?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
         weight: vekter?.egenvekt || null,
         totalWeight,
@@ -355,6 +413,14 @@ export default publicProcedure
         mileageHistory,
         euControlDate: lastEuControl || null,
         nextEuControlDate: nextEuControl || null,
+        vehicleSections: {
+          euKontroll: euKontrollSection || undefined,
+          registreringsdata: registreringsdataSection || undefined,
+          utslipp: utslippSection || undefined,
+          malOgVekt: malOgVektSection || undefined,
+          motorKraftoverforing: motorKraftSection || undefined,
+          dekkOgFelg: dekkFelgSection || undefined,
+        },
       };
 
       console.log(`[Vehicle Search] Success! Found: ${result.make} ${result.model}`);

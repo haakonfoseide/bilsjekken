@@ -74,6 +74,7 @@ export default function AddCarScreen() {
   const [registeredMileage, setRegisteredMileage] = useState<number | null>(null);
   const [registeredMileageDate, setRegisteredMileageDate] = useState("");
   const [mileageHistory, setMileageHistory] = useState<any[]>([]);
+  const [vehicleSections, setVehicleSections] = useState<any>(null);
   const [euControlDate, setEuControlDate] = useState("");
   const [nextEuControlDate, setNextEuControlDate] = useState("");
   
@@ -181,6 +182,7 @@ export default function AddCarScreen() {
         setRegisteredMileage(data.registeredMileage || null);
         setRegisteredMileageDate(data.registeredMileageDate || "");
         setMileageHistory(data.mileageHistory || []);
+        setVehicleSections((data as any).vehicleSections || null);
         setEuControlDate(data.euControlDate || "");
         setNextEuControlDate(data.nextEuControlDate || "");
         
@@ -276,6 +278,7 @@ export default function AddCarScreen() {
       registeredMileage: registeredMileage || undefined,
       registeredMileageDate,
       mileageHistory,
+      vehicleSections: vehicleSections || undefined,
       euControlDate,
       nextEuControlDate,
     };

@@ -1,3 +1,14 @@
+export interface VehicleField {
+  label: string;
+  value: string;
+  unit?: string;
+}
+
+export interface VehicleSection {
+  title: string;
+  fields: VehicleField[];
+}
+
 export interface CarInfo {
   id: string;
   make: string;
@@ -35,6 +46,15 @@ export interface CarInfo {
 
   euControlDate?: string;
   nextEuControlDate?: string;
+
+  vehicleSections?: {
+    euKontroll?: VehicleSection;
+    registreringsdata?: VehicleSection;
+    utslipp?: VehicleSection;
+    malOgVekt?: VehicleSection;
+    motorKraftoverforing?: VehicleSection;
+    dekkOgFelg?: VehicleSection;
+  };
 }
 
 export interface WashRecord {
