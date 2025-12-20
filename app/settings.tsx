@@ -338,7 +338,7 @@ export default function SettingsScreen() {
               onPress={() => {
                 Alert.alert(
                   "Hjelp",
-                  "Trenger du hjelp? Ta kontakt på support@bilapp.no",
+                  "Trenger du hjelp? Ta kontakt på haakon.foseide@gmail.com",
                   [{ text: "OK" }]
                 );
               }}
@@ -357,7 +357,7 @@ export default function SettingsScreen() {
               onPress={() => {
                 Alert.alert(
                   "Kontakt oss",
-                  "E-post: support@bilapp.no\nTelefon: +47 123 45 678",
+                  "E-post: haakon.foseide@gmail.com\nTelefon: +47 412 89 330",
                   [{ text: "OK" }]
                 );
               }}
@@ -375,8 +375,8 @@ export default function SettingsScreen() {
               style={styles.inputRow}
               onPress={() => {
                 Alert.alert(
-                  "Personvern",
-                  "Vi tar ditt personvern på alvor. All data lagres lokalt på enheten din.",
+                  "Personvern & Vilkår",
+                  "Personvern:\nVi tar ditt personvern på alvor. All bildata og vedlikeholdsinformasjon lagres lokalt på enheten din. Vi samler ikke inn personlig informasjon utover det som er nødvendig for appens funksjonalitet.\n\nVilkår:\nDenne appen tilbys som den er, uten noen form for garanti. Ved å bruke appen aksepterer du å ta fullt ansvar for all informasjon som registreres. Appens utvikler er ikke ansvarlig for eventuelle feil eller mangler i data.\n\nFor spørsmål, kontakt haakon.foseide@gmail.com",
                   [{ text: "OK" }]
                 );
               }}
