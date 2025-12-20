@@ -64,31 +64,38 @@ export const [CarProvider, useCarData] = createContextHook(() => {
           return defaultData;
         }
 
-        const parsed = JSON.parse(stored);
-        console.log("[CarContext] Successfully loaded data from storage");
-        
-        // MIGRATION LOGIC
-        if (!parsed.cars && parsed.carInfo) {
-           console.log("[CarContext] Migrating from v1 to v2");
-           const oldCar = parsed.carInfo;
-           const carId = "default-car";
-           const migratedCar: CarInfo = { ...oldCar, id: carId };
-           
-           // Migrate records
-           const migrateRecord = (r: any) => ({ ...r, carId });
-           
-           return {
-             cars: [migratedCar],
-             activeCarId: carId,
-             washRecords: (parsed.washRecords || []).map(migrateRecord),
-             serviceRecords: (parsed.serviceRecords || []).map(migrateRecord),
-             tireSets: (parsed.tireSets || []).map(migrateRecord),
-             mileageRecords: (parsed.mileageRecords || []).map(migrateRecord),
-             tireInfos: parsed.tireInfo ? { [carId]: parsed.tireInfo } : {},
-           };
-        }
+        try {
+          const parsed = JSON.parse(stored);
+          console.log("[CarContext] Successfully loaded data from storage");
+          
+          // MIGRATION LOGIC
+          if (!parsed.cars && parsed.carInfo) {
+             console.log("[CarContext] Migrating from v1 to v2");
+             const oldCar = parsed.carInfo;
+             const carId = "default-car";
+             const migratedCar: CarInfo = { ...oldCar, id: carId };
+             
+             // Migrate records
+             const migrateRecord = (r: any) => ({ ...r, carId });
+             
+             return {
+               cars: [migratedCar],
+               activeCarId: carId,
+               washRecords: (parsed.washRecords || []).map(migrateRecord),
+               serviceRecords: (parsed.serviceRecords || []).map(migrateRecord),
+               tireSets: (parsed.tireSets || []).map(migrateRecord),
+               mileageRecords: (parsed.mileageRecords || []).map(migrateRecord),
+               tireInfos: parsed.tireInfo ? { [carId]: parsed.tireInfo } : {},
+             };
+          }
 
-        return parsed;
+          return parsed;
+        } catch (e) {
+          console.error("[CarContext] Failed to parse stored data. Resetting storage.", e);
+          // If the data is corrupted (e.g. "object Object"), we must clear it to allow the app to start.
+          await AsyncStorage.removeItem(STORAGE_KEY);
+          return defaultData;
+        }
       } catch (error) {
         console.error("[CarContext] Error loading data:", error);
         // Try backup...
