@@ -22,11 +22,34 @@ import {
   Edit2,
   Trash2,
   X,
-  Calendar,
+  Calendar as CalendarIcon,
 } from "lucide-react-native";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 import { useState, useMemo } from "react";
+import { Calendar, LocaleConfig } from "react-native-calendars";
+
+LocaleConfig.locales['no'] = {
+  monthNames: [
+    'Januar',
+    'Februar',
+    'Mars',
+    'April',
+    'Mai',
+    'Juni',
+    'Juli',
+    'August',
+    'September',
+    'Oktober',
+    'November',
+    'Desember'
+  ],
+  monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'],
+  dayNames: ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'],
+  dayNamesShort: ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'],
+  today: 'I dag'
+};
+LocaleConfig.defaultLocale = 'no';
 
 export default function MileageHistoryScreen() {
   const router = useRouter();
@@ -37,6 +60,7 @@ export default function MileageHistoryScreen() {
   const [editingRecord, setEditingRecord] = useState<{ id: string; mileage: number; date: string } | null>(null);
   const [newMileage, setNewMileage] = useState("");
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const allRecords = useMemo(() => {
     if (!carInfo) return [];
@@ -68,6 +92,23 @@ export default function MileageHistoryScreen() {
     });
   };
 
+  const openAddModal = () => {
+    setNewMileage("");
+    setNewDate(new Date().toISOString().split('T')[0]);
+    setShowCalendar(false);
+    setIsAddModalVisible(true);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalVisible(false);
+    setShowCalendar(false);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalVisible(false);
+    setShowCalendar(false);
+  };
+
   const handleAddMileage = () => {
     const mileageNum = parseInt(newMileage, 10);
     if (!mileageNum || mileageNum <= 0) {
@@ -80,9 +121,7 @@ export default function MileageHistoryScreen() {
       date: newDate,
     });
 
-    setNewMileage("");
-    setNewDate(new Date().toISOString().split('T')[0]);
-    setIsAddModalVisible(false);
+    closeAddModal();
   };
 
   const handleEditMileage = () => {
@@ -100,9 +139,7 @@ export default function MileageHistoryScreen() {
     });
 
     setEditingRecord(null);
-    setNewMileage("");
-    setNewDate(new Date().toISOString().split('T')[0]);
-    setIsEditModalVisible(false);
+    closeEditModal();
   };
 
   const handleDeleteMileage = (id: string) => {
@@ -125,6 +162,7 @@ export default function MileageHistoryScreen() {
     setNewMileage(record.mileage.toString());
     setNewDate(record.date);
     setIsEditModalVisible(true);
+    setShowCalendar(false);
   };
 
   return (
@@ -143,7 +181,7 @@ export default function MileageHistoryScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Kilometerstand</Text>
           <TouchableOpacity 
-            onPress={() => setIsAddModalVisible(true)}
+            onPress={openAddModal}
             style={styles.addButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -245,7 +283,7 @@ export default function MileageHistoryScreen() {
         visible={isAddModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsAddModalVisible(false)}
+        onRequestClose={closeAddModal}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -253,12 +291,12 @@ export default function MileageHistoryScreen() {
         >
         <Pressable 
           style={styles.modalOverlay}
-          onPress={() => setIsAddModalVisible(false)}
+          onPress={closeAddModal}
         >
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Legg til kilometerstand</Text>
-              <TouchableOpacity onPress={() => setIsAddModalVisible(false)}>
+              <TouchableOpacity onPress={closeAddModal}>
                 <X size={24} color={Colors.text.primary} />
               </TouchableOpacity>
             </View>
@@ -278,16 +316,34 @@ export default function MileageHistoryScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Dato</Text>
-                <View style={styles.dateInputContainer}>
-                  <Calendar size={20} color={Colors.text.secondary} />
-                  <TextInput
-                    style={styles.dateInput}
-                    value={newDate}
-                    onChangeText={setNewDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={Colors.text.light}
-                  />
-                </View>
+                <TouchableOpacity 
+                  style={styles.dateInputContainer}
+                  onPress={() => setShowCalendar(!showCalendar)}
+                >
+                  <CalendarIcon size={20} color={Colors.text.secondary} />
+                  <Text style={styles.dateInputText}>{formatDate(newDate)}</Text>
+                </TouchableOpacity>
+                {showCalendar && (
+                  <View style={styles.calendarContainer}>
+                    <Calendar
+                      current={newDate}
+                      onDayPress={(day: { dateString: string }) => {
+                        setNewDate(day.dateString);
+                        setShowCalendar(false);
+                      }}
+                      markedDates={{
+                        [newDate]: {selected: true, selectedColor: Colors.primary}
+                      }}
+                      theme={{
+                        todayTextColor: Colors.primary,
+                        arrowColor: Colors.primary,
+                        textDayFontWeight: '500',
+                        textMonthFontWeight: 'bold',
+                        textDayHeaderFontWeight: '500',
+                      }}
+                    />
+                  </View>
+                )}
               </View>
 
               <TouchableOpacity 
@@ -307,7 +363,7 @@ export default function MileageHistoryScreen() {
         visible={isEditModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsEditModalVisible(false)}
+        onRequestClose={closeEditModal}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -315,12 +371,12 @@ export default function MileageHistoryScreen() {
         >
         <Pressable 
           style={styles.modalOverlay}
-          onPress={() => setIsEditModalVisible(false)}
+          onPress={closeEditModal}
         >
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Rediger kilometerstand</Text>
-              <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+              <TouchableOpacity onPress={closeEditModal}>
                 <X size={24} color={Colors.text.primary} />
               </TouchableOpacity>
             </View>
@@ -340,16 +396,34 @@ export default function MileageHistoryScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Dato</Text>
-                <View style={styles.dateInputContainer}>
-                  <Calendar size={20} color={Colors.text.secondary} />
-                  <TextInput
-                    style={styles.dateInput}
-                    onChangeText={setNewDate}
-                    value={newDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={Colors.text.light}
-                  />
-                </View>
+                <TouchableOpacity 
+                  style={styles.dateInputContainer}
+                  onPress={() => setShowCalendar(!showCalendar)}
+                >
+                  <CalendarIcon size={20} color={Colors.text.secondary} />
+                  <Text style={styles.dateInputText}>{formatDate(newDate)}</Text>
+                </TouchableOpacity>
+                {showCalendar && (
+                  <View style={styles.calendarContainer}>
+                    <Calendar
+                      current={newDate}
+                      onDayPress={(day: { dateString: string }) => {
+                        setNewDate(day.dateString);
+                        setShowCalendar(false);
+                      }}
+                      markedDates={{
+                        [newDate]: {selected: true, selectedColor: Colors.primary}
+                      }}
+                      theme={{
+                        todayTextColor: Colors.primary,
+                        arrowColor: Colors.primary,
+                        textDayFontWeight: '500',
+                        textMonthFontWeight: 'bold',
+                        textDayHeaderFontWeight: '500',
+                      }}
+                    />
+                  </View>
+                )}
               </View>
 
               <TouchableOpacity 
@@ -674,6 +748,19 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: Colors.text.primary,
+  },
+  dateInputText: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.text.primary,
+  },
+  calendarContainer: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   modalButton: {
     backgroundColor: Colors.primary,
