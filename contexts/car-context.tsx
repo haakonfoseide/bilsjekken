@@ -387,6 +387,62 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [activeCarId, mutate]
   );
 
+  const updateMileageRecord = useCallback(
+    (id: string, record: Omit<MileageRecord, "id" | "carId">) => {
+      setData((prev) => {
+        const newMileageRecords = prev.mileageRecords.map(r => 
+          r.id === id ? { ...r, ...record } : r
+        );
+        
+        // Update car info current mileage if this is the latest record
+        const sortedRecords = [...newMileageRecords].sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        const latestRecord = sortedRecords[0];
+        
+        const newCars = prev.cars.map(c => 
+           c.id === activeCarId ? { ...c, currentMileage: latestRecord?.mileage || c.currentMileage } : c
+        );
+        
+        const newData = {
+            ...prev,
+            cars: newCars,
+            mileageRecords: newMileageRecords,
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
+  const deleteMileageRecord = useCallback(
+    (id: string) => {
+      setData((prev) => {
+        const newMileageRecords = prev.mileageRecords.filter(r => r.id !== id);
+        
+        // Update car info current mileage to the latest remaining record
+        const sortedRecords = [...newMileageRecords]
+          .filter(r => r.carId === activeCarId)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const latestRecord = sortedRecords[0];
+        
+        const newCars = prev.cars.map(c => 
+           c.id === activeCarId ? { ...c, currentMileage: latestRecord?.mileage || c.currentMileage } : c
+        );
+        
+        const newData = {
+            ...prev,
+            cars: newCars,
+            mileageRecords: newMileageRecords,
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
   // -- GETTERS --
   // Filter by activeCarId
 
@@ -562,6 +618,8 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       deleteTireSet,
       setActiveTireSet,
       addMileageRecord,
+      updateMileageRecord,
+      deleteMileageRecord,
       
       // Helpers
       getLastWash,

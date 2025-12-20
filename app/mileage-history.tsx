@@ -4,6 +4,10 @@ import {
   View,
   TouchableOpacity,
   FlatList,
+  Modal,
+  TextInput,
+  Alert,
+  Pressable,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,8 +16,11 @@ import {
   ArrowLeft,
   History,
   TrendingUp,
-  Building2,
-  User,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Calendar,
 } from "lucide-react-native";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
@@ -22,39 +29,26 @@ import { useState, useMemo } from "react";
 export default function MileageHistoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { carInfo, mileageRecords } = useCarData();
-  const [activeTab, setActiveTab] = useState<'all' | 'user' | 'vegvesen'>('all');
+  const { carInfo, mileageRecords, addMileageRecord, updateMileageRecord, deleteMileageRecord } = useCarData();
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<{ id: string; mileage: number; date: string } | null>(null);
+  const [newMileage, setNewMileage] = useState("");
+  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Combine and sort records
   const allRecords = useMemo(() => {
     if (!carInfo) return [];
 
     const userRecords = mileageRecords.map(r => ({
-      id: r.id,
+      id: r.id || '',
       mileage: r.mileage,
       date: r.date,
       source: 'user' as const,
       type: 'Avlesning',
     }));
-
-    const vegvesenRecords = (carInfo.mileageHistory || []).map((r, index) => ({
-      id: `vv-${index}`,
-      mileage: r.mileage,
-      date: r.date,
-      source: 'vegvesen' as const,
-      type: 'EU-kontroll', // Usually from EU control
-    }));
-
-    const combined = [...userRecords, ...vegvesenRecords];
     
-    // Sort by date descending
-    return combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return userRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [mileageRecords, carInfo]);
-
-  const filteredRecords = useMemo(() => {
-    if (activeTab === 'all') return allRecords;
-    return allRecords.filter(r => r.source === activeTab);
-  }, [allRecords, activeTab]);
 
   if (!carInfo) {
     return (
@@ -72,6 +66,65 @@ export default function MileageHistoryScreen() {
     });
   };
 
+  const handleAddMileage = () => {
+    const mileageNum = parseInt(newMileage, 10);
+    if (!mileageNum || mileageNum <= 0) {
+      Alert.alert("Feil", "Vennligst skriv inn en gyldig kilometerstand");
+      return;
+    }
+
+    addMileageRecord({
+      mileage: mileageNum,
+      date: newDate,
+    });
+
+    setNewMileage("");
+    setNewDate(new Date().toISOString().split('T')[0]);
+    setIsAddModalVisible(false);
+  };
+
+  const handleEditMileage = () => {
+    if (!editingRecord) return;
+
+    const mileageNum = parseInt(newMileage, 10);
+    if (!mileageNum || mileageNum <= 0) {
+      Alert.alert("Feil", "Vennligst skriv inn en gyldig kilometerstand");
+      return;
+    }
+
+    updateMileageRecord(editingRecord.id, {
+      mileage: mileageNum,
+      date: newDate,
+    });
+
+    setEditingRecord(null);
+    setNewMileage("");
+    setNewDate(new Date().toISOString().split('T')[0]);
+    setIsEditModalVisible(false);
+  };
+
+  const handleDeleteMileage = (id: string) => {
+    Alert.alert(
+      "Slett kilometerstand",
+      "Er du sikker på at du vil slette denne kilometerstanden?",
+      [
+        { text: "Avbryt", style: "cancel" },
+        {
+          text: "Slett",
+          style: "destructive",
+          onPress: () => deleteMileageRecord(id),
+        },
+      ]
+    );
+  };
+
+  const openEditModal = (record: { id: string; mileage: number; date: string }) => {
+    setEditingRecord(record);
+    setNewMileage(record.mileage.toString());
+    setNewDate(record.date);
+    setIsEditModalVisible(true);
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -87,7 +140,13 @@ export default function MileageHistoryScreen() {
             <ArrowLeft size={24} color={Colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Kilometerstand</Text>
-          <View style={{ width: 40 }} /> 
+          <TouchableOpacity 
+            onPress={() => setIsAddModalVisible(true)}
+            style={styles.addButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Plus size={24} color={Colors.primary} />
+          </TouchableOpacity> 
         </View>
 
         {/* Stats Card */}
@@ -113,31 +172,10 @@ export default function MileageHistoryScreen() {
           )}
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-            onPress={() => setActiveTab('all')}
-          >
-            <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>Alle</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'vegvesen' && styles.activeTab]}
-            onPress={() => setActiveTab('vegvesen')}
-          >
-            <Text style={[styles.tabText, activeTab === 'vegvesen' && styles.activeTabText]}>Vegvesenet</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'user' && styles.activeTab]}
-            onPress={() => setActiveTab('user')}
-          >
-            <Text style={[styles.tabText, activeTab === 'user' && styles.activeTabText]}>Egne</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <FlatList
-        data={filteredRecords}
+        data={allRecords}
         keyExtractor={(item) => item.id || item.date}
         contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
         showsVerticalScrollIndicator={false}
@@ -149,15 +187,10 @@ export default function MileageHistoryScreen() {
                 <View style={[
                   styles.timelineDot, 
                   isFirst && styles.timelineDotActive,
-                  item.source === 'vegvesen' && styles.timelineDotVegvesen
                 ]}>
-                  {item.source === 'vegvesen' ? (
-                    <Building2 size={12} color="#fff" />
-                  ) : (
-                    <User size={12} color="#fff" />
-                  )}
+                  <Gauge size={12} color="#fff" />
                 </View>
-                {index !== filteredRecords.length - 1 && (
+                {index !== allRecords.length - 1 && (
                   <View style={styles.timelineLine} />
                 )}
               </View>
@@ -165,16 +198,21 @@ export default function MileageHistoryScreen() {
               <View style={styles.recordCard}>
                 <View style={styles.recordHeader}>
                   <Text style={styles.recordDate}>{formatDate(item.date)}</Text>
-                  <View style={[
-                    styles.sourceTag,
-                    item.source === 'vegvesen' ? styles.sourceTagVegvesen : styles.sourceTagUser
-                  ]}>
-                    <Text style={[
-                      styles.sourceTagText,
-                      item.source === 'vegvesen' ? styles.sourceTagTextVegvesen : styles.sourceTagTextUser
-                    ]}>
-                      {item.source === 'vegvesen' ? 'Vegvesenet' : 'Avlesning'}
-                    </Text>
+                  <View style={styles.recordActions}>
+                    <TouchableOpacity 
+                      onPress={() => openEditModal(item)}
+                      style={styles.actionButton}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Edit2 size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      onPress={() => handleDeleteMileage(item.id)}
+                      style={styles.actionButton}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Trash2 size={16} color="#EF4444" />
+                    </TouchableOpacity>
                   </View>
                 </View>
                 
@@ -182,9 +220,9 @@ export default function MileageHistoryScreen() {
                   {item.mileage.toLocaleString("no-NO")} km
                 </Text>
                 
-                {index < filteredRecords.length - 1 && (
+                {index < allRecords.length - 1 && (
                   <Text style={styles.recordDiff}>
-                    +{item.mileage - filteredRecords[index + 1].mileage} km
+                    +{item.mileage - allRecords[index + 1].mileage} km
                   </Text>
                 )}
               </View>
@@ -194,10 +232,125 @@ export default function MileageHistoryScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <History size={48} color={Colors.text.light} />
-            <Text style={styles.emptyText}>Ingen historikk funnet</Text>
+            <Text style={styles.emptyText}>Ingen kilometerstand registrert</Text>
+            <Text style={styles.emptySubtext}>Trykk på + for å legge til</Text>
           </View>
         }
       />
+
+      {/* Add Modal */}
+      <Modal
+        visible={isAddModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsAddModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setIsAddModalVisible(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Legg til kilometerstand</Text>
+              <TouchableOpacity onPress={() => setIsAddModalVisible(false)}>
+                <X size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Kilometerstand</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newMileage}
+                  onChangeText={setNewMileage}
+                  placeholder="F.eks. 45000"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Dato</Text>
+                <View style={styles.dateInputContainer}>
+                  <Calendar size={20} color={Colors.text.secondary} />
+                  <TextInput
+                    style={styles.dateInput}
+                    value={newDate}
+                    onChangeText={setNewDate}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={Colors.text.light}
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={handleAddMileage}
+              >
+                <Text style={styles.modalButtonText}>Legg til</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsEditModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setIsEditModalVisible(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Rediger kilometerstand</Text>
+              <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+                <X size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Kilometerstand</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newMileage}
+                  onChangeText={setNewMileage}
+                  placeholder="F.eks. 45000"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Dato</Text>
+                <View style={styles.dateInputContainer}>
+                  <Calendar size={20} color={Colors.text.secondary} />
+                  <TextInput
+                    style={styles.dateInput}
+                    onChangeText={setNewDate}
+                    value={newDate}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={Colors.text.light}
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={handleEditMileage}
+              >
+                <Text style={styles.modalButtonText}>Lagre</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -239,6 +392,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: Colors.text.primary,
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    backgroundColor: "#EFF6FF",
   },
   statsCard: {
     backgroundColor: "#F8FAFC",
@@ -376,6 +537,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
+  recordActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
+  },
   recordDate: {
     fontSize: 12,
     color: Colors.text.secondary,
@@ -422,5 +595,84 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     color: Colors.text.secondary,
+    fontWeight: "600",
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 12,
+    color: Colors.text.light,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.text.primary,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  dateInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 12,
+  },
+  dateInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.text.primary,
+  },
+  modalButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
   },
 });
