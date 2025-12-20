@@ -217,10 +217,15 @@ export default function DashboardScreen() {
                   <View style={styles.statusDivider} />
 
                   <View style={styles.statusGrid}>
-                    <View style={styles.statusItem}>
+                    <TouchableOpacity 
+                      style={styles.statusItem}
+                      onPress={() => handlePress("/mileage-history")}
+                      activeOpacity={0.7}
+                    >
                       <View style={styles.statusLabelRow}>
                         <Gauge size={14} color={Colors.text.secondary} />
                         <Text style={styles.statusLabel}>Kilometer</Text>
+                        <ChevronRight size={12} color={Colors.text.secondary} />
                       </View>
                       <Text style={styles.statusValue}>
                         {carInfo.currentMileage.toLocaleString("no-NO")}
@@ -230,7 +235,7 @@ export default function DashboardScreen() {
                            Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
                         </Text>
                       )}
-                    </View>
+                    </TouchableOpacity>
 
                     <View style={styles.statusVerticalLine} />
 

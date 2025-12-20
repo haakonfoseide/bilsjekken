@@ -15,6 +15,11 @@ export interface CarInfo {
   power?: number;
   registeredMileage?: number;
   registeredMileageDate?: string;
+  mileageHistory?: {
+    mileage: number;
+    date: string;
+    source?: 'vegvesen' | 'user';
+  }[];
   euControlDate?: string;
   nextEuControlDate?: string;
 }

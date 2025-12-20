@@ -145,6 +145,12 @@ export default publicProcedure
       const kjorelengder = vehicle.kjorelengdeMaalinger?.kjorelengdeMaaling || [];
       const sisteKjorelengde = kjorelengder.length > 0 ? kjorelengder[0] : null;
 
+      const mileageHistory = kjorelengder.map((item: any) => ({
+        mileage: item.kilometerstand,
+        date: item.maalingDato,
+        source: 'vegvesen',
+      }));
+
       const result = {
         licensePlate: vehicle.kjoretoyId?.kjennemerke || cleanedPlate,
         make: generelt?.merke?.[0]?.merke || "Ukjent",
@@ -159,6 +165,7 @@ export default publicProcedure
         fuelType: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.drivstoffKode?.navn || "Ukjent",
         registeredMileage: sisteKjorelengde?.kilometerstand || null,
         registeredMileageDate: sisteKjorelengde?.maalingDato || null,
+        mileageHistory,
         euControlDate: lastEuControl || null,
         nextEuControlDate: nextEuControl || null,
       };
