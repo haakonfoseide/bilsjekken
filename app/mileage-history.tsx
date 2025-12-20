@@ -24,6 +24,8 @@ import {
   Trash2,
   X,
   Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react-native";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
@@ -339,6 +341,11 @@ export default function MileageHistoryScreen() {
                       markedDates={{
                         [newDate]: {selected: true, selectedColor: Colors.primary}
                       }}
+                      renderArrow={(direction: 'left' | 'right') => (
+                        direction === 'left' ? 
+                        <ChevronLeft size={24} color={Colors.primary} /> : 
+                        <ChevronRight size={24} color={Colors.primary} />
+                      )}
                       theme={{
                         todayTextColor: Colors.primary,
                         arrowColor: Colors.primary,
@@ -423,6 +430,11 @@ export default function MileageHistoryScreen() {
                       markedDates={{
                         [newDate]: {selected: true, selectedColor: Colors.primary}
                       }}
+                      renderArrow={(direction: 'left' | 'right') => (
+                        direction === 'left' ? 
+                        <ChevronLeft size={24} color={Colors.primary} /> : 
+                        <ChevronRight size={24} color={Colors.primary} />
+                      )}
                       theme={{
                         todayTextColor: Colors.primary,
                         arrowColor: Colors.primary,
