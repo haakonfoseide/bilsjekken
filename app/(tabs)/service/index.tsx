@@ -10,7 +10,7 @@ import {
   Image,
   Keyboard,
 } from "react-native";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Wrench, Plus, Trash2, Camera, X, Check, FileText } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -41,7 +41,7 @@ export default function ServiceScreen() {
     };
   }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     if (!date || !mileage || !type || !description) {
       Alert.alert("Feil", "Vennligst fyll ut alle påkrevde felt");
       return;
@@ -69,9 +69,9 @@ export default function ServiceScreen() {
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-  };
+  }, [date, mileage, type, description, cost, location, receiptImages, addServiceRecord]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     Alert.alert(
       "Slett service",
       "Er du sikker på at du vil slette denne servicen?",
@@ -89,16 +89,16 @@ export default function ServiceScreen() {
         },
       ]
     );
-  };
+  }, [deleteServiceRecord]);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("no-NO", {
       day: "numeric",
       month: "short",
       year: "numeric",
     });
-  };
+  }, []);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();

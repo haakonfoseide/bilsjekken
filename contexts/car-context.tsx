@@ -1,7 +1,7 @@
 import createContextHook from "@nkzw/create-context-hook";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { trpcClient } from "@/lib/trpc";
 import type {
   CarInfo,
@@ -53,6 +53,7 @@ const defaultData: CarData = {
 export const [CarProvider, useCarData] = createContextHook(() => {
   const [data, setData] = useState<CarData>(defaultData);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const dataRef = useRef<CarData>(defaultData);
 
   const { data: loadedData, isLoading } = useQuery({
     queryKey: ["carData"],
@@ -139,17 +140,17 @@ export const [CarProvider, useCarData] = createContextHook(() => {
 
   useEffect(() => {
     if (loadedData) {
-      setData((prev) => ({
-        ...prev,
+      const newData = {
         ...loadedData,
-        // Ensure arrays are initialized
         cars: loadedData.cars || [],
         washRecords: loadedData.washRecords || [],
         serviceRecords: loadedData.serviceRecords || [],
         tireSets: loadedData.tireSets || [],
         mileageRecords: loadedData.mileageRecords || [],
         tireInfos: loadedData.tireInfos || {},
-      }));
+      };
+      dataRef.current = newData;
+      setData(newData);
       
       if (isInitialLoad) setIsInitialLoad(false);
     }
@@ -168,19 +169,19 @@ export const [CarProvider, useCarData] = createContextHook(() => {
        const newData = {
          ...prev,
          cars: newCars,
-         activeCarId: prev.activeCarId || id, // Auto select if first car
+         activeCarId: prev.activeCarId || id,
        };
+       dataRef.current = newData;
        mutate(newData);
        return newData;
     });
   }, [mutate]);
 
   const updateCarInfo = useCallback((carInfo: CarInfo) => {
-      // In v2, carInfo must have ID.
-      // If the user passes a carInfo, we update it in the cars array.
       setData((prev) => {
          const newCars = prev.cars.map(c => c.id === carInfo.id ? carInfo : c);
          const newData = { ...prev, cars: newCars };
+         dataRef.current = newData;
          mutate(newData);
          return newData;
       });
@@ -189,7 +190,6 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   const deleteCar = useCallback((carId: string) => {
       setData((prev) => {
          const newCars = prev.cars.filter(c => c.id !== carId);
-         // Filter out records for this car?
          const newWash = prev.washRecords.filter(r => r.carId !== carId);
          const newService = prev.serviceRecords.filter(r => r.carId !== carId);
          const newTires = prev.tireSets.filter(r => r.carId !== carId);
@@ -212,6 +212,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
             mileageRecords: newMileage,
             tireInfos: newTireInfos,
          };
+         dataRef.current = newData;
          mutate(newData);
          return newData;
       });
@@ -220,6 +221,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   const setActiveCar = useCallback((carId: string) => {
       setData((prev) => {
          const newData = { ...prev, activeCarId: carId };
+         dataRef.current = newData;
          mutate(newData);
          return newData;
       });

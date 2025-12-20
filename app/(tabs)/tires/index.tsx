@@ -11,7 +11,7 @@ import {
   Image,
   Keyboard,
 } from "react-native";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CircleSlash2,
@@ -58,7 +58,7 @@ export default function TiresScreen() {
     };
   }, []);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setTireType("summer");
     setBrand("");
     setPurchaseDate(new Date().toISOString().split("T")[0]);
@@ -70,7 +70,7 @@ export default function TiresScreen() {
     setHasBalancing(false);
     setHasRemounting(false);
     setShowAddForm(false);
-  };
+  }, []);
 
   useEffect(() => {
     if (params.prefillData) {
@@ -102,7 +102,7 @@ export default function TiresScreen() {
     }
   }, [params.prefillData]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!brand || !purchaseDate || !size) {
       Alert.alert("Feil", "Vennligst fyll ut alle obligatoriske felt");
       return;
@@ -127,9 +127,9 @@ export default function TiresScreen() {
     }
 
     resetForm();
-  };
+  }, [brand, purchaseDate, size, tireType, isAtTireHotel, hotelLocation, notes, receiptImages, tireSets.length, hasBalancing, hasRemounting, addTireSet, resetForm]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     Alert.alert(
       "Slett dekksett",
       "Er du sikker på at du vil slette dette dekksettet?",
@@ -147,16 +147,16 @@ export default function TiresScreen() {
         },
       ]
     );
-  };
+  }, [deleteTireSet]);
 
-  const handleSetActive = (id: string) => {
+  const handleSetActive = useCallback((id: string) => {
     setActiveTireSet(id);
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-  };
+  }, [setActiveTireSet]);
 
-  const getTireAge = (purchaseDate: string) => {
+  const getTireAge = useCallback((purchaseDate: string) => {
     const purchase = new Date(purchaseDate);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - purchase.getTime());
@@ -165,7 +165,7 @@ export default function TiresScreen() {
       (diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30)
     );
     return { years: diffYears, months: diffMonths };
-  };
+  }, []);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -228,8 +228,8 @@ export default function TiresScreen() {
     ]);
   };
 
-  const summerTires = tireSets.filter((t) => t.type === "summer");
-  const winterTires = tireSets.filter((t) => t.type === "winter");
+  const summerTires = useMemo(() => tireSets.filter((t) => t.type === "summer"), [tireSets]);
+  const winterTires = useMemo(() => tireSets.filter((t) => t.type === "winter"), [tireSets]);
 
   return (
     <View style={styles.container}>

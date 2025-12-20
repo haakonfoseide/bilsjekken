@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import {
   Car,
   Droplet,
@@ -62,14 +62,14 @@ export default function DashboardScreen() {
   const nextService = getNextService();
   const tireAge = getTireAge();
 
-  const handlePress = (route: string) => {
+  const handlePress = useCallback((route: string) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     router.push(route as never);
-  };
+  }, [router]);
 
-  const toggleSpecs = () => {
+  const toggleSpecs = useCallback(() => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -80,9 +80,9 @@ export default function DashboardScreen() {
       friction: 10,
     }).start();
     setSpecsExpanded(!specsExpanded);
-  };
+  }, [specsExpanded, specsAnimation]);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
@@ -94,9 +94,9 @@ export default function DashboardScreen() {
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} uker siden`;
     if (diffDays < 365) return `${Math.floor(diffDays / 30)} mnd siden`;
     return `${Math.floor(diffDays / 365)} år siden`;
-  };
+  }, []);
 
-  const formatDateSimple = (dateString: string | null | undefined) => {
+  const formatDateSimple = useCallback((dateString: string | null | undefined) => {
     if (!dateString) return "Ukjent";
     const date = new Date(dateString);
     return date.toLocaleDateString("no-NO", {
@@ -104,24 +104,24 @@ export default function DashboardScreen() {
       month: "2-digit",
       year: "numeric",
     });
-  };
+  }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     refreshCarInfo();
-  };
+  }, [refreshCarInfo]);
 
-  const specsHeight = specsAnimation.interpolate({
+  const specsHeight = useMemo(() => specsAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 320],
-  });
+  }), [specsAnimation]);
 
-  const chevronRotate = specsAnimation.interpolate({
+  const chevronRotate = useMemo(() => specsAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "180deg"],
-  });
+  }), [specsAnimation]);
 
   return (
     <View style={styles.container}>
