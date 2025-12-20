@@ -7,6 +7,16 @@ export interface CarInfo {
   insurance: string;
   currentMileage: number;
   vin?: string;
+  color?: string;
+  fuelType?: string;
+  registrationDate?: string;
+  vehicleType?: string;
+  weight?: number;
+  power?: number;
+  registeredMileage?: number;
+  registeredMileageDate?: string;
+  euControlDate?: string;
+  nextEuControlDate?: string;
 }
 
 export interface WashRecord {

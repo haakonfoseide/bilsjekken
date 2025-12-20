@@ -2,6 +2,7 @@ import createContextHook from "@nkzw/create-context-hook";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { trpc } from "@/lib/trpc";
 import type {
   CarInfo,
   WashRecord,
@@ -454,6 +455,51 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     return { years: diffYears, months: diffMonths };
   }, [currentTireInfo, filteredTireSets]);
 
+  const refreshCarInfoMutation = useMutation({
+    mutationFn: async (carId: string) => {
+      const car = data.cars.find(c => c.id === carId);
+      if (!car) throw new Error("Bil ikke funnet");
+      
+      console.log("[CarContext] Refreshing vehicle data for:", car.licensePlate);
+      const vehicleData = await trpc.vehicle.search.query({ licensePlate: car.licensePlate });
+      return { carId, vehicleData };
+    },
+    onSuccess: ({ carId, vehicleData }) => {
+      console.log("[CarContext] Received updated vehicle data", vehicleData);
+      setData((prev) => {
+        const newCars = prev.cars.map(c => {
+          if (c.id === carId) {
+            return {
+              ...c,
+              make: vehicleData.make,
+              model: vehicleData.model,
+              year: vehicleData.year,
+              vin: vehicleData.vin || c.vin,
+              color: vehicleData.color,
+              currentMileage: vehicleData.registeredMileage || c.currentMileage,
+              registeredMileage: vehicleData.registeredMileage,
+              registeredMileageDate: vehicleData.registeredMileageDate,
+              euControlDate: vehicleData.euControlDate,
+              nextEuControlDate: vehicleData.nextEuControlDate,
+            } as CarInfo;
+          }
+          return c;
+        });
+        const newData = { ...prev, cars: newCars };
+        mutate(newData);
+        return newData;
+      });
+    },
+  });
+
+  const { mutate: mutateRefresh } = refreshCarInfoMutation;
+
+  const refreshCarInfo = useCallback((carId?: string) => {
+    const targetId = carId || activeCarId;
+    if (!targetId) return;
+    mutateRefresh(targetId);
+  }, [activeCarId, mutateRefresh]);
+
   return {
       // State
       cars: data.cars,
@@ -470,6 +516,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       updateCarInfo,
       deleteCar,
       setActiveCar,
+      refreshCarInfo,
       
       addWashRecord,
       deleteWashRecord,
@@ -489,7 +536,9 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       // Meta
       isLoading: saveMutation.isPending || isLoading,
       isSaving: saveMutation.isPending,
+      isRefreshing: refreshCarInfoMutation.isPending,
       isInitializing: isInitialLoad,
       saveError: saveMutation.error,
+      refreshError: refreshCarInfoMutation.error,
   };
 });

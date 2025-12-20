@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +21,12 @@ import {
   Plus,
   Edit,
   Trash2,
+  RefreshCw,
+  Calendar,
+  Fuel,
+  Palette,
+  Weight,
+  Zap,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -37,6 +44,8 @@ export default function DashboardScreen() {
     cars,
     setActiveCar,
     deleteCar,
+    refreshCarInfo,
+    isRefreshing,
   } = useCarData();
 
   const lastWash = getLastWash();
@@ -94,6 +103,23 @@ export default function DashboardScreen() {
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} uker siden`;
     if (diffDays < 365) return `${Math.floor(diffDays / 30)} måneder siden`;
     return `${Math.floor(diffDays / 365)} år siden`;
+  };
+
+  const formatDateSimple = (dateString: string | null | undefined) => {
+    if (!dateString) return "Ukjent";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("no-NO", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const handleRefresh = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    refreshCarInfo();
   };
 
   return (
@@ -157,6 +183,20 @@ export default function DashboardScreen() {
                         </View>
                       )}
                     </View>
+                    {isActive && car.color && (
+                      <View style={styles.carDetailsRow}>
+                        <View style={styles.carDetailItem}>
+                          <Palette size={14} color={Colors.text.secondary} />
+                          <Text style={styles.carDetailText}>{car.color}</Text>
+                        </View>
+                        {car.fuelType && (
+                          <View style={styles.carDetailItem}>
+                            <Fuel size={14} color={Colors.text.secondary} />
+                            <Text style={styles.carDetailText}>{car.fuelType}</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
                     <View style={styles.carCardActions}>
                       <TouchableOpacity
                         style={styles.carActionButton}
@@ -181,6 +221,127 @@ export default function DashboardScreen() {
                 );
               })}
             </View>
+
+            {carInfo && (
+              <TouchableOpacity
+                style={styles.refreshCard}
+                onPress={handleRefresh}
+                disabled={isRefreshing}
+                activeOpacity={0.7}
+              >
+                <View style={styles.refreshContent}>
+                  <View style={styles.refreshIconContainer}>
+                    {isRefreshing ? (
+                      <ActivityIndicator size="small" color={Colors.primary} />
+                    ) : (
+                      <RefreshCw size={20} color={Colors.primary} strokeWidth={2.5} />
+                    )}
+                  </View>
+                  <View style={styles.refreshTextContainer}>
+                    <Text style={styles.refreshTitle}>
+                      {isRefreshing ? "Oppdaterer..." : "Oppdater fra Vegvesenet"}
+                    </Text>
+                    <Text style={styles.refreshSubtitle}>
+                      Hent siste kjørelengde og EU-kontroll
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {carInfo && (
+              <View style={styles.vehicleDetailsCard}>
+                <Text style={styles.vehicleDetailsTitle}>Kjøretøyinformasjon</Text>
+                
+                {carInfo.registeredMileage && (
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIcon}>
+                      <Gauge size={18} color={Colors.primary} />
+                    </View>
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Registrert kjørelengde</Text>
+                      <Text style={styles.detailValue}>
+                        {carInfo.registeredMileage.toLocaleString("no-NO")} km
+                      </Text>
+                      {carInfo.registeredMileageDate && (
+                        <Text style={styles.detailSubValue}>
+                          Registrert: {formatDateSimple(carInfo.registeredMileageDate)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                )}
+
+                {carInfo.nextEuControlDate && (
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIcon}>
+                      <Calendar size={18} color={Colors.success} />
+                    </View>
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Neste EU-kontroll</Text>
+                      <Text style={styles.detailValue}>
+                        {formatDateSimple(carInfo.nextEuControlDate)}
+                      </Text>
+                      {carInfo.euControlDate && (
+                        <Text style={styles.detailSubValue}>
+                          Sist kontrollert: {formatDateSimple(carInfo.euControlDate)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                )}
+
+                {carInfo.vin && (
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIcon}>
+                      <Car size={18} color={Colors.text.secondary} />
+                    </View>
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>VIN</Text>
+                      <Text style={styles.detailValue}>{carInfo.vin}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {carInfo.weight && (
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIcon}>
+                      <Weight size={18} color={Colors.text.secondary} />
+                    </View>
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Egenvekt</Text>
+                      <Text style={styles.detailValue}>{carInfo.weight} kg</Text>
+                    </View>
+                  </View>
+                )}
+
+                {carInfo.power && (
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIcon}>
+                      <Zap size={18} color={Colors.warning} />
+                    </View>
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Effekt</Text>
+                      <Text style={styles.detailValue}>{carInfo.power} kW</Text>
+                    </View>
+                  </View>
+                )}
+
+                {carInfo.registrationDate && (
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailIcon}>
+                      <Calendar size={18} color={Colors.text.secondary} />
+                    </View>
+                    <View style={styles.detailContent}>
+                      <Text style={styles.detailLabel}>Førstegangsregistrert</Text>
+                      <Text style={styles.detailValue}>
+                        {formatDateSimple(carInfo.registrationDate)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
 
             <View style={styles.statsGrid}>
               <TouchableOpacity
@@ -539,5 +700,106 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
   },
-
+  carDetailsRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  carDetailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  carDetailText: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+    fontWeight: "500" as const,
+  },
+  refreshCard: {
+    backgroundColor: Colors.primary + "08",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: Colors.primary + "40",
+  },
+  refreshContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  refreshIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  refreshTextContainer: {
+    flex: 1,
+  },
+  refreshTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  refreshSubtitle: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+  },
+  vehicleDetailsCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  vehicleDetailsTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  detailIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+    marginBottom: 4,
+    fontWeight: "500" as const,
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+  },
+  detailSubValue: {
+    fontSize: 12,
+    color: Colors.text.light,
+    marginTop: 2,
+  },
 });
