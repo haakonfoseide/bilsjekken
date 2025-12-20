@@ -12,11 +12,13 @@ import {
 } from "react-native";
 import { useState, useRef, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Wrench, Plus, Trash2, Camera, X } from "lucide-react-native";
+import { Wrench, Plus, Trash2, Camera, X, Check, FileText } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
+
+const SERVICE_TYPES = ["Oljeskift", "EU-kontroll", "Dekkskift", "Bremser", "Filter", "Annet"];
 
 export default function ServiceScreen() {
   const { serviceRecords, addServiceRecord, deleteServiceRecord } = useCarData();
@@ -93,7 +95,7 @@ export default function ServiceScreen() {
     const date = new Date(dateString);
     return date.toLocaleDateString("no-NO", {
       day: "numeric",
-      month: "long",
+      month: "short",
       year: "numeric",
     });
   };
@@ -159,18 +161,9 @@ export default function ServiceScreen() {
 
   const showImageOptions = () => {
     Alert.alert("Legg til kvittering", "Velg et alternativ", [
-      {
-        text: "Ta bilde",
-        onPress: takePhoto,
-      },
-      {
-        text: "Velg fra galleri",
-        onPress: pickImage,
-      },
-      {
-        text: "Avbryt",
-        style: "cancel",
-      },
+      { text: "Ta bilde", onPress: takePhoto },
+      { text: "Velg fra galleri", onPress: pickImage },
+      { text: "Avbryt", style: "cancel" },
     ]);
   };
 
@@ -180,81 +173,94 @@ export default function ServiceScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent, 
-          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 100 : 40 }
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setShowAddForm(!showAddForm);
-            if (Platform.OS !== "web") {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-          }}
-          activeOpacity={0.8}
-        >
-          <Plus size={20} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>
-            {showAddForm ? "Avbryt" : "Legg til service"}
-          </Text>
-        </TouchableOpacity>
-
-        {showAddForm && (
+        {!showAddForm ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setShowAddForm(true);
+              if (Platform.OS !== "web") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Plus size={20} color="#fff" strokeWidth={2.5} />
+            <Text style={styles.addButtonText}>Registrer service</Text>
+          </TouchableOpacity>
+        ) : (
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Ny service</Text>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Ny service</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setShowAddForm(false);
+                  if (Platform.OS !== "web") {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
+              >
+                <X size={20} color={Colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Dato <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={date}
-                onChangeText={setDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Dato <Text style={styles.required}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  value={date}
+                  onChangeText={setDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={Colors.text.light}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Km-stand <Text style={styles.required}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  value={mileage}
+                  onChangeText={setMileage}
+                  placeholder="0"
+                  placeholderTextColor={Colors.text.light}
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Kilometerstand <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={mileage}
-                onChangeText={setMileage}
-                placeholder="0"
-                placeholderTextColor={Colors.text.light}
-                keyboardType="numeric"
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
+              <Text style={styles.label}>Type service <Text style={styles.required}>*</Text></Text>
+              <View style={styles.typeChips}>
+                {SERVICE_TYPES.map((serviceType) => (
+                  <TouchableOpacity
+                    key={serviceType}
+                    style={[styles.typeChip, type === serviceType && styles.typeChipActive]}
+                    onPress={() => {
+                      setType(type === serviceType ? "" : serviceType);
+                      if (Platform.OS !== "web") {
+                        Haptics.selectionAsync();
+                      }
+                    }}
+                  >
+                    <Text style={[styles.typeChipText, type === serviceType && styles.typeChipTextActive]}>
+                      {serviceType}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Type service <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={type}
-                onChangeText={setType}
-                placeholder="F.eks. Oljeskift, EU-kontroll"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Beskrivelse <Text style={styles.required}>*</Text>
-              </Text>
+              <Text style={styles.label}>Beskrivelse <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={description}
@@ -269,31 +275,32 @@ export default function ServiceScreen() {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Kostnad (kr)</Text>
-              <TextInput
-                style={styles.input}
-                value={cost}
-                onChangeText={setCost}
-                placeholder="0"
-                placeholderTextColor={Colors.text.light}
-                keyboardType="numeric"
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Verksted/sted</Text>
-              <TextInput
-                style={styles.input}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="F.eks. Biltema"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Kostnad (kr)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cost}
+                  onChangeText={setCost}
+                  placeholder="0"
+                  placeholderTextColor={Colors.text.light}
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Verksted</Text>
+                <TextInput
+                  style={styles.input}
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="Sted"
+                  placeholderTextColor={Colors.text.light}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
@@ -304,7 +311,7 @@ export default function ServiceScreen() {
                 activeOpacity={0.8}
               >
                 <Camera size={20} color={Colors.primary} strokeWidth={2} />
-                <Text style={styles.addImageText}>Legg til kvittering</Text>
+                <Text style={styles.addImageText}>Legg til bilde</Text>
               </TouchableOpacity>
 
               {receiptImages.length > 0 && (
@@ -320,7 +327,7 @@ export default function ServiceScreen() {
                         style={styles.removeImageButton}
                         onPress={() => removeImage(index)}
                       >
-                        <X size={16} color="#fff" strokeWidth={2} />
+                        <X size={14} color="#fff" strokeWidth={2.5} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -333,83 +340,89 @@ export default function ServiceScreen() {
               onPress={handleAdd}
               activeOpacity={0.8}
             >
-              <Text style={styles.submitButtonText}>Lagre</Text>
+              <Check size={20} color="#fff" strokeWidth={2.5} />
+              <Text style={styles.submitButtonText}>Lagre service</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Servicehistorikk</Text>
+        <Text style={styles.sectionTitle}>Servicehistorikk</Text>
 
-          {serviceRecords.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Wrench size={48} color={Colors.text.light} strokeWidth={1.5} />
-              <Text style={styles.emptyText}>Ingen service registrert</Text>
+        {serviceRecords.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <FileText size={32} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-          ) : (
-            serviceRecords.map((record) => (
+            <Text style={styles.emptyTitle}>Ingen service registrert</Text>
+            <Text style={styles.emptyText}>
+              Logg service for å holde oversikt over vedlikehold
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.recordsList}>
+            {serviceRecords.map((record) => (
               <View key={record.id} style={styles.recordCard}>
                 <View style={styles.recordHeader}>
-                  <View style={styles.iconCircle}>
-                    <Wrench size={20} color={Colors.success} strokeWidth={2} />
+                  <View style={styles.recordIcon}>
+                    <Wrench size={18} color={Colors.success} strokeWidth={2} />
                   </View>
-                  <View style={styles.recordContent}>
+                  <View style={styles.recordMeta}>
                     <Text style={styles.recordType}>{record.type}</Text>
                     <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
-                    <Text style={styles.recordMileage}>
-                      {record.mileage.toLocaleString("no-NO")} km
-                    </Text>
-                    <Text style={styles.recordDescription}>
-                      {record.description}
-                    </Text>
-                    {record.cost && (
-                      <Text style={styles.recordCost}>
-                        Kostnad: {record.cost.toLocaleString("no-NO")} kr
-                      </Text>
-                    )}
-                    {record.location && (
-                      <Text style={styles.recordLocation}>{record.location}</Text>
-                    )}
-                    {record.receiptImages && record.receiptImages.length > 0 && (
-                      <View style={styles.receiptsContainer}>
-                        <Text style={styles.receiptsLabel}>Kvitteringer:</Text>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          style={styles.receiptImagesScroll}
-                        >
-                          {record.receiptImages.map((uri, index) => (
-                            <TouchableOpacity
-                              key={index}
-                              onPress={() => {
-                                Alert.alert(
-                                  "Kvittering",
-                                  "Vis større bilde (kommer snart)",
-                                  [{ text: "OK" }]
-                                );
-                              }}
-                            >
-                              <Image
-                                source={{ uri }}
-                                style={styles.receiptThumbnail}
-                              />
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
-                      </View>
-                    )}
                   </View>
                   <TouchableOpacity
                     onPress={() => handleDelete(record.id)}
                     style={styles.deleteButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Trash2 size={20} color={Colors.danger} strokeWidth={2} />
+                    <Trash2 size={18} color={Colors.danger} strokeWidth={2} />
                   </TouchableOpacity>
                 </View>
+
+                <Text style={styles.recordDescription}>{record.description}</Text>
+
+                <View style={styles.recordDetails}>
+                  <View style={styles.recordDetailItem}>
+                    <Text style={styles.recordDetailLabel}>Km-stand</Text>
+                    <Text style={styles.recordDetailValue}>
+                      {record.mileage.toLocaleString("no-NO")} km
+                    </Text>
+                  </View>
+                  {record.cost && (
+                    <View style={styles.recordDetailItem}>
+                      <Text style={styles.recordDetailLabel}>Kostnad</Text>
+                      <Text style={[styles.recordDetailValue, { color: Colors.success }]}>
+                        {record.cost.toLocaleString("no-NO")} kr
+                      </Text>
+                    </View>
+                  )}
+                  {record.location && (
+                    <View style={styles.recordDetailItem}>
+                      <Text style={styles.recordDetailLabel}>Verksted</Text>
+                      <Text style={styles.recordDetailValue}>{record.location}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {record.receiptImages && record.receiptImages.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.receiptScroll}
+                  >
+                    {record.receiptImages.map((uri, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri }}
+                        style={styles.receiptThumbnail}
+                      />
+                    ))}
+                  </ScrollView>
+                )}
               </View>
-            ))
-          )}
-        </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -418,14 +431,13 @@ export default function ServiceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#F8FAFC",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 20,
   },
   addButton: {
     backgroundColor: Colors.primary,
@@ -434,11 +446,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+    borderRadius: 14,
+    marginBottom: 24,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -448,21 +460,38 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
   },
   formCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
+    backgroundColor: "#fff",
+    borderRadius: 20,
     padding: 20,
-    marginBottom: 20,
+    marginBottom: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  formHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   formTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700" as const,
     color: Colors.text.primary,
-    marginBottom: 16,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  row: {
+    flexDirection: "row",
+    gap: 12,
   },
   inputGroup: {
     marginBottom: 16,
@@ -477,11 +506,11 @@ const styles = StyleSheet.create({
     color: Colors.danger,
   },
   input: {
-    backgroundColor: Colors.background,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#E2E8F0",
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     fontSize: 16,
     color: Colors.text.primary,
   },
@@ -489,104 +518,39 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: "top",
   },
-  submitButton: {
-    backgroundColor: Colors.success,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  submitButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700" as const,
-  },
-  listSection: {
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: Colors.text.primary,
-    marginBottom: 16,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: Colors.text.secondary,
-    marginTop: 16,
-  },
-  recordCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  recordHeader: {
+  typeChips: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
+    flexWrap: "wrap",
+    gap: 8,
   },
-  iconCircle: {
-    width: 40,
-    height: 40,
+  typeChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: "#dcfce7",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-  recordContent: {
-    flex: 1,
+  typeChipActive: {
+    backgroundColor: "#ECFDF5",
+    borderColor: Colors.success,
   },
-  recordType: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: Colors.text.primary,
-    marginBottom: 4,
-  },
-  recordDate: {
-    fontSize: 14,
+  typeChipText: {
+    fontSize: 13,
+    fontWeight: "500" as const,
     color: Colors.text.secondary,
-    marginBottom: 2,
   },
-  recordMileage: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    marginBottom: 4,
-  },
-  recordDescription: {
-    fontSize: 14,
-    color: Colors.text.primary,
-    marginTop: 4,
-  },
-  recordCost: {
-    fontSize: 14,
+  typeChipTextActive: {
     color: Colors.success,
-    marginTop: 4,
     fontWeight: "600" as const,
-  },
-  recordLocation: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    marginTop: 2,
-  },
-  deleteButton: {
-    padding: 4,
   },
   addImageButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    padding: 16,
-    backgroundColor: Colors.background,
+    padding: 14,
+    backgroundColor: "#F8FAFC",
     borderWidth: 2,
     borderColor: Colors.primary,
     borderRadius: 12,
@@ -594,7 +558,7 @@ const styles = StyleSheet.create({
   },
   addImageText: {
     color: Colors.primary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600" as const,
   },
   imagePreviewContainer: {
@@ -602,17 +566,17 @@ const styles = StyleSheet.create({
   },
   imagePreviewWrapper: {
     position: "relative",
-    marginRight: 12,
+    marginRight: 10,
   },
   imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
+    width: 80,
+    height: 80,
+    borderRadius: 10,
   },
   removeImageButton: {
     position: "absolute",
-    top: 4,
-    right: 4,
+    top: -6,
+    right: -6,
     backgroundColor: Colors.danger,
     borderRadius: 12,
     width: 24,
@@ -620,24 +584,134 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  receiptsContainer: {
-    marginTop: 8,
-  },
-  receiptsLabel: {
-    fontSize: 13,
-    color: Colors.text.secondary,
-    marginBottom: 6,
-    fontWeight: "600" as const,
-  },
-  receiptImagesScroll: {
+  submitButton: {
+    backgroundColor: Colors.success,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 16,
+    borderRadius: 12,
     marginTop: 4,
   },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700" as const,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+    marginBottom: 14,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 48,
+    paddingHorizontal: 20,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+    marginBottom: 6,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    textAlign: "center",
+  },
+  recordsList: {
+    gap: 12,
+  },
+  recordCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  recordHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  recordIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  recordMeta: {
+    flex: 1,
+  },
+  recordType: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+  },
+  recordDate: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+    marginTop: 2,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  recordDescription: {
+    fontSize: 14,
+    color: Colors.text.primary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  recordDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  recordDetailItem: {},
+  recordDetailLabel: {
+    fontSize: 11,
+    color: Colors.text.light,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  recordDetailValue: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+  },
+  receiptScroll: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
   receiptThumbnail: {
-    width: 80,
-    height: 80,
-    borderRadius: 6,
+    width: 64,
+    height: 64,
+    borderRadius: 8,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#E2E8F0",
   },
 });

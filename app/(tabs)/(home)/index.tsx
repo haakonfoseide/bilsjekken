@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useState, useRef } from "react";
 import {
   Car,
   Droplet,
@@ -16,23 +18,24 @@ import {
   Gauge,
   CircleSlash2,
   ChevronRight,
+  ChevronDown,
   ScanLine,
   Plus,
-  Edit,
+  Settings,
   RefreshCw,
   Calendar,
   Fuel,
-  Palette,
   Weight,
   Zap,
   CheckCircle2,
   AlertCircle,
   Factory,
-  Grip,
   GaugeCircle,
   Users,
   DoorOpen,
   Truck,
+  Grip,
+  Palette,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -41,6 +44,9 @@ import Colors from "@/constants/colors";
 export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [specsExpanded, setSpecsExpanded] = useState(false);
+  const specsAnimation = useRef(new Animated.Value(0)).current;
+  
   const {
     carInfo,
     getLastWash,
@@ -63,12 +69,17 @@ export default function DashboardScreen() {
     router.push(route as never);
   };
 
-  const handleEditCar = (car: typeof cars[0]) => {
+  const toggleSpecs = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    setActiveCar(car.id);
-    handlePress("/settings");
+    const toValue = specsExpanded ? 0 : 1;
+    Animated.spring(specsAnimation, {
+      toValue,
+      useNativeDriver: false,
+      friction: 10,
+    }).start();
+    setSpecsExpanded(!specsExpanded);
   };
 
   const formatDate = (dateString: string) => {
@@ -81,7 +92,7 @@ export default function DashboardScreen() {
     if (diffDays === 1) return "I går";
     if (diffDays < 7) return `${diffDays} dager siden`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} uker siden`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} måneder siden`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} mnd siden`;
     return `${Math.floor(diffDays / 365)} år siden`;
   };
 
@@ -102,42 +113,45 @@ export default function DashboardScreen() {
     refreshCarInfo();
   };
 
+  const specsHeight = specsAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 320],
+  });
+
+  const chevronRotate = specsAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
+
   return (
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent, 
-          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 100 : 40 }
         ]}
         showsVerticalScrollIndicator={false}
       >
         {cars.length > 0 ? (
           <>
             <View style={styles.header}>
-              <View>
-                <Text style={styles.headerTitle}>Garasjen</Text>
-                <Text style={styles.headerSubtitle}>
-                  {cars.length} {cars.length === 1 ? "bil" : "biler"} registrert
-                </Text>
-              </View>
+              <Text style={styles.headerTitle}>Min bil</Text>
               <TouchableOpacity
-                style={styles.addCarButton}
+                style={styles.headerButton}
                 onPress={() => handlePress("/add-car")}
                 activeOpacity={0.7}
               >
-                <Plus size={20} color="#fff" strokeWidth={2.5} />
-                <Text style={styles.addCarButtonText}>Legg til</Text>
+                <Plus size={22} color={Colors.primary} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.carSelectorContainer}>
+            {cars.length > 1 && (
               <ScrollView 
                 horizontal 
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.carSelectorContent}
-                decelerationRate="fast"
-                snapToInterval={Platform.OS === "ios" ? 172 : undefined} // 160 width + 12 gap
+                style={styles.carSelector}
               >
                 {cars.map((car) => {
                   const isActive = car.id === carInfo?.id;
@@ -145,8 +159,8 @@ export default function DashboardScreen() {
                     <TouchableOpacity
                       key={car.id}
                       style={[
-                        styles.carSelectorItem,
-                        isActive && styles.carSelectorItemActive,
+                        styles.carChip,
+                        isActive && styles.carChipActive,
                       ]}
                       onPress={() => {
                         if (car.id !== carInfo?.id) {
@@ -156,405 +170,284 @@ export default function DashboardScreen() {
                           }
                         }
                       }}
-                      activeOpacity={0.9}
+                      activeOpacity={0.8}
                     >
-                      <View style={[styles.carSelectorIcon, isActive && styles.carSelectorIconActive]}>
-                        <Car
-                          size={24}
-                          color={isActive ? "#fff" : Colors.text.secondary}
-                          strokeWidth={2}
-                        />
-                      </View>
-                      <View style={styles.carSelectorInfo}>
-                        <Text 
-                          style={[
-                            styles.carSelectorTitle, 
-                            isActive && styles.carSelectorTitleActive
-                          ]} 
-                          numberOfLines={1}
-                        >
-                          {car.make} {car.model}
-                        </Text>
-                        <Text style={[styles.carSelectorSubtitle, isActive && styles.carSelectorSubtitleActive]}>
-                          {car.licensePlate}
-                        </Text>
-                      </View>
+                      <Text style={[styles.carChipText, isActive && styles.carChipTextActive]}>
+                        {car.licensePlate}
+                      </Text>
                       {isActive && (
-                        <View style={styles.activeCheck}>
-                           <CheckCircle2 size={16} color={Colors.primary} fill="#fff" />
-                        </View>
+                        <CheckCircle2 size={14} color="#fff" strokeWidth={2.5} />
                       )}
                     </TouchableOpacity>
                   );
                 })}
               </ScrollView>
-            </View>
+            )}
 
             {carInfo && (
-              <View style={styles.dashboardContent}>
-                {/* Main Car Status Card */}
-                <View style={styles.mainStatusCard}>
-                  <View style={styles.mainStatusHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.carBigTitle} numberOfLines={1}>
+              <View style={styles.content}>
+                <View style={styles.carCard}>
+                  <View style={styles.carCardHeader}>
+                    <View style={styles.carIconContainer}>
+                      <Car size={28} color="#fff" strokeWidth={2} />
+                    </View>
+                    <View style={styles.carInfo}>
+                      <Text style={styles.carName} numberOfLines={1}>
                         {carInfo.make} {carInfo.model}
                       </Text>
-                      <View style={styles.carBadgeRow}>
-                         <View style={styles.plateBadge}>
-                           <View style={styles.plateFlag}>
-                             <Text style={styles.plateFlagText}>N</Text>
-                           </View>
-                           <Text style={styles.plateText}>{carInfo.licensePlate}</Text>
-                         </View>
-                         <Text style={styles.carYearBadge}>{carInfo.year}</Text>
+                      <View style={styles.carMeta}>
+                        <View style={styles.plateBadge}>
+                          <Text style={styles.plateText}>{carInfo.licensePlate}</Text>
+                        </View>
+                        <Text style={styles.carYear}>{carInfo.year}</Text>
                       </View>
                     </View>
-                    <View style={styles.actionRow}>
+                    <View style={styles.carActions}>
                       <TouchableOpacity
-                        style={styles.iconButton}
+                        style={styles.actionBtn}
                         onPress={handleRefresh}
                         disabled={isRefreshing}
                       >
-                         {isRefreshing ? (
+                        {isRefreshing ? (
                           <ActivityIndicator size="small" color={Colors.primary} />
                         ) : (
-                          <RefreshCw size={20} color={Colors.primary} />
+                          <RefreshCw size={18} color={Colors.primary} />
                         )}
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={() => handleEditCar(carInfo)}
+                        style={styles.actionBtn}
+                        onPress={() => handlePress("/settings")}
                       >
-                        <Edit size={20} color={Colors.text.primary} />
+                        <Settings size={18} color={Colors.text.secondary} />
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  <View style={styles.statusDivider} />
-
-                  <View style={styles.statusGrid}>
+                  <View style={styles.statsRow}>
                     <TouchableOpacity 
-                      style={styles.statusItem}
+                      style={styles.statItem}
                       onPress={() => handlePress("/mileage-history")}
                       activeOpacity={0.7}
                     >
-                      <View style={styles.statusLabelRow}>
-                        <Gauge size={14} color={Colors.text.secondary} />
-                        <Text style={styles.statusLabel}>Kilometerstand</Text>
-                        <ChevronRight size={12} color={Colors.text.secondary} />
+                      <View style={styles.statHeader}>
+                        <Gauge size={16} color={Colors.primary} />
+                        <Text style={styles.statLabel}>Kilometerstand</Text>
+                        <ChevronRight size={14} color={Colors.text.light} />
                       </View>
-                      <Text style={styles.statusValue}>
+                      <Text style={styles.statValue}>
                         {Number.isFinite(carInfo.currentMileage)
                           ? `${carInfo.currentMileage.toLocaleString("no-NO")} km`
                           : "—"}
                       </Text>
-
-                      {carInfo.registeredMileage ? (
-                        carInfo.registeredMileage > carInfo.currentMileage ? (
-                          <View style={styles.warningContainer}>
-                            <AlertCircle size={12} color={Colors.danger} />
-                            <Text style={styles.warningText}>
-                              Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
-                            </Text>
-                          </View>
-                        ) : (
-                          <Text style={styles.statusSubtext}>
-                            Vegvesenet sist: {formatDateSimple(carInfo.registeredMileageDate)}
+                      {carInfo.registeredMileage && carInfo.registeredMileage > carInfo.currentMileage && (
+                        <View style={styles.warningBadge}>
+                          <AlertCircle size={10} color={Colors.danger} />
+                          <Text style={styles.warningText}>
+                            Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
                           </Text>
-                        )
-                      ) : (
-                        <Text style={styles.statusSubtext}>Ingen km-data fra Vegvesenet ennå</Text>
+                        </View>
                       )}
                     </TouchableOpacity>
 
-                    <View style={styles.statusVerticalLine} />
+                    <View style={styles.statDivider} />
 
-                    <View style={styles.statusItem}>
-                      <View style={styles.statusLabelRow}>
-                        <Calendar size={14} color={Colors.text.secondary} />
-                        <Text style={styles.statusLabel}>EU-kontroll</Text>
+                    <View style={styles.statItem}>
+                      <View style={styles.statHeader}>
+                        <Calendar size={16} color={Colors.success} />
+                        <Text style={styles.statLabel}>EU-kontroll</Text>
                       </View>
-                      <Text style={[
-                        styles.statusValue,
-                        // Logic for red text if expired could be added here
-                      ]}>
+                      <Text style={styles.statValue}>
                         {carInfo.nextEuControlDate 
                           ? formatDateSimple(carInfo.nextEuControlDate)
                           : "Ukjent"
                         }
                       </Text>
-                      {carInfo.nextEuControlDate && (
-                         <Text style={styles.statusSubtext}>
-                           Frist for godkjenning
-                        </Text>
-                      )}
                     </View>
                   </View>
                 </View>
 
-                {/* Quick Actions / Maintenance */}
-                <Text style={styles.sectionTitle}>Vedlikehold</Text>
-
-                <View style={styles.maintenanceGrid}>
+                <View style={styles.quickActions}>
                   <TouchableOpacity
-                    style={[styles.maintenanceCard, styles.maintenanceCardGrid, { backgroundColor: "#EFF6FF" }]}
+                    style={[styles.quickAction, { backgroundColor: "#EBF5FF" }]}
                     onPress={() => handlePress("/wash")}
-                    activeOpacity={0.85}
-                    testID="home-maintenance-wash"
+                    activeOpacity={0.8}
                   >
-                    <View style={[styles.maintenanceIcon, { backgroundColor: "#DBEAFE" }]}>
-                      <Droplet size={22} color={Colors.primary} strokeWidth={2.5} />
+                    <View style={[styles.quickActionIcon, { backgroundColor: "#DBEAFE" }]}>
+                      <Droplet size={20} color="#2563EB" strokeWidth={2.5} />
                     </View>
-                    <Text style={[styles.maintenanceTitle, { color: "#1E3A8A" }]}>Vask</Text>
-                    <Text style={[styles.maintenanceValue, { color: "#1E40AF" }]} numberOfLines={1}>
-                      {lastWash ? formatDate(lastWash.date) : "Aldri"}
-                    </Text>
+                    <View style={styles.quickActionContent}>
+                      <Text style={[styles.quickActionTitle, { color: "#1E40AF" }]}>Vask</Text>
+                      <Text style={[styles.quickActionValue, { color: "#3B82F6" }]}>
+                        {lastWash ? formatDate(lastWash.date) : "Ikke registrert"}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#93C5FD" />
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.maintenanceCard, styles.maintenanceCardGrid, { backgroundColor: "#ECFDF5" }]}
+                    style={[styles.quickAction, { backgroundColor: "#ECFDF5" }]}
                     onPress={() => handlePress("/service")}
-                    activeOpacity={0.85}
-                    testID="home-maintenance-service"
+                    activeOpacity={0.8}
                   >
-                    <View style={[styles.maintenanceIcon, { backgroundColor: "#D1FAE5" }]}>
-                      <Wrench size={22} color="#059669" strokeWidth={2.5} />
+                    <View style={[styles.quickActionIcon, { backgroundColor: "#D1FAE5" }]}>
+                      <Wrench size={20} color="#059669" strokeWidth={2.5} />
                     </View>
-                    <Text style={[styles.maintenanceTitle, { color: "#064E3B" }]}>Service</Text>
-                    <Text style={[styles.maintenanceValue, { color: "#065F46" }]} numberOfLines={1}>
-                      {nextService
-                        ? nextService.mileage > 0
-                          ? `${nextService.mileage} km til`
-                          : "Forfalt"
-                        : "Ingen data"}
-                    </Text>
+                    <View style={styles.quickActionContent}>
+                      <Text style={[styles.quickActionTitle, { color: "#065F46" }]}>Service</Text>
+                      <Text style={[styles.quickActionValue, { color: "#10B981" }]}>
+                        {nextService
+                          ? nextService.mileage > 0
+                            ? `${nextService.mileage.toLocaleString("no-NO")} km til`
+                            : "Forfalt"
+                          : "Ikke planlagt"}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#6EE7B7" />
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.maintenanceCard, styles.maintenanceCardGrid, { backgroundColor: "#FEF2F2" }]}
+                    style={[styles.quickAction, { backgroundColor: "#FEF2F2" }]}
                     onPress={() => handlePress("/tires")}
-                    activeOpacity={0.85}
-                    testID="home-maintenance-tires"
+                    activeOpacity={0.8}
                   >
-                    <View style={[styles.maintenanceIcon, { backgroundColor: "#FEE2E2" }]}>
-                      <CircleSlash2 size={22} color="#DC2626" strokeWidth={2.5} />
+                    <View style={[styles.quickActionIcon, { backgroundColor: "#FEE2E2" }]}>
+                      <CircleSlash2 size={20} color="#DC2626" strokeWidth={2.5} />
                     </View>
-                    <Text style={[styles.maintenanceTitle, { color: "#7F1D1D" }]}>Dekk</Text>
-                    <Text style={[styles.maintenanceValue, { color: "#991B1B" }]} numberOfLines={1}>
-                      {tireAge ? `${tireAge.years} år` : "Ingen info"}
-                    </Text>
+                    <View style={styles.quickActionContent}>
+                      <Text style={[styles.quickActionTitle, { color: "#991B1B" }]}>Dekk</Text>
+                      <Text style={[styles.quickActionValue, { color: "#EF4444" }]}>
+                        {tireAge ? `${tireAge.years} år gammel` : "Ikke registrert"}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#FCA5A5" />
                   </TouchableOpacity>
                 </View>
 
-                {/* Technical Specs Collapsible-ish */}
-                <Text style={styles.sectionTitle}>Spesifikasjoner</Text>
-                <View style={styles.specsCard}>
-                  <View style={styles.specRow}>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Effekt</Text>
-                      <View style={styles.specValueRow}>
-                        <Zap size={14} color={Colors.warning} />
-                        <Text style={styles.specValue}>{carInfo.power ? `${carInfo.power} kW` : "-"}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Egenvekt</Text>
-                      <View style={styles.specValueRow}>
-                        <Weight size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>{carInfo.weight ? `${carInfo.weight} kg` : "-"}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Drivstoff</Text>
-                      <View style={styles.specValueRow}>
-                        <Fuel size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>{carInfo.fuelType || "-"}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.specsDividerHorizontal} />
-
-                  <View style={styles.specRow}>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>CO₂</Text>
-                      <View style={styles.specValueRow}>
-                        <Factory size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>
-                          {Number.isFinite(carInfo.co2Emission)
-                            ? `${carInfo.co2Emission?.toLocaleString("no-NO")} g/km`
-                            : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Slagvolum</Text>
-                      <View style={styles.specValueRow}>
-                        <GaugeCircle size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>
-                          {Number.isFinite(carInfo.engineDisplacement)
-                            ? `${carInfo.engineDisplacement?.toLocaleString("no-NO")} cm³`
-                            : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Drivlinje</Text>
-                      <View style={styles.specValueRow}>
-                        <Grip size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue} numberOfLines={1}>
-                          {carInfo.driveType || "-"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.specsDividerHorizontal} />
-
-                  <View style={styles.specRow}>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Gir</Text>
-                      <View style={styles.specValueRow}>
-                        <Gauge size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue} numberOfLines={1}>
-                          {carInfo.transmission || "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Totalvekt</Text>
-                      <View style={styles.specValueRow}>
-                        <Weight size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>
-                          {Number.isFinite(carInfo.totalWeight)
-                            ? `${carInfo.totalWeight?.toLocaleString("no-NO")} kg`
-                            : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Tilhenger</Text>
-                      <View style={styles.specValueRow}>
-                        <Truck size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>
-                          {Number.isFinite(carInfo.maxTowWeight)
-                            ? `${carInfo.maxTowWeight?.toLocaleString("no-NO")} kg`
-                            : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.specsDividerHorizontal} />
-
-                  <View style={styles.specRow}>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Seter</Text>
-                      <View style={styles.specValueRow}>
-                        <Users size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>
-                          {Number.isFinite(carInfo.numberOfSeats) ? `${carInfo.numberOfSeats}` : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Dører</Text>
-                      <View style={styles.specValueRow}>
-                        <DoorOpen size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>
-                          {Number.isFinite(carInfo.numberOfDoors) ? `${carInfo.numberOfDoors}` : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Farge</Text>
-                      <View style={styles.specValueRow}>
-                        <Palette size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue} numberOfLines={1}>
-                          {carInfo.color || "-"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.specsDividerHorizontal} />
-
-                  <View style={styles.specRow}>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Reg. dato</Text>
-                      <View style={styles.specValueRow}>
-                        <Calendar size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue}>
-                          {carInfo.registrationDate ? new Date(carInfo.registrationDate).getFullYear() : "-"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.specDivider} />
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Type</Text>
-                      <View style={styles.specValueRow}>
-                        <Car size={14} color={Colors.text.secondary} />
-                        <Text style={styles.specValue} numberOfLines={1}>
-                          {carInfo.vehicleType || "-"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {carInfo.vin && (
-                    <>
-                      <View style={styles.specsDividerHorizontal} />
-                      <View style={styles.vinRow}>
-                        <Text style={styles.specLabel}>VIN</Text>
-                        <Text style={styles.vinText}>{carInfo.vin}</Text>
-                      </View>
-                    </>
-                  )}
-                </View>
-                
-                <TouchableOpacity
-                  style={styles.scanReceiptButton}
-                  onPress={() => handlePress("/scan-receipt" as never)}
+                <TouchableOpacity 
+                  style={styles.specsHeader}
+                  onPress={toggleSpecs}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.scanIconContainer}>
-                    <ScanLine size={24} color="#fff" strokeWidth={2} />
-                  </View>
-                  <View style={styles.scanButtonContent}>
-                    <Text style={styles.scanButtonTitle}>Skann kvittering</Text>
-                    <Text style={styles.scanButtonSubtitle}>
-                      Registrer utgifter automatisk med AI
-                    </Text>
-                  </View>
-                  <ChevronRight size={20} color={Colors.text.light} />
+                  <Text style={styles.sectionTitle}>Spesifikasjoner</Text>
+                  <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
+                    <ChevronDown size={20} color={Colors.text.secondary} />
+                  </Animated.View>
                 </TouchableOpacity>
 
-                <View style={{ height: 40 }} />
+                <Animated.View style={[styles.specsContainer, { height: specsHeight, overflow: "hidden" }]}>
+                  <View style={styles.specsGrid}>
+                    <View style={styles.specItem}>
+                      <Zap size={16} color={Colors.warning} />
+                      <Text style={styles.specLabel}>Effekt</Text>
+                      <Text style={styles.specValue}>{carInfo.power ? `${carInfo.power} kW` : "-"}</Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Weight size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Vekt</Text>
+                      <Text style={styles.specValue}>{carInfo.weight ? `${carInfo.weight} kg` : "-"}</Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Fuel size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Drivstoff</Text>
+                      <Text style={styles.specValue}>{carInfo.fuelType || "-"}</Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Factory size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>CO₂</Text>
+                      <Text style={styles.specValue}>
+                        {Number.isFinite(carInfo.co2Emission) ? `${carInfo.co2Emission} g/km` : "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <GaugeCircle size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Slagvolum</Text>
+                      <Text style={styles.specValue}>
+                        {Number.isFinite(carInfo.engineDisplacement) ? `${carInfo.engineDisplacement} cm³` : "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Grip size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Drivlinje</Text>
+                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.driveType || "-"}</Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Gauge size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Gir</Text>
+                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.transmission || "-"}</Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Truck size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Tilhenger</Text>
+                      <Text style={styles.specValue}>
+                        {Number.isFinite(carInfo.maxTowWeight) ? `${carInfo.maxTowWeight} kg` : "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Users size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Seter</Text>
+                      <Text style={styles.specValue}>
+                        {Number.isFinite(carInfo.numberOfSeats) ? carInfo.numberOfSeats : "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <DoorOpen size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Dører</Text>
+                      <Text style={styles.specValue}>
+                        {Number.isFinite(carInfo.numberOfDoors) ? carInfo.numberOfDoors : "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Palette size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Farge</Text>
+                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.color || "-"}</Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Car size={16} color={Colors.text.secondary} />
+                      <Text style={styles.specLabel}>Type</Text>
+                      <Text style={styles.specValue} numberOfLines={1}>{carInfo.vehicleType || "-"}</Text>
+                    </View>
+                  </View>
+                  {carInfo.vin && (
+                    <View style={styles.vinContainer}>
+                      <Text style={styles.vinLabel}>VIN</Text>
+                      <Text style={styles.vinValue}>{carInfo.vin}</Text>
+                    </View>
+                  )}
+                </Animated.View>
+                
+                <TouchableOpacity
+                  style={styles.scanButton}
+                  onPress={() => handlePress("/scan-receipt")}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.scanIconWrap}>
+                    <ScanLine size={22} color="#fff" strokeWidth={2.5} />
+                  </View>
+                  <View style={styles.scanContent}>
+                    <Text style={styles.scanTitle}>Skann kvittering</Text>
+                    <Text style={styles.scanSubtitle}>Registrer utgifter med AI</Text>
+                  </View>
+                  <ChevronRight size={20} color="rgba(255,255,255,0.6)" />
+                </TouchableOpacity>
               </View>
             )}
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Car size={64} color={Colors.text.light} strokeWidth={1.5} />
-            <Text style={styles.emptyTitle}>Ingen bil registrert</Text>
+            <View style={styles.emptyIcon}>
+              <Car size={48} color={Colors.text.light} strokeWidth={1.5} />
+            </View>
+            <Text style={styles.emptyTitle}>Velkommen!</Text>
             <Text style={styles.emptyText}>
-              Trykk på knappen under for å legge til din bil
+              Legg til bilen din for å komme i gang med vedlikeholdsoversikt
             </Text>
             <TouchableOpacity
-              style={styles.addButton}
+              style={styles.emptyButton}
               onPress={() => handlePress("/add-car")}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
-              <Plus size={24} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.addButtonText}>Legg til bil</Text>
+              <Plus size={20} color="#fff" strokeWidth={2.5} />
+              <Text style={styles.emptyButtonText}>Legg til bil</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -566,7 +459,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F4F7", // Slightly grey background for better card contrast
+    backgroundColor: "#F8FAFC",
   },
   scrollView: {
     flex: 1,
@@ -575,424 +468,346 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   
-  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: 32,
+    fontWeight: "800" as const,
     color: Colors.text.primary,
     letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  addCarButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    gap: 6,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  addCarButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  // Car Selector
-  carSelectorContainer: {
-    marginBottom: 20,
-  },
-  carSelectorContent: {
-    paddingHorizontal: 20,
-    gap: 12,
-    paddingRight: 40, // Add extra padding at end
-  },
-  carSelectorItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 12,
-    paddingRight: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "transparent",
-    gap: 12,
-    minWidth: 160,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  carSelectorItemActive: {
-    borderColor: Colors.primary,
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#EFF6FF",
-  },
-  carSelectorIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
-  carSelectorIconActive: {
+
+  carSelector: {
+    marginBottom: 16,
+  },
+  carSelectorContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  carChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  carChipActive: {
     backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
-  carSelectorInfo: {
-    flex: 1,
-  },
-  carSelectorTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: Colors.text.primary,
-  },
-  carSelectorTitleActive: {
-    color: Colors.primary,
-  },
-  carSelectorSubtitle: {
-    fontSize: 12,
+  carChipText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
     color: Colors.text.secondary,
   },
-  carSelectorSubtitleActive: {
-    color: Colors.primary,
-    opacity: 0.8,
-  },
-  activeCheck: {
-    marginLeft: 4,
+  carChipTextActive: {
+    color: "#fff",
   },
 
-  // Dashboard
-  dashboardContent: {
+  content: {
     paddingHorizontal: 20,
   },
-  
-  // Main Status Card
-  mainStatusCard: {
+
+  carCard: {
     backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-    marginBottom: 24,
-  },
-  mainStatusHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    borderRadius: 20,
+    padding: 16,
     marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  carBigTitle: {
-    fontSize: 22,
-    fontWeight: "800",
+  carCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  carIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  carInfo: {
+    flex: 1,
+  },
+  carName: {
+    fontSize: 18,
+    fontWeight: "700" as const,
     color: Colors.text.primary,
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  carBadgeRow: {
+  carMeta: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
   plateBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    overflow: "hidden",
-  },
-  plateFlag: {
-    backgroundColor: "#00529C",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    height: "100%",
-    justifyContent: "center",
-  },
-  plateFlagText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
+    borderColor: "#E2E8F0",
   },
   plateText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: Colors.text.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
-  carYearBadge: {
-    fontSize: 12,
-    fontWeight: "600",
+  carYear: {
+    fontSize: 13,
     color: Colors.text.secondary,
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    overflow: "hidden",
+    fontWeight: "500" as const,
   },
-  actionRow: {
+  carActions: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
-  iconButton: {
+  actionBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
     alignItems: "center",
     justifyContent: "center",
   },
-  statusDivider: {
-    height: 1,
-    backgroundColor: "#F3F4F6",
-    marginBottom: 20,
-  },
-  statusGrid: {
+
+  statsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 14,
+    padding: 14,
   },
-  statusItem: {
+  statItem: {
     flex: 1,
-    alignItems: "center",
   },
-  statusVerticalLine: {
-    width: 1,
-    backgroundColor: "#F3F4F6",
-    marginHorizontal: 16,
-  },
-  statusLabelRow: {
+  statHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  statusLabel: {
-    fontSize: 11,
-    fontWeight: "600",
+  statLabel: {
+    fontSize: 12,
     color: Colors.text.secondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontWeight: "500" as const,
+    flex: 1,
   },
-  statusValue: {
-    fontSize: 20,
-    fontWeight: "700",
+  statValue: {
+    fontSize: 16,
+    fontWeight: "700" as const,
     color: Colors.text.primary,
-    marginBottom: 4,
-    textAlign: "center",
   },
-  statusSubtext: {
-    fontSize: 11,
-    color: Colors.text.light,
-    textAlign: "center",
+  statDivider: {
+    width: 1,
+    backgroundColor: "#E2E8F0",
+    marginHorizontal: 14,
   },
-  warningContainer: {
+  warningBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 2,
+    marginTop: 4,
     backgroundColor: "#FEF2F2",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: "flex-start",
   },
   warningText: {
     fontSize: 10,
     color: Colors.danger,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
 
-  // Section
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.text.primary,
-    marginBottom: 16,
-    marginLeft: 4,
-  },
-
-  // Maintenance
-  maintenanceGrid: {
-    flexDirection: "row",
-    gap: 12,
+  quickActions: {
+    gap: 10,
     marginBottom: 24,
   },
-  maintenanceCard: {
-    padding: 16,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
+  quickAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 16,
   },
-  maintenanceCardGrid: {
-    flex: 1,
-    minWidth: 0,
-  },
-  maintenanceIcon: {
-    width: 40,
-    height: 40,
+  quickActionIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginRight: 14,
   },
-  maintenanceTitle: {
-    fontSize: 14,
-    fontWeight: "700",
+  quickActionContent: {
+    flex: 1,
+  },
+  quickActionTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    marginBottom: 2,
+  },
+  quickActionValue: {
+    fontSize: 13,
+    fontWeight: "500" as const,
+  },
+
+  specsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
     marginBottom: 4,
   },
-  maintenanceValue: {
-    fontSize: 12,
-    fontWeight: "600",
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
   },
-
-  // Specs
-  specsCard: {
+  specsContainer: {
     backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 24,
+    borderRadius: 16,
+    marginBottom: 20,
   },
-  specRow: {
+  specsGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    flexWrap: "wrap",
+    padding: 12,
   },
   specItem: {
-    flex: 1,
+    width: "33.33%",
+    padding: 10,
     alignItems: "center",
-  },
-  specDivider: {
-    width: 1,
-    backgroundColor: "#F3F4F6",
-  },
-  specsDividerHorizontal: {
-    height: 1,
-    backgroundColor: "#F3F4F6",
-    marginVertical: 16,
   },
   specLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.text.light,
-    marginBottom: 6,
-    fontWeight: "500",
-  },
-  specValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    marginTop: 6,
+    marginBottom: 2,
+    textAlign: "center",
   },
   specValue: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "600" as const,
     color: Colors.text.primary,
+    textAlign: "center",
   },
-  vinRow: {
+  vinContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
   },
-  vinText: {
-    fontSize: 14,
+  vinLabel: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+    fontWeight: "500" as const,
+  },
+  vinValue: {
+    fontSize: 12,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     color: Colors.text.primary,
-    fontWeight: "500",
+    fontWeight: "500" as const,
   },
 
-  // Scan Button
-  scanReceiptButton: {
+  scanButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
     elevation: 6,
   },
-  scanIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+  scanIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
+    marginRight: 14,
   },
-  scanButtonContent: {
+  scanContent: {
     flex: 1,
   },
-  scanButtonTitle: {
+  scanTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: "#fff",
     marginBottom: 2,
   },
-  scanButtonSubtitle: {
-    fontSize: 12,
+  scanSubtitle: {
+    fontSize: 13,
     color: "rgba(255,255,255,0.8)",
   },
 
-  // Empty state
   emptyState: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 80,
-    paddingHorizontal: 32,
+    paddingVertical: 100,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: "700",
+    fontSize: 26,
+    fontWeight: "700" as const,
     color: Colors.text.primary,
-    marginTop: 24,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
     color: Colors.text.secondary,
     textAlign: "center",
+    lineHeight: 24,
     marginBottom: 32,
   },
-  addButton: {
+  emptyButton: {
     backgroundColor: Colors.primary,
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
@@ -1000,9 +815,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  addButtonText: {
+  emptyButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "700" as const,
   },
 });

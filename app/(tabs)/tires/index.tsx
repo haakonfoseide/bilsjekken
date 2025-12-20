@@ -15,7 +15,6 @@ import { useState, useEffect, useRef } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CircleSlash2,
-  Save,
   Camera,
   X,
   Plus,
@@ -24,6 +23,9 @@ import {
   Trash2,
   CheckCircle2,
   Circle,
+  Check,
+  MapPin,
+  Clock,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -32,18 +34,14 @@ import { useLocalSearchParams } from "expo-router";
 import Colors from "@/constants/colors";
 
 export default function TiresScreen() {
-  const { tireSets, addTireSet, deleteTireSet, setActiveTireSet } =
-    useCarData();
+  const { tireSets, addTireSet, deleteTireSet, setActiveTireSet } = useCarData();
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
 
   const [showAddForm, setShowAddForm] = useState(false);
-
   const [tireType, setTireType] = useState<"summer" | "winter">("summer");
   const [brand, setBrand] = useState("");
-  const [purchaseDate, setPurchaseDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
   const [isAtTireHotel, setIsAtTireHotel] = useState(false);
   const [hotelLocation, setHotelLocation] = useState("");
   const [size, setSize] = useState("");
@@ -86,7 +84,6 @@ export default function TiresScreen() {
         if (data.date) setPurchaseDate(data.date);
         if (data.description) setNotes(data.description);
         if (data.receiptImages && Array.isArray(data.receiptImages)) {
-          console.log("[Tires] Setting receipt images:", data.receiptImages);
           setReceiptImages(data.receiptImages);
         }
         if (data.items && data.items.length > 0) {
@@ -101,17 +98,9 @@ export default function TiresScreen() {
         }
       } catch (error) {
         console.error("[Tires] Error parsing prefill data:", error);
-        console.error("[Tires] Prefill data was:", params.prefillData);
       }
     }
   }, [params.prefillData]);
-
-  const handleAddNew = () => {
-    setShowAddForm(!showAddForm);
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  };
 
   const handleSave = () => {
     if (!brand || !purchaseDate || !size) {
@@ -138,7 +127,6 @@ export default function TiresScreen() {
     }
 
     resetForm();
-    Alert.alert("Lagret", "Dekksettet er lagt til");
   };
 
   const handleDelete = (id: string) => {
@@ -153,9 +141,7 @@ export default function TiresScreen() {
           onPress: () => {
             deleteTireSet(id);
             if (Platform.OS !== "web") {
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success
-              );
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
           },
         },
@@ -184,10 +170,7 @@ export default function TiresScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Tillatelse påkrevd",
-        "Vi trenger tilgang til bildegalleriet ditt for å legge til kvitteringer."
-      );
+      Alert.alert("Tillatelse påkrevd", "Vi trenger tilgang til bildegalleriet.");
       return;
     }
 
@@ -211,10 +194,7 @@ export default function TiresScreen() {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Tillatelse påkrevd",
-        "Vi trenger tilgang til kameraet ditt for å ta bilde av kvitteringer."
-      );
+      Alert.alert("Tillatelse påkrevd", "Vi trenger tilgang til kameraet.");
       return;
     }
 
@@ -242,18 +222,9 @@ export default function TiresScreen() {
 
   const showImageOptions = () => {
     Alert.alert("Legg til kvittering", "Velg et alternativ", [
-      {
-        text: "Ta bilde",
-        onPress: takePhoto,
-      },
-      {
-        text: "Velg fra galleri",
-        onPress: pickImage,
-      },
-      {
-        text: "Avbryt",
-        style: "cancel",
-      },
+      { text: "Ta bilde", onPress: takePhoto },
+      { text: "Velg fra galleri", onPress: pickImage },
+      { text: "Avbryt", style: "cancel" },
     ]);
   };
 
@@ -266,127 +237,104 @@ export default function TiresScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent, 
-          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 100 : 40 }
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddNew}
-          activeOpacity={0.8}
-        >
-          <Plus size={20} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>
-            {showAddForm ? "Avbryt" : "Legg til dekksett"}
-          </Text>
-        </TouchableOpacity>
-
-        {showAddForm && (
+        {!showAddForm ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setShowAddForm(true);
+              if (Platform.OS !== "web") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Plus size={20} color="#fff" strokeWidth={2.5} />
+            <Text style={styles.addButtonText}>Legg til dekksett</Text>
+          </TouchableOpacity>
+        ) : (
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Nytt dekksett</Text>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Nytt dekksett</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  resetForm();
+                  if (Platform.OS !== "web") {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
+              >
+                <X size={20} color={Colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Type <Text style={styles.required}>*</Text>
-              </Text>
+              <Text style={styles.label}>Type <Text style={styles.required}>*</Text></Text>
               <View style={styles.typeSelector}>
                 <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    tireType === "summer" && styles.typeButtonActive,
-                  ]}
+                  style={[styles.typeButton, tireType === "summer" && styles.typeButtonSummer]}
                   onPress={() => {
                     setTireType("summer");
-                    if (Platform.OS !== "web") {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
                   }}
                   activeOpacity={0.8}
                 >
-                  <Sun
-                    size={20}
-                    color={
-                      tireType === "summer" ? "#fff" : Colors.text.secondary
-                    }
-                    strokeWidth={2}
-                  />
-                  <Text
-                    style={[
-                      styles.typeButtonText,
-                      tireType === "summer" && styles.typeButtonTextActive,
-                    ]}
-                  >
+                  <Sun size={20} color={tireType === "summer" ? "#fff" : "#F59E0B"} />
+                  <Text style={[styles.typeButtonText, tireType === "summer" && styles.typeButtonTextActive]}>
                     Sommer
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    tireType === "winter" && styles.typeButtonActive,
-                  ]}
+                  style={[styles.typeButton, tireType === "winter" && styles.typeButtonWinter]}
                   onPress={() => {
                     setTireType("winter");
-                    if (Platform.OS !== "web") {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
                   }}
                   activeOpacity={0.8}
                 >
-                  <Snowflake
-                    size={20}
-                    color={
-                      tireType === "winter" ? "#fff" : Colors.text.secondary
-                    }
-                    strokeWidth={2}
-                  />
-                  <Text
-                    style={[
-                      styles.typeButtonText,
-                      tireType === "winter" && styles.typeButtonTextActive,
-                    ]}
-                  >
+                  <Snowflake size={20} color={tireType === "winter" ? "#fff" : "#3B82F6"} />
+                  <Text style={[styles.typeButtonText, tireType === "winter" && styles.typeButtonTextActive]}>
                     Vinter
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Merke <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={brand}
-                onChangeText={setBrand}
-                placeholder="F.eks. Nokian"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Merke <Text style={styles.required}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  value={brand}
+                  onChangeText={setBrand}
+                  placeholder="F.eks. Nokian"
+                  placeholderTextColor={Colors.text.light}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Dimensjon <Text style={styles.required}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  value={size}
+                  onChangeText={setSize}
+                  placeholder="205/55 R16"
+                  placeholderTextColor={Colors.text.light}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Dekkdimensjon <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={size}
-                onChangeText={setSize}
-                placeholder="F.eks. 205/55 R16"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Kjøpsdato <Text style={styles.required}>*</Text>
-              </Text>
+              <Text style={styles.label}>Kjøpsdato <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={styles.input}
                 value={purchaseDate}
@@ -398,16 +346,80 @@ export default function TiresScreen() {
               />
             </View>
 
+            <View style={styles.switchCard}>
+              <View style={styles.switchRow}>
+                <View style={styles.switchContent}>
+                  <MapPin size={18} color={Colors.primary} />
+                  <View style={styles.switchText}>
+                    <Text style={styles.switchLabel}>Dekkhotell</Text>
+                    <Text style={styles.switchDesc}>Lagret hos verksted</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={isAtTireHotel}
+                  onValueChange={(value) => {
+                    setIsAtTireHotel(value);
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                  }}
+                  trackColor={{ false: "#E2E8F0", true: Colors.primary }}
+                  thumbColor="#fff"
+                />
+              </View>
+
+              {isAtTireHotel && (
+                <TextInput
+                  style={[styles.input, { marginTop: 12 }]}
+                  value={hotelLocation}
+                  onChangeText={setHotelLocation}
+                  placeholder="Hvor er dekkene lagret?"
+                  placeholderTextColor={Colors.text.light}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              )}
+            </View>
+
+            <View style={styles.switchCard}>
+              <View style={styles.switchRow}>
+                <View style={styles.switchContent}>
+                  <Text style={styles.switchLabel}>Avbalansering inkludert</Text>
+                </View>
+                <Switch
+                  value={hasBalancing}
+                  onValueChange={(value) => {
+                    setHasBalancing(value);
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                  }}
+                  trackColor={{ false: "#E2E8F0", true: Colors.success }}
+                  thumbColor="#fff"
+                />
+              </View>
+              <View style={[styles.switchRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" }]}>
+                <View style={styles.switchContent}>
+                  <Text style={styles.switchLabel}>Omlegging inkludert</Text>
+                </View>
+                <Switch
+                  value={hasRemounting}
+                  onValueChange={(value) => {
+                    setHasRemounting(value);
+                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                  }}
+                  trackColor={{ false: "#E2E8F0", true: Colors.success }}
+                  thumbColor="#fff"
+                />
+              </View>
+            </View>
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Notater</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Valgfrie notater"
+                placeholder="Valgfrie notater..."
                 placeholderTextColor={Colors.text.light}
                 multiline
-                numberOfLines={3}
+                numberOfLines={2}
                 returnKeyType="done"
                 onSubmitEditing={() => Keyboard.dismiss()}
                 blurOnSubmit
@@ -422,23 +434,16 @@ export default function TiresScreen() {
                 activeOpacity={0.8}
               >
                 <Camera size={20} color={Colors.primary} strokeWidth={2} />
-                <Text style={styles.addImageText}>Legg til kvittering</Text>
+                <Text style={styles.addImageText}>Legg til bilde</Text>
               </TouchableOpacity>
 
               {receiptImages.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.imagePreviewContainer}
-                >
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewContainer}>
                   {receiptImages.map((uri, index) => (
                     <View key={index} style={styles.imagePreviewWrapper}>
                       <Image source={{ uri }} style={styles.imagePreview} />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => removeImage(index)}
-                      >
-                        <X size={16} color="#fff" strokeWidth={2} />
+                      <TouchableOpacity style={styles.removeImageButton} onPress={() => removeImage(index)}>
+                        <X size={14} color="#fff" strokeWidth={2.5} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -446,186 +451,80 @@ export default function TiresScreen() {
               )}
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Dekkhotell</Text>
-
-              <View style={styles.switchRow}>
-                <View style={styles.switchLabel}>
-                  <Text style={styles.label}>Lagret på dekkhotell</Text>
-                  <Text style={styles.switchDescription}>
-                    {isAtTireHotel ? "Ja" : "Nei"}
-                  </Text>
-                </View>
-                <Switch
-                  value={isAtTireHotel}
-                  onValueChange={(value) => {
-                    setIsAtTireHotel(value);
-                    if (Platform.OS !== "web") {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                  }}
-                  trackColor={{ false: Colors.border, true: Colors.primary }}
-                  thumbColor="#fff"
-                />
-              </View>
-
-              {isAtTireHotel && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Hvor er dekket lagret?</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={hotelLocation}
-                    onChangeText={setHotelLocation}
-                    placeholder="F.eks. Biltema Oslo"
-                    placeholderTextColor={Colors.text.light}
-                    returnKeyType="done"
-                    onSubmitEditing={() => Keyboard.dismiss()}
-                  />
-                </View>
-              )}
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Ekstra tjenester</Text>
-
-              <View style={styles.switchRow}>
-                <View style={styles.switchLabel}>
-                  <Text style={styles.label}>Avbalansering</Text>
-                  <Text style={styles.switchDescription}>
-                    {hasBalancing ? "Ja" : "Nei"}
-                  </Text>
-                </View>
-                <Switch
-                  value={hasBalancing}
-                  onValueChange={(value) => {
-                    setHasBalancing(value);
-                    if (Platform.OS !== "web") {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                  }}
-                  trackColor={{ false: Colors.border, true: Colors.primary }}
-                  thumbColor="#fff"
-                />
-              </View>
-
-              <View style={styles.switchRow}>
-                <View style={styles.switchLabel}>
-                  <Text style={styles.label}>Omlegging</Text>
-                  <Text style={styles.switchDescription}>
-                    {hasRemounting ? "Ja" : "Nei"}
-                  </Text>
-                </View>
-                <Switch
-                  value={hasRemounting}
-                  onValueChange={(value) => {
-                    setHasRemounting(value);
-                    if (Platform.OS !== "web") {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                  }}
-                  trackColor={{ false: Colors.border, true: Colors.primary }}
-                  thumbColor="#fff"
-                />
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleSave}
-              activeOpacity={0.8}
-            >
-              <Save size={20} color="#fff" strokeWidth={2} />
+            <TouchableOpacity style={styles.submitButton} onPress={handleSave} activeOpacity={0.8}>
+              <Check size={20} color="#fff" strokeWidth={2.5} />
               <Text style={styles.submitButtonText}>Lagre dekksett</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Dekksett</Text>
-          {tireSets.length === 0 ? (
-            <View style={styles.emptyState}>
-              <CircleSlash2
-                size={48}
-                color={Colors.text.light}
-                strokeWidth={1.5}
-              />
-              <Text style={styles.emptyText}>Ingen dekksett registrert</Text>
+        {tireSets.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <CircleSlash2 size={32} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-          ) : (
+            <Text style={styles.emptyTitle}>Ingen dekksett</Text>
+            <Text style={styles.emptyText}>Legg til dekk for å holde oversikt</Text>
+          </View>
+        ) : (
           <>
             {summerTires.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Sun size={20} color={Colors.warning} strokeWidth={2} />
+                  <Sun size={18} color="#F59E0B" />
                   <Text style={styles.sectionTitle}>Sommerdekk</Text>
+                  <Text style={styles.sectionCount}>{summerTires.length}</Text>
                 </View>
 
                 {summerTires.map((tire) => {
                   const age = getTireAge(tire.purchaseDate);
+                  const isOld = age.years >= 6;
                   return (
                     <TouchableOpacity
                       key={tire.id}
-                      style={[
-                        styles.tireCard,
-                        tire.isActive && styles.tireCardActive,
-                      ]}
+                      style={[styles.tireCard, tire.isActive && styles.tireCardActive]}
                       onPress={() => handleSetActive(tire.id)}
-                      activeOpacity={0.7}
+                      activeOpacity={0.8}
                     >
-                      <View style={styles.tireCardHeader}>
-                        <View style={styles.tireCardTitle}>
-                          {tire.isActive ? (
-                            <CheckCircle2
-                              size={24}
-                              color={Colors.primary}
-                              strokeWidth={2}
-                            />
-                          ) : (
-                            <Circle
-                              size={24}
-                              color={Colors.text.light}
-                              strokeWidth={2}
-                            />
-                          )}
-                          <View>
-                            <Text style={styles.tireBrand}>{tire.brand}</Text>
-                            <Text style={styles.tireSize}>{tire.size}</Text>
-                          </View>
+                      <View style={styles.tireHeader}>
+                        {tire.isActive ? (
+                          <CheckCircle2 size={22} color={Colors.primary} strokeWidth={2.5} />
+                        ) : (
+                          <Circle size={22} color="#CBD5E1" strokeWidth={2} />
+                        )}
+                        <View style={styles.tireInfo}>
+                          <Text style={styles.tireBrand}>{tire.brand}</Text>
+                          <Text style={styles.tireSize}>{tire.size}</Text>
                         </View>
                         <TouchableOpacity
                           onPress={() => handleDelete(tire.id)}
                           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          style={styles.deleteBtn}
                         >
-                          <Trash2
-                            size={20}
-                            color={Colors.danger}
-                            strokeWidth={2}
-                          />
+                          <Trash2 size={18} color={Colors.danger} />
                         </TouchableOpacity>
                       </View>
 
-                      <View style={styles.tireCardDetails}>
-                        <Text style={styles.tireDetail}>
-                          Alder: {age.years} år {age.months} mnd
-                        </Text>
-                        {age.years >= 6 && (
-                          <Text style={styles.tireWarning}>
-                            ⚠️ Bør byttes
+                      <View style={styles.tireDetails}>
+                        <View style={styles.tireDetailItem}>
+                          <Clock size={14} color={Colors.text.light} />
+                          <Text style={[styles.tireDetailText, isOld && styles.tireDetailWarning]}>
+                            {age.years} år {age.months} mnd
                           </Text>
-                        )}
+                        </View>
                         {tire.isAtTireHotel && (
-                          <Text style={styles.tireDetail}>
-                            📍 {tire.hotelLocation || "Dekkhotell"}
-                          </Text>
-                        )}
-                        {(tire.hasBalancing || tire.hasRemounting) && (
-                          <Text style={styles.tireDetail}>
-                            {tire.hasBalancing && "✓ Avbalansering"}
-                            {tire.hasBalancing && tire.hasRemounting && ", "}
-                            {tire.hasRemounting && "✓ Omlegging"}
-                          </Text>
+                          <View style={styles.tireDetailItem}>
+                            <MapPin size={14} color={Colors.primary} />
+                            <Text style={styles.tireDetailText}>{tire.hotelLocation || "Dekkhotell"}</Text>
+                          </View>
                         )}
                       </View>
+
+                      {isOld && (
+                        <View style={styles.warningBanner}>
+                          <Text style={styles.warningBannerText}>Anbefales å bytte</Text>
+                        </View>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -635,84 +534,67 @@ export default function TiresScreen() {
             {winterTires.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Snowflake size={20} color="#60A5FA" strokeWidth={2} />
+                  <Snowflake size={18} color="#3B82F6" />
                   <Text style={styles.sectionTitle}>Vinterdekk</Text>
+                  <Text style={styles.sectionCount}>{winterTires.length}</Text>
                 </View>
 
                 {winterTires.map((tire) => {
                   const age = getTireAge(tire.purchaseDate);
+                  const isOld = age.years >= 6;
                   return (
                     <TouchableOpacity
                       key={tire.id}
-                      style={[
-                        styles.tireCard,
-                        tire.isActive && styles.tireCardActive,
-                      ]}
+                      style={[styles.tireCard, tire.isActive && styles.tireCardActive]}
                       onPress={() => handleSetActive(tire.id)}
-                      activeOpacity={0.7}
+                      activeOpacity={0.8}
                     >
-                      <View style={styles.tireCardHeader}>
-                        <View style={styles.tireCardTitle}>
-                          {tire.isActive ? (
-                            <CheckCircle2
-                              size={24}
-                              color={Colors.primary}
-                              strokeWidth={2}
-                            />
-                          ) : (
-                            <Circle
-                              size={24}
-                              color={Colors.text.light}
-                              strokeWidth={2}
-                            />
-                          )}
-                          <View>
-                            <Text style={styles.tireBrand}>{tire.brand}</Text>
-                            <Text style={styles.tireSize}>{tire.size}</Text>
-                          </View>
+                      <View style={styles.tireHeader}>
+                        {tire.isActive ? (
+                          <CheckCircle2 size={22} color={Colors.primary} strokeWidth={2.5} />
+                        ) : (
+                          <Circle size={22} color="#CBD5E1" strokeWidth={2} />
+                        )}
+                        <View style={styles.tireInfo}>
+                          <Text style={styles.tireBrand}>{tire.brand}</Text>
+                          <Text style={styles.tireSize}>{tire.size}</Text>
                         </View>
                         <TouchableOpacity
                           onPress={() => handleDelete(tire.id)}
                           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          style={styles.deleteBtn}
                         >
-                          <Trash2
-                            size={20}
-                            color={Colors.danger}
-                            strokeWidth={2}
-                          />
+                          <Trash2 size={18} color={Colors.danger} />
                         </TouchableOpacity>
                       </View>
 
-                      <View style={styles.tireCardDetails}>
-                        <Text style={styles.tireDetail}>
-                          Alder: {age.years} år {age.months} mnd
-                        </Text>
-                        {age.years >= 6 && (
-                          <Text style={styles.tireWarning}>
-                            ⚠️ Bør byttes
+                      <View style={styles.tireDetails}>
+                        <View style={styles.tireDetailItem}>
+                          <Clock size={14} color={Colors.text.light} />
+                          <Text style={[styles.tireDetailText, isOld && styles.tireDetailWarning]}>
+                            {age.years} år {age.months} mnd
                           </Text>
-                        )}
+                        </View>
                         {tire.isAtTireHotel && (
-                          <Text style={styles.tireDetail}>
-                            📍 {tire.hotelLocation || "Dekkhotell"}
-                          </Text>
-                        )}
-                        {(tire.hasBalancing || tire.hasRemounting) && (
-                          <Text style={styles.tireDetail}>
-                            {tire.hasBalancing && "✓ Avbalansering"}
-                            {tire.hasBalancing && tire.hasRemounting && ", "}
-                            {tire.hasRemounting && "✓ Omlegging"}
-                          </Text>
+                          <View style={styles.tireDetailItem}>
+                            <MapPin size={14} color={Colors.primary} />
+                            <Text style={styles.tireDetailText}>{tire.hotelLocation || "Dekkhotell"}</Text>
+                          </View>
                         )}
                       </View>
+
+                      {isOld && (
+                        <View style={styles.warningBanner}>
+                          <Text style={styles.warningBannerText}>Anbefales å bytte</Text>
+                        </View>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
               </View>
             )}
           </>
-          )}
-        </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -721,86 +603,13 @@ export default function TiresScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#F8FAFC",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 90,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: Colors.text.secondary,
-    marginTop: 16,
-  },
-  listSection: {
-    marginTop: 8,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: Colors.text.primary,
-  },
-  tireCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  tireCardActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.cardBackground,
-  },
-  tireCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  tireCardTitle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  tireBrand: {
-    fontSize: 17,
-    fontWeight: "700" as const,
-    color: Colors.text.primary,
-  },
-  tireSize: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    marginTop: 2,
-  },
-  tireCardDetails: {
-    gap: 6,
-  },
-  tireDetail: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-  },
-  tireWarning: {
-    fontSize: 13,
-    color: Colors.warning,
-    fontWeight: "600" as const,
+    padding: 20,
   },
   addButton: {
     backgroundColor: Colors.primary,
@@ -809,11 +618,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+    borderRadius: 14,
+    marginBottom: 24,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -823,21 +632,38 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
   },
   formCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
+    backgroundColor: "#fff",
+    borderRadius: 20,
     padding: 20,
-    marginBottom: 20,
+    marginBottom: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  formHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   formTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700" as const,
     color: Colors.text.primary,
-    marginBottom: 16,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  row: {
+    flexDirection: "row",
+    gap: 12,
   },
   inputGroup: {
     marginBottom: 16,
@@ -852,16 +678,16 @@ const styles = StyleSheet.create({
     color: Colors.danger,
   },
   input: {
-    backgroundColor: Colors.background,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#E2E8F0",
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     fontSize: 16,
     color: Colors.text.primary,
   },
   textArea: {
-    minHeight: 80,
+    minHeight: 60,
     textAlignVertical: "top",
   },
   typeSelector: {
@@ -874,15 +700,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    padding: 16,
-    backgroundColor: Colors.background,
+    padding: 14,
+    backgroundColor: "#F8FAFC",
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: "#E2E8F0",
     borderRadius: 12,
   },
-  typeButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+  typeButtonSummer: {
+    backgroundColor: "#FEF3C7",
+    borderColor: "#F59E0B",
+  },
+  typeButtonWinter: {
+    backgroundColor: "#DBEAFE",
+    borderColor: "#3B82F6",
   },
   typeButtonText: {
     fontSize: 15,
@@ -892,22 +722,75 @@ const styles = StyleSheet.create({
   typeButtonTextActive: {
     color: "#fff",
   },
+  switchCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
   switchRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
   },
-  switchLabel: {
+  switchContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     flex: 1,
   },
-  switchDescription: {
-    fontSize: 14,
+  switchText: {
+    flex: 1,
+  },
+  switchLabel: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+  },
+  switchDesc: {
+    fontSize: 12,
     color: Colors.text.secondary,
-    marginTop: 4,
+    marginTop: 2,
+  },
+  addImageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 14,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    borderStyle: "dashed",
+  },
+  addImageText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "600" as const,
+  },
+  imagePreviewContainer: {
+    marginTop: 12,
+  },
+  imagePreviewWrapper: {
+    position: "relative",
+    marginRight: 10,
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: Colors.danger,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   submitButton: {
     backgroundColor: Colors.success,
@@ -917,50 +800,132 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 16,
     borderRadius: 12,
+    marginTop: 4,
   },
   submitButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700" as const,
   },
-  addImageButton: {
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 48,
+    paddingHorizontal: 20,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+    marginBottom: 6,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    textAlign: "center",
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
-    padding: 16,
-    backgroundColor: Colors.background,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    borderRadius: 12,
-    borderStyle: "dashed",
+    marginBottom: 12,
   },
-  addImageText: {
-    color: Colors.primary,
-    fontSize: 15,
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+    flex: 1,
+  },
+  sectionCount: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.text.light,
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  tireCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: "transparent",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  tireCardActive: {
+    borderColor: Colors.primary,
+    backgroundColor: "#FAFCFF",
+  },
+  tireHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  tireInfo: {
+    flex: 1,
+  },
+  tireBrand: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+  },
+  tireSize: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+    marginTop: 2,
+  },
+  deleteBtn: {
+    padding: 8,
+  },
+  tireDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  tireDetailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  tireDetailText: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+  },
+  tireDetailWarning: {
+    color: Colors.warning,
     fontWeight: "600" as const,
   },
-  imagePreviewContainer: {
+  warningBanner: {
+    backgroundColor: "#FEF3C7",
     marginTop: 12,
-  },
-  imagePreviewWrapper: {
-    position: "relative",
-    marginRight: 12,
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
+    padding: 8,
     borderRadius: 8,
-  },
-  removeImageButton: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: Colors.danger,
-    borderRadius: 12,
-    width: 24,
-    height: 24,
     alignItems: "center",
-    justifyContent: "center",
+  },
+  warningBannerText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    color: "#D97706",
   },
 });

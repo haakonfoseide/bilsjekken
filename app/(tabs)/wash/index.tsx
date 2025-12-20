@@ -11,10 +11,12 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Droplet, Plus, Trash2 } from "lucide-react-native";
+import { Droplet, Plus, Trash2, X, Check, Sparkles } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
+
+const WASH_TYPES = ["Håndvask", "Automatvask", "Selvvask", "Polering"];
 
 export default function WashScreen() {
   const { washRecords, addWashRecord, deleteWashRecord } = useCarData();
@@ -67,9 +69,19 @@ export default function WashScreen() {
     const date = new Date(dateString);
     return date.toLocaleDateString("no-NO", {
       day: "numeric",
-      month: "long",
+      month: "short",
       year: "numeric",
     });
+  };
+
+  const getDaysAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return "I dag";
+    if (diffDays === 1) return "I går";
+    return `${diffDays} dager siden`;
   };
 
   return (
@@ -78,29 +90,41 @@ export default function WashScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent, 
-          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 80 : 32 }
+          { paddingBottom: Platform.OS === "ios" ? insets.bottom + 100 : 40 }
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setShowAddForm(!showAddForm);
-            if (Platform.OS !== "web") {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-          }}
-          activeOpacity={0.8}
-        >
-          <Plus size={20} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>
-            {showAddForm ? "Avbryt" : "Legg til vask"}
-          </Text>
-        </TouchableOpacity>
-
-        {showAddForm && (
+        {!showAddForm ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setShowAddForm(true);
+              if (Platform.OS !== "web") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Plus size={20} color="#fff" strokeWidth={2.5} />
+            <Text style={styles.addButtonText}>Registrer vask</Text>
+          </TouchableOpacity>
+        ) : (
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Ny vask</Text>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Ny vask</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setShowAddForm(false);
+                  if (Platform.OS !== "web") {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
+              >
+                <X size={20} color={Colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Dato</Text>
@@ -117,24 +141,33 @@ export default function WashScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Type vask</Text>
-              <TextInput
-                style={styles.input}
-                value={type}
-                onChangeText={setType}
-                placeholder="F.eks. Håndvask, automatvask"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
-              />
+              <View style={styles.typeChips}>
+                {WASH_TYPES.map((washType) => (
+                  <TouchableOpacity
+                    key={washType}
+                    style={[styles.typeChip, type === washType && styles.typeChipActive]}
+                    onPress={() => {
+                      setType(type === washType ? "" : washType);
+                      if (Platform.OS !== "web") {
+                        Haptics.selectionAsync();
+                      }
+                    }}
+                  >
+                    <Text style={[styles.typeChipText, type === washType && styles.typeChipTextActive]}>
+                      {washType}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Notater</Text>
+              <Text style={styles.label}>Notater (valgfritt)</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Valgfrie notater"
+                placeholder="F.eks. brukte nytt vaskemiddel..."
                 placeholderTextColor={Colors.text.light}
                 multiline
                 numberOfLines={3}
@@ -149,46 +182,62 @@ export default function WashScreen() {
               onPress={handleAdd}
               activeOpacity={0.8}
             >
+              <Check size={20} color="#fff" strokeWidth={2.5} />
               <Text style={styles.submitButtonText}>Lagre</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Historikk</Text>
+        <Text style={styles.sectionTitle}>Historikk</Text>
 
-          {washRecords.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Droplet size={48} color={Colors.text.light} strokeWidth={1.5} />
-              <Text style={styles.emptyText}>Ingen vasker registrert</Text>
+        {washRecords.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <Sparkles size={32} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-          ) : (
-            washRecords.map((record) => (
-              <View key={record.id} style={styles.recordCard}>
-                <View style={styles.recordHeader}>
-                  <View style={styles.iconCircle}>
-                    <Droplet size={20} color={Colors.primary} strokeWidth={2} />
-                  </View>
-                  <View style={styles.recordContent}>
-                    <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
-                    {record.type && (
-                      <Text style={styles.recordType}>{record.type}</Text>
-                    )}
-                    {record.notes && (
-                      <Text style={styles.recordNotes}>{record.notes}</Text>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(record.id)}
-                    style={styles.deleteButton}
-                  >
-                    <Trash2 size={20} color={Colors.danger} strokeWidth={2} />
-                  </TouchableOpacity>
+            <Text style={styles.emptyTitle}>Ingen vasker ennå</Text>
+            <Text style={styles.emptyText}>
+              Hold oversikt over når bilen ble vasket
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.recordsList}>
+            {washRecords.map((record, index) => (
+              <View 
+                key={record.id} 
+                style={[
+                  styles.recordCard,
+                  index === 0 && styles.recordCardFirst
+                ]}
+              >
+                <View style={[styles.recordIcon, index === 0 && styles.recordIconFirst]}>
+                  <Droplet size={18} color={index === 0 ? "#fff" : Colors.primary} strokeWidth={2} />
                 </View>
+                <View style={styles.recordContent}>
+                  <View style={styles.recordHeader}>
+                    <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
+                    <Text style={styles.recordDaysAgo}>{getDaysAgo(record.date)}</Text>
+                  </View>
+                  {record.type && (
+                    <View style={styles.recordTypeBadge}>
+                      <Text style={styles.recordTypeText}>{record.type}</Text>
+                    </View>
+                  )}
+                  {record.notes && (
+                    <Text style={styles.recordNotes} numberOfLines={2}>{record.notes}</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleDelete(record.id)}
+                  style={styles.deleteButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Trash2 size={18} color={Colors.danger} strokeWidth={2} />
+                </TouchableOpacity>
               </View>
-            ))
-          )}
-        </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -197,14 +246,13 @@ export default function WashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#F8FAFC",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 20,
   },
   addButton: {
     backgroundColor: Colors.primary,
@@ -213,11 +261,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+    borderRadius: 14,
+    marginBottom: 24,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -227,37 +275,50 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
   },
   formCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
+    backgroundColor: "#fff",
+    borderRadius: 20,
     padding: 20,
-    marginBottom: 20,
+    marginBottom: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  formHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   formTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700" as const,
     color: Colors.text.primary,
-    marginBottom: 16,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   label: {
     fontSize: 14,
     fontWeight: "600" as const,
     color: Colors.text.secondary,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   input: {
-    backgroundColor: Colors.background,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#E2E8F0",
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     fontSize: 16,
     color: Colors.text.primary,
   },
@@ -265,79 +326,149 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: "top",
   },
+  typeChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  typeChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  typeChipActive: {
+    backgroundColor: "#EFF6FF",
+    borderColor: Colors.primary,
+  },
+  typeChipText: {
+    fontSize: 14,
+    fontWeight: "500" as const,
+    color: Colors.text.secondary,
+  },
+  typeChipTextActive: {
+    color: Colors.primary,
+    fontWeight: "600" as const,
+  },
   submitButton: {
     backgroundColor: Colors.success,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     padding: 16,
     borderRadius: 12,
-    alignItems: "center",
+    marginTop: 4,
   },
   submitButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700" as const,
   },
-  listSection: {
-    marginTop: 8,
-  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700" as const,
     color: Colors.text.primary,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 48,
+    paddingHorizontal: 20,
   },
-  emptyText: {
-    fontSize: 16,
-    color: Colors.text.secondary,
-    marginTop: 16,
-  },
-  recordCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  recordHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#dbeafe",
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+    marginBottom: 6,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    textAlign: "center",
+  },
+  recordsList: {
+    gap: 10,
+  },
+  recordCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  recordCardFirst: {
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+    backgroundColor: "#FAFCFF",
+  },
+  recordIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  recordIconFirst: {
+    backgroundColor: Colors.primary,
   },
   recordContent: {
     flex: 1,
   },
-  recordDate: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: Colors.text.primary,
+  recordHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 4,
   },
-  recordType: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    marginBottom: 2,
+  recordDate: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
   },
-  recordNotes: {
-    fontSize: 14,
-    color: Colors.text.secondary,
+  recordDaysAgo: {
+    fontSize: 12,
+    color: Colors.text.light,
+  },
+  recordTypeBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     marginTop: 4,
   },
+  recordTypeText: {
+    fontSize: 12,
+    fontWeight: "500" as const,
+    color: Colors.text.secondary,
+  },
+  recordNotes: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+    marginTop: 6,
+    lineHeight: 18,
+  },
   deleteButton: {
-    padding: 4,
+    padding: 8,
+    marginLeft: 4,
   },
 });
