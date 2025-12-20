@@ -7,17 +7,13 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
-  ActivityIndicator,
-  Keyboard,
   KeyboardAvoidingView,
-  LayoutAnimation,
   UIManager,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { 
-  Search, 
   Trash2, 
   CarFront, 
   Calendar, 
@@ -26,9 +22,6 @@ import {
   Gauge, 
   ShieldCheck, 
   ChevronRight,
-  WifiOff,
-  CheckCircle2,
-  AlertCircle,
   FileKey,
   HelpCircle,
   Download,
@@ -37,10 +30,10 @@ import {
   Shield
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import * as Network from "expo-network";
+
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
-import { trpcClient } from "@/lib/trpc";
+
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android') {
@@ -56,7 +49,6 @@ export default function SettingsScreen() {
 
   const [isCreating, setIsCreating] = useState(false);
 
-  // Form State
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
@@ -64,13 +56,6 @@ export default function SettingsScreen() {
   const [insurance, setInsurance] = useState("");
   const [currentMileage, setCurrentMileage] = useState("");
   const [vin, setVin] = useState("");
-  
-  // Search State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [searchSuccess, setSearchSuccess] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
 
   const isMounted = useRef(true);
   useEffect(() => {
@@ -96,153 +81,7 @@ export default function SettingsScreen() {
     }
   }, [carInfo, isCreating]);
 
-  const resetForm = () => {
-    setMake("");
-    setModel("");
-    setYear("");
-    setLicensePlate("");
-    setInsurance("");
-    setCurrentMileage("");
-    setVin("");
-    setSearchQuery("");
-    setSearchError(null);
-    setSearchSuccess(false);
-  };
 
-  // Network monitoring
-  useEffect(() => {
-    const checkNetwork = async () => {
-      try {
-        const state = await Network.getNetworkStateAsync();
-        setIsOnline(state.isConnected ?? true);
-      } catch {
-        // Fallback to online if check fails
-        setIsOnline(true);
-      }
-    };
-    
-    checkNetwork();
-    // Check every time the screen comes into focus would be better, 
-    // but interval is okay for now
-    const interval = setInterval(checkNetwork, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleSearch = async () => {
-    const attemptId = `search_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-    const plateRaw = searchQuery;
-    const plate = searchQuery.trim().replace(/\s+/g, "").toUpperCase();
-
-    console.log("[Settings][VehicleLookup] ------------------------------");
-    console.log("[Settings][VehicleLookup] attemptId:", attemptId);
-    console.log("[Settings][VehicleLookup] platform:", Platform.OS);
-    console.log("[Settings][VehicleLookup] isOnline:", isOnline);
-    console.log("[Settings][VehicleLookup] input.raw:", plateRaw);
-    console.log("[Settings][VehicleLookup] input.cleaned:", plate);
-    console.log("[Settings][VehicleLookup] trpcUrl:", process.env.EXPO_PUBLIC_RORK_API_BASE_URL ?? process.env.EXPO_PUBLIC_TOOLKIT_URL ?? "(auto)");
-
-    if (!plate) {
-      setSearchError("Skriv inn registreringsnummer");
-      console.log("[Settings][VehicleLookup] aborted: empty plate");
-      return;
-    }
-
-    if (plate.length < 2) {
-      setSearchError("For kort registreringsnummer");
-      console.log("[Settings][VehicleLookup] aborted: plate too short");
-      return;
-    }
-
-    if (!isOnline) {
-      console.log("[Settings][VehicleLookup] aborted: offline");
-      Alert.alert("Ingen nettverk", "Du må være på nett for å søke opp kjøretøy.");
-      return;
-    }
-
-    setSearchError(null);
-    setSearchSuccess(false);
-    setIsSearching(true);
-    Keyboard.dismiss();
-
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    const startedAt = Date.now();
-
-    try {
-      console.log("[Settings][VehicleLookup] calling trpc procedure: vehicleSearch.query");
-      const data = await trpcClient.vehicleSearch.query({ licensePlate: plate });
-      
-      if (!isMounted.current) return;
-
-      const durationMs = Date.now() - startedAt;
-      console.log("[Settings][VehicleLookup] success durationMs:", durationMs);
-      console.log("[Settings][VehicleLookup] result:", data);
-
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
-        if (data) {
-        setMake(data.make || "");
-        setModel(data.model || "");
-        setYear(data.year || "");
-        setLicensePlate(data.licensePlate || plate);
-        setVin(data.vin || "");
-
-        setSearchSuccess(true);
-
-        if (Platform.OS !== "web") {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-      }
-    } catch (err: any) {
-      if (!isMounted.current) return;
-      const durationMs = Date.now() - startedAt;
-      console.error("[Settings][VehicleLookup] FAILED durationMs:", durationMs);
-      console.error("[Settings][VehicleLookup] raw error:", err);
-
-      const trpcData = err?.data;
-      const trpcShape = err?.shape;
-      const httpStatus = trpcShape?.data?.httpStatus ?? trpcData?.httpStatus;
-      const trpcCode = trpcShape?.data?.code ?? trpcData?.code;
-
-      console.error("[Settings][VehicleLookup] parsed:", {
-        attemptId,
-        message: err?.message,
-        name: err?.name,
-        httpStatus,
-        trpcCode,
-        shape: trpcShape,
-        data: trpcData,
-        cause: err?.cause,
-        stack: err?.stack,
-      });
-
-      let msg = "Kunne ikke finne kjøretøyet.";
-
-      if (trpcCode === "NOT_FOUND" || err?.message?.includes("NOT_FOUND")) {
-        msg = "Fant ingen kjøretøy med dette nummeret.";
-      } else if (trpcCode === "UNAUTHORIZED" || err?.message?.includes("UNAUTHORIZED")) {
-        msg = "Tjenesten er midlertidig utilgjengelig (Auth).";
-      } else if (httpStatus === 404 || err?.message?.includes("route not found")) {
-        msg = "Backend-ruten ble ikke funnet (404). Se console logg for URL + RequestId.";
-      } else if (httpStatus === 401 || httpStatus === 403) {
-        msg = "Vegvesenet API-nøkkel mangler/er ugyldig. Se backend logg.";
-      } else if (httpStatus === 429) {
-        msg = "For mange forespørsler. Vent litt og prøv igjen.";
-      }
-
-      setSearchError(msg);
-
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsSearching(false);
-      }
-    }
-  };
 
   const handleSave = () => {
     if (!make || !model || !licensePlate) {
@@ -354,7 +193,6 @@ export default function SettingsScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Car Selector */}
           <View style={styles.carSelectorContainer}>
             <Text style={styles.sectionHeader}>Mine biler</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carList} contentContainerStyle={{ paddingHorizontal: 4 }}>
@@ -377,88 +215,13 @@ export default function SettingsScreen() {
                 <TouchableOpacity 
                     style={[styles.carChip, isCreating && styles.carChipActive]}
                     onPress={() => {
-                        setIsCreating(true);
-                        resetForm();
+                        router.push("/add-car" as never);
                         Haptics.selectionAsync();
                     }}
                 >
                     <Text style={[styles.carChipText, isCreating && styles.carChipTextActive]}>+ Legg til</Text>
                 </TouchableOpacity>
             </ScrollView>
-          </View>
-
-          {/* Search Section */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.iconContainer}>
-                <Search size={20} color={Colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Hent fra Vegvesenet</Text>
-                <Text style={styles.cardSubtitle}>
-                  Vi fyller ut detaljene automatisk
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.searchRow}>
-              <View style={styles.inputWrapper}>
-                <View style={styles.plateContainer}>
-                   <View style={styles.plateFlag}>
-                      <Text style={styles.plateFlagText}>N</Text>
-                   </View>
-                   <TextInput
-                    style={styles.plateInput}
-                    placeholder="AB12345"
-                    placeholderTextColor="#999"
-                    value={searchQuery}
-                    onChangeText={(text) => {
-                      setSearchQuery(text);
-                      setSearchError(null);
-                      setSearchSuccess(false);
-                    }}
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                    maxLength={7}
-                    returnKeyType="search"
-                    onSubmitEditing={handleSearch}
-                  />
-                </View>
-              </View>
-              
-              <TouchableOpacity 
-                style={[styles.searchButton, (!isOnline || isSearching) && styles.disabledButton]}
-                onPress={handleSearch}
-                disabled={!isOnline || isSearching}
-              >
-                {isSearching ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <ChevronRight color="#fff" size={24} />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {searchError && (
-              <View style={styles.messageContainer}>
-                <AlertCircle size={16} color={Colors.danger} />
-                <Text style={styles.errorText}>{searchError}</Text>
-              </View>
-            )}
-            
-            {searchSuccess && (
-               <View style={styles.messageContainer}>
-                 <CheckCircle2 size={16} color={Colors.primary} />
-                 <Text style={styles.successText}>Bil funnet! Skjemaet er oppdatert.</Text>
-               </View>
-            )}
-
-            {!isOnline && (
-              <View style={styles.messageContainer}>
-                <WifiOff size={16} color={Colors.text.secondary} />
-                <Text style={styles.offlineText}>Du er offline. Søk er deaktivert.</Text>
-              </View>
-            )}
           </View>
 
           <Text style={styles.sectionHeader}>Kjøretøyinformasjon</Text>
@@ -722,115 +485,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 4,
   },
-  card: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    gap: 12,
-  },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.primary + "20", // 20% opacity
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.text.primary,
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: Colors.text.secondary,
-    marginTop: 2,
-  },
-  searchRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  inputWrapper: {
-    flex: 1,
-  },
-  plateContainer: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#E1E1E1",
-    borderRadius: 8,
-    overflow: "hidden",
-    height: 50,
-  },
-  plateFlag: {
-    backgroundColor: "#00529C",
-    width: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRightWidth: 1,
-    borderRightColor: "#E1E1E1",
-  },
-  plateFlagText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  plateInput: {
-    flex: 1,
-    paddingHorizontal: 12,
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#333",
-    letterSpacing: 2,
-  },
-  searchButton: {
-    width: 50,
-    height: 50,
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  disabledButton: {
-    opacity: 0.5,
-    shadowOpacity: 0,
-  },
-  messageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 12,
-    paddingHorizontal: 4,
-  },
-  errorText: {
-    color: Colors.danger,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  successText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  offlineText: {
-    color: Colors.text.secondary,
-    fontSize: 14,
-  },
+
   formCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 16,

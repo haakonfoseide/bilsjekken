@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ScanLine,
   RefreshCw,
+  Plus,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -110,8 +111,13 @@ export default function DashboardScreen() {
       >
         {carInfo ? (
           <>
-            <View style={styles.carInfoCard}>
-              <View style={styles.carInfoHeader}>
+            <View style={styles.carSelectorCard}>
+              <Text style={styles.carSelectorLabel}>Aktiv bil</Text>
+              <TouchableOpacity 
+                style={styles.carInfoHeader}
+                onPress={handleSwitchCar}
+                activeOpacity={0.7}
+              >
                 <Car size={32} color={Colors.primary} strokeWidth={2} />
                 <View style={styles.carInfoText}>
                   <Text style={styles.carMake}>
@@ -121,16 +127,22 @@ export default function DashboardScreen() {
                     {carInfo.year} • {carInfo.licensePlate}
                   </Text>
                 </View>
-                {cars.length > 0 && (
-                  <TouchableOpacity 
-                    style={styles.switchButton}
-                    onPress={handleSwitchCar}
-                    activeOpacity={0.7}
-                  >
-                    <RefreshCw size={20} color={Colors.primary} strokeWidth={2} />
-                  </TouchableOpacity>
+                {cars.length > 1 && (
+                  <View style={styles.switchIndicator}>
+                    <RefreshCw size={18} color={Colors.primary} strokeWidth={2} />
+                    <Text style={styles.switchText}>Bytt</Text>
+                  </View>
                 )}
-              </View>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.addCarButton}
+                onPress={() => handlePress("/add-car")}
+                activeOpacity={0.7}
+              >
+                <Plus size={20} color={Colors.primary} strokeWidth={2.5} />
+                <Text style={styles.addCarButtonText}>Legg til bil</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.statsGrid}>
@@ -223,7 +235,7 @@ export default function DashboardScreen() {
             </Text>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => handlePress("/settings")}
+              onPress={() => handlePress("/add-car")}
               activeOpacity={0.7}
             >
               <Text style={styles.addButtonText}>Legg til bil</Text>
@@ -262,7 +274,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
-  carInfoCard: {
+  carSelectorCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 16,
     padding: 20,
@@ -272,6 +284,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  carSelectorLabel: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    color: Colors.text.secondary,
+    textTransform: "uppercase" as const,
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   carInfoHeader: {
     flexDirection: "row",
@@ -420,12 +440,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
   },
-  switchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  switchIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     backgroundColor: Colors.primary + "15",
+    borderRadius: 20,
+  },
+  switchText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.primary,
+  },
+  addCarButton: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.primary + "10",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.primary + "40",
+    borderStyle: "dashed" as const,
+  },
+  addCarButtonText: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: Colors.primary,
   },
 });
