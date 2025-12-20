@@ -8,6 +8,8 @@ import {
   TextInput,
   Alert,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -245,6 +247,10 @@ export default function MileageHistoryScreen() {
         animationType="slide"
         onRequestClose={() => setIsAddModalVisible(false)}
       >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
         <Pressable 
           style={styles.modalOverlay}
           onPress={() => setIsAddModalVisible(false)}
@@ -293,6 +299,7 @@ export default function MileageHistoryScreen() {
             </View>
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Edit Modal */}
@@ -302,6 +309,10 @@ export default function MileageHistoryScreen() {
         animationType="slide"
         onRequestClose={() => setIsEditModalVisible(false)}
       >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
         <Pressable 
           style={styles.modalOverlay}
           onPress={() => setIsEditModalVisible(false)}
@@ -350,6 +361,7 @@ export default function MileageHistoryScreen() {
             </View>
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
