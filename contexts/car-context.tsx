@@ -457,9 +457,9 @@ export const [CarProvider, useCarData] = createContextHook(() => {
 
   const refreshCarInfoMutation = useMutation({
     mutationFn: async (carId: string) => {
-      const car = data.cars.find(c => c.id === carId);
+      const car = data.cars.find((c) => c.id === carId);
       if (!car) throw new Error("Bil ikke funnet");
-      
+
       console.log("[CarContext] Refreshing vehicle data for:", car.licensePlate);
       const vehicleData = await trpcClient.vehicle.search.query({ licensePlate: car.licensePlate });
       return { carId, vehicleData };
@@ -467,31 +467,41 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     onSuccess: ({ carId, vehicleData }) => {
       console.log("[CarContext] Received updated vehicle data", vehicleData);
       setData((prev) => {
-        const newCars = prev.cars.map(c => {
-          if (c.id === carId) {
-            return {
-              ...c,
-              make: vehicleData.make,
-              model: vehicleData.model,
-              year: vehicleData.year,
-              vin: vehicleData.vin || c.vin,
-              color: vehicleData.color,
-              weight: vehicleData.weight,
-              power: vehicleData.power,
-              fuelType: vehicleData.fuelType,
-              registrationDate: vehicleData.registrationDate,
-              vehicleType: vehicleData.vehicleType,
-              // Update current mileage if the registered mileage is higher than what we have locally
-              currentMileage: Math.max(c.currentMileage || 0, vehicleData.registeredMileage || 0),
-              registeredMileage: vehicleData.registeredMileage,
-              registeredMileageDate: vehicleData.registeredMileageDate,
-              mileageHistory: vehicleData.mileageHistory,
-              euControlDate: vehicleData.euControlDate,
-              nextEuControlDate: vehicleData.nextEuControlDate,
-            } as CarInfo;
-          }
-          return c;
+        const newCars = prev.cars.map((c) => {
+          if (c.id !== carId) return c;
+
+          const localCurrent = Number.isFinite(c.currentMileage) ? c.currentMileage : 0;
+          const vvRegistered = Number.isFinite(vehicleData.registeredMileage)
+            ? (vehicleData.registeredMileage as number)
+            : null;
+
+          const vvHistory = Array.isArray(vehicleData.mileageHistory)
+            ? (vehicleData.mileageHistory as { mileage: number; date: string; source?: "vegvesen" }[])
+            : undefined;
+
+          const computedCurrentMileage = vvRegistered !== null ? Math.max(localCurrent, vvRegistered) : localCurrent;
+
+          return {
+            ...c,
+            make: vehicleData.make,
+            model: vehicleData.model,
+            year: vehicleData.year,
+            vin: vehicleData.vin || c.vin,
+            color: vehicleData.color,
+            weight: vehicleData.weight,
+            power: vehicleData.power,
+            fuelType: vehicleData.fuelType,
+            registrationDate: vehicleData.registrationDate,
+            vehicleType: vehicleData.vehicleType,
+            currentMileage: computedCurrentMileage,
+            registeredMileage: vvRegistered ?? c.registeredMileage,
+            registeredMileageDate: vehicleData.registeredMileageDate ?? c.registeredMileageDate,
+            mileageHistory: vvHistory ?? c.mileageHistory,
+            euControlDate: vehicleData.euControlDate ?? c.euControlDate,
+            nextEuControlDate: vehicleData.nextEuControlDate ?? c.nextEuControlDate,
+          };
         });
+
         const newData = { ...prev, cars: newCars };
         mutate(newData);
         return newData;

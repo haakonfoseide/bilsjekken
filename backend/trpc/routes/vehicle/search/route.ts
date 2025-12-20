@@ -148,7 +148,7 @@ export default publicProcedure
       const toIntOrNull = (value: unknown): number | null => {
         if (value === null || value === undefined) return null;
         if (typeof value === "number") return Number.isFinite(value) ? Math.trunc(value) : null;
-        const cleaned = String(value).replace(/[^0-9-]/g, "");
+        const cleaned = String(value).replace(/[^0-9]/g, "");
         if (!cleaned) return null;
         const parsed = parseInt(cleaned, 10);
         return Number.isFinite(parsed) ? parsed : null;
@@ -163,29 +163,94 @@ export default publicProcedure
       };
 
       const getMileageDateRaw = (item: any): unknown =>
-        item?.maalingDato ?? item?.maalingdato ?? item?.dato ?? item?.registrertDato ?? item?.registreringsdato;
+        item?.maalingDato ??
+        item?.maalingdato ??
+        item?.maalingsDato ??
+        item?.maalingsdato ??
+        item?.avlestDato ??
+        item?.dato ??
+        item?.registrertDato ??
+        item?.registreringsdato ??
+        item?.tidspunkt ??
+        item?.kontrollTidspunkt;
 
       const getMileageValueRaw = (item: any): unknown =>
-        item?.kilometerstand ?? item?.kjorelengde ?? item?.kjoreLengde ?? item?.avlestKjorelengde ?? item?.avlestKjorelengdeKm;
+        item?.kilometerstand ??
+        item?.kmStand ??
+        item?.maalestand ??
+        item?.kjorelengde ??
+        item?.kjoreLengde ??
+        item?.avlestKjorelengde ??
+        item?.avlestKjorelengdeKm ??
+        item?.avlestKjorelengdeKilometer ??
+        item?.kilometer ??
+        item?.km;
 
-      // Ensure kjorelengder is an array (Vegvesenet sometimes returns single object)
-      let kjorelengder: any[] = [];
-      const rawKjorelengder = vehicle.kjorelengdeMaalinger?.kjorelengdeMaaling;
+      const normalizeToArray = (maybeArray: unknown): any[] => {
+        if (!maybeArray) return [];
+        if (Array.isArray(maybeArray)) return maybeArray as any[];
+        return [maybeArray];
+      };
 
-      if (Array.isArray(rawKjorelengder)) {
-        kjorelengder = rawKjorelengder;
-      } else if (rawKjorelengder) {
-        kjorelengder = [rawKjorelengder];
-      }
+      const extractMileageMeasurements = (vvVehicle: any): any[] => {
+        const candidates: unknown[] = [
+          vvVehicle?.kjorelengdeMaalinger?.kjorelengdeMaaling,
+          vvVehicle?.kjorelengdeMaalinger,
+          vvVehicle?.kjorelengdeMalinger?.kjorelengdeMaling,
+          vvVehicle?.kjorelengdeMalinger,
+          vvVehicle?.kjorelengdeMaaling?.kjorelengdeMaaling,
+          vvVehicle?.kjorelengdeMaaling,
+        ];
+
+        for (const c of candidates) {
+          const arr = normalizeToArray(c);
+          const filtered = arr.filter((it) => typeof it === "object" && it !== null);
+          if (filtered.length > 0) return filtered;
+        }
+
+        const found: any[] = [];
+        const seen = new Set<any>();
+
+        const walk = (node: any, depth: number) => {
+          if (!node || depth > 6) return;
+          if (seen.has(node)) return;
+          if (typeof node !== "object") return;
+          seen.add(node);
+
+          if (Array.isArray(node)) {
+            for (const item of node) walk(item, depth + 1);
+            return;
+          }
+
+          const hasMileage = toIntOrNull(getMileageValueRaw(node)) !== null;
+          const hasDate = toIsoOrNull(getMileageDateRaw(node)) !== null;
+          const maybeLooksLikeMileage = hasMileage && hasDate;
+          if (maybeLooksLikeMileage) {
+            found.push(node);
+          }
+
+          for (const key of Object.keys(node)) {
+            walk(node[key], depth + 1);
+          }
+        };
+
+        walk(vvVehicle, 0);
+        return found;
+      };
+
+      const kjorelengder = extractMileageMeasurements(vehicle);
 
       const firstMileageKeys = kjorelengder[0] ? Object.keys(kjorelengder[0]) : [];
       console.log(`[Vehicle Search] Found ${kjorelengder.length} mileage entries. First keys:`, firstMileageKeys);
+      if (kjorelengder.length === 0) {
+        console.log("[Vehicle Search] Mileage debug keys on vehicle:", Object.keys(vehicle || {}));
+      }
 
       const normalizedMileageHistory = kjorelengder
         .map((item: any) => {
           const mileage = toIntOrNull(getMileageValueRaw(item));
           const dateIso = toIsoOrNull(getMileageDateRaw(item));
-          if (!mileage || !dateIso) return null;
+          if (mileage === null || dateIso === null) return null;
           return { mileage, date: dateIso, source: "vegvesen" as const };
         })
         .filter(Boolean) as { mileage: number; date: string; source: "vegvesen" }[];
