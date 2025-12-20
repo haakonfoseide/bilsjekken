@@ -133,6 +133,8 @@ export default publicProcedure
       
       // 7. Map Data
       // Safely access nested properties
+      console.log("[Vehicle Search] Mapping data...");
+      
       const teknisk = vehicle.godkjenning?.tekniskGodkjenning?.tekniskeData;
       const generelt = teknisk?.generelt;
       const karosseri = teknisk?.karosseriOgLasteplan;
@@ -142,20 +144,36 @@ export default publicProcedure
       const nextEuControl = periodiskKjoretoyKontroll?.kontrollfrist;
       const lastEuControl = periodiskKjoretoyKontroll?.sistGodkjent;
       
-      const kjorelengder = vehicle.kjorelengdeMaalinger?.kjorelengdeMaaling || [];
+      console.log("[Vehicle Search] PKK data:", JSON.stringify(periodiskKjoretoyKontroll, null, 2));
+
+      // Ensure kjorelengder is an array
+      let kjorelengder: any[] = [];
+      const rawKjorelengder = vehicle.kjorelengdeMaalinger?.kjorelengdeMaaling;
       
+      if (Array.isArray(rawKjorelengder)) {
+        kjorelengder = rawKjorelengder;
+      } else if (rawKjorelengder) {
+        // Single object case
+        kjorelengder = [rawKjorelengder];
+      }
+
+      console.log(`[Vehicle Search] Found ${kjorelengder.length} mileage entries`);
+
       // Sort mileage history by date descending (newest first) to ensure accuracy
-      const sortedMileageHistory = [...kjorelengder].sort((a: any, b: any) => {
+      const sortedMileageHistory = kjorelengder.sort((a: any, b: any) => {
         return new Date(b.maalingDato).getTime() - new Date(a.maalingDato).getTime();
       });
 
       const sisteKjorelengde = sortedMileageHistory.length > 0 ? sortedMileageHistory[0] : null;
 
       const mileageHistory = sortedMileageHistory.map((item: any) => ({
-        mileage: item.kilometerstand,
+        mileage: parseInt(item.kilometerstand, 10),
         date: item.maalingDato,
         source: 'vegvesen',
       }));
+
+      const registeredMileage = sisteKjorelengde ? parseInt(sisteKjorelengde.kilometerstand, 10) : null;
+      const registeredMileageDate = sisteKjorelengde?.maalingDato || null;
 
       const result = {
         licensePlate: vehicle.kjoretoyId?.kjennemerke || cleanedPlate,
@@ -169,8 +187,8 @@ export default publicProcedure
         weight: vekter?.egenvekt || null,
         power: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.maksNettoEffekt || null,
         fuelType: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.drivstoffKode?.navn || "Ukjent",
-        registeredMileage: sisteKjorelengde?.kilometerstand || null,
-        registeredMileageDate: sisteKjorelengde?.maalingDato || null,
+        registeredMileage: registeredMileage,
+        registeredMileageDate: registeredMileageDate,
         mileageHistory,
         euControlDate: lastEuControl || null,
         nextEuControlDate: nextEuControl || null,

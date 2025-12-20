@@ -165,7 +165,7 @@ export default function AddCarScreen() {
         setEuControlDate(data.euControlDate || "");
         setNextEuControlDate(data.nextEuControlDate || "");
         
-        if (data.registeredMileage && !currentMileage) {
+        if (data.registeredMileage) {
           setCurrentMileage(data.registeredMileage.toString());
         }
 

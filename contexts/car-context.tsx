@@ -481,7 +481,8 @@ export const [CarProvider, useCarData] = createContextHook(() => {
               fuelType: vehicleData.fuelType,
               registrationDate: vehicleData.registrationDate,
               vehicleType: vehicleData.vehicleType,
-              currentMileage: c.currentMileage || vehicleData.registeredMileage || c.currentMileage,
+              // Update current mileage if the registered mileage is higher than what we have locally
+              currentMileage: Math.max(c.currentMileage || 0, vehicleData.registeredMileage || 0),
               registeredMileage: vehicleData.registeredMileage,
               registeredMileageDate: vehicleData.registeredMileageDate,
               mileageHistory: vehicleData.mileageHistory,
