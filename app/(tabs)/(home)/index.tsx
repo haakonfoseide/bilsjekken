@@ -25,6 +25,8 @@ import {
   Palette,
   Weight,
   Zap,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -129,7 +131,7 @@ export default function DashboardScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.carSelectorContent}
                 decelerationRate="fast"
-                snapToInterval={Platform.OS === "ios" ? 160 : undefined}
+                snapToInterval={Platform.OS === "ios" ? 172 : undefined} // 160 width + 12 gap
               >
                 {cars.map((car) => {
                   const isActive = car.id === carInfo?.id;
@@ -150,10 +152,10 @@ export default function DashboardScreen() {
                       }}
                       activeOpacity={0.9}
                     >
-                      <View style={styles.carSelectorIcon}>
+                      <View style={[styles.carSelectorIcon, isActive && styles.carSelectorIconActive]}>
                         <Car
                           size={24}
-                          color={isActive ? Colors.primary : Colors.text.secondary}
+                          color={isActive ? "#fff" : Colors.text.secondary}
                           strokeWidth={2}
                         />
                       </View>
@@ -167,12 +169,14 @@ export default function DashboardScreen() {
                         >
                           {car.make} {car.model}
                         </Text>
-                        <Text style={styles.carSelectorSubtitle}>
+                        <Text style={[styles.carSelectorSubtitle, isActive && styles.carSelectorSubtitleActive]}>
                           {car.licensePlate}
                         </Text>
                       </View>
                       {isActive && (
-                        <View style={styles.activeIndicator} />
+                        <View style={styles.activeCheck}>
+                           <CheckCircle2 size={16} color={Colors.primary} fill="#fff" />
+                        </View>
                       )}
                     </TouchableOpacity>
                   );
@@ -185,13 +189,19 @@ export default function DashboardScreen() {
                 {/* Main Car Status Card */}
                 <View style={styles.mainStatusCard}>
                   <View style={styles.mainStatusHeader}>
-                    <View>
-                      <Text style={styles.carBigTitle}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.carBigTitle} numberOfLines={1}>
                         {carInfo.make} {carInfo.model}
                       </Text>
-                      <Text style={styles.carBigSubtitle}>
-                        {carInfo.year} • {carInfo.licensePlate}
-                      </Text>
+                      <View style={styles.carBadgeRow}>
+                         <View style={styles.plateBadge}>
+                           <View style={styles.plateFlag}>
+                             <Text style={styles.plateFlagText}>N</Text>
+                           </View>
+                           <Text style={styles.plateText}>{carInfo.licensePlate}</Text>
+                         </View>
+                         <Text style={styles.carYearBadge}>{carInfo.year}</Text>
+                      </View>
                     </View>
                     <View style={styles.actionRow}>
                       <TouchableOpacity
@@ -224,15 +234,23 @@ export default function DashboardScreen() {
                     >
                       <View style={styles.statusLabelRow}>
                         <Gauge size={14} color={Colors.text.secondary} />
-                        <Text style={styles.statusLabel}>Kilometer</Text>
+                        <Text style={styles.statusLabel}>Kilometerstand</Text>
                         <ChevronRight size={12} color={Colors.text.secondary} />
                       </View>
                       <Text style={styles.statusValue}>
-                        {carInfo.currentMileage.toLocaleString("no-NO")}
+                        {carInfo.currentMileage.toLocaleString("no-NO")} km
                       </Text>
-                      {carInfo.registeredMileage && carInfo.registeredMileage !== carInfo.currentMileage && (
-                        <Text style={styles.statusSubtext}>
-                           Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
+                      {carInfo.registeredMileage && carInfo.registeredMileage > carInfo.currentMileage && (
+                        <View style={styles.warningContainer}>
+                           <AlertCircle size={12} color={Colors.danger} />
+                           <Text style={styles.warningText}>
+                             Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
+                           </Text>
+                        </View>
+                      )}
+                      {carInfo.registeredMileage && carInfo.registeredMileage <= carInfo.currentMileage && (
+                         <Text style={styles.statusSubtext}>
+                           Sist sjekket: {formatDateSimple(carInfo.registeredMileageDate || new Date().toISOString())}
                         </Text>
                       )}
                     </TouchableOpacity>
@@ -246,16 +264,16 @@ export default function DashboardScreen() {
                       </View>
                       <Text style={[
                         styles.statusValue,
-                        // Add color logic for expired/soon?
+                        // Logic for red text if expired could be added here
                       ]}>
                         {carInfo.nextEuControlDate 
                           ? formatDateSimple(carInfo.nextEuControlDate)
                           : "Ukjent"
                         }
                       </Text>
-                      {carInfo.euControlDate && (
+                      {carInfo.nextEuControlDate && (
                          <Text style={styles.statusSubtext}>
-                           Sist: {formatDateSimple(carInfo.euControlDate)}
+                           Frist for godkjenning
                         </Text>
                       )}
                     </View>
@@ -419,21 +437,6 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
         )}
-
-        <TouchableOpacity
-          style={styles.scanReceiptButton}
-          onPress={() => handlePress("/scan-receipt" as never)}
-          activeOpacity={0.7}
-        >
-          <ScanLine size={24} color={Colors.primary} strokeWidth={2} />
-          <View style={styles.scanButtonContent}>
-            <Text style={styles.scanButtonTitle}>Skann kvittering</Text>
-            <Text style={styles.scanButtonSubtitle}>
-              La AI kategorisere og legge til utgifter
-            </Text>
-          </View>
-          <ChevronRight size={24} color={Colors.text.light} />
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -499,6 +502,7 @@ const styles = StyleSheet.create({
   carSelectorContent: {
     paddingHorizontal: 20,
     gap: 12,
+    paddingRight: 40, // Add extra padding at end
   },
   carSelectorItem: {
     flexDirection: "row",
@@ -508,18 +512,18 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "transparent",
     gap: 12,
-    minWidth: 150,
+    minWidth: 160,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
   carSelectorItemActive: {
     borderColor: Colors.primary,
-    backgroundColor: "#EFF6FF", // Light blue tint
+    backgroundColor: "#EFF6FF",
   },
   carSelectorIcon: {
     width: 40,
@@ -528,6 +532,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
+  },
+  carSelectorIconActive: {
+    backgroundColor: Colors.primary,
   },
   carSelectorInfo: {
     flex: 1,
@@ -544,11 +551,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.secondary,
   },
-  activeIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
+  carSelectorSubtitleActive: {
+    color: Colors.primary,
+    opacity: 0.8,
+  },
+  activeCheck: {
+    marginLeft: 4,
   },
 
   // Dashboard
@@ -562,9 +570,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     elevation: 4,
     marginBottom: 24,
   },
@@ -579,12 +587,51 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: Colors.text.primary,
     letterSpacing: -0.5,
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  carBigSubtitle: {
-    fontSize: 14,
-    fontWeight: "500",
+  carBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  plateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  plateFlag: {
+    backgroundColor: "#00529C",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    height: "100%",
+    justifyContent: "center",
+  },
+  plateFlagText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  plateText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.text.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  carYearBadge: {
+    fontSize: 12,
+    fontWeight: "600",
     color: Colors.text.secondary,
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    overflow: "hidden",
   },
   actionRow: {
     flexDirection: "row",
@@ -600,7 +647,7 @@ const styles = StyleSheet.create({
   },
   statusDivider: {
     height: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#F3F4F6",
     marginBottom: 20,
   },
   statusGrid: {
@@ -613,7 +660,7 @@ const styles = StyleSheet.create({
   },
   statusVerticalLine: {
     width: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#F3F4F6",
     marginHorizontal: 16,
   },
   statusLabelRow: {
@@ -623,21 +670,38 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: Colors.text.secondary,
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   statusValue: {
     fontSize: 20,
     fontWeight: "700",
     color: Colors.text.primary,
     marginBottom: 4,
+    textAlign: "center",
   },
   statusSubtext: {
     fontSize: 11,
     color: Colors.text.light,
     textAlign: "center",
+  },
+  warningContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+    backgroundColor: "#FEF2F2",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  warningText: {
+    fontSize: 10,
+    color: Colors.danger,
+    fontWeight: "600",
   },
 
   // Section

@@ -54,6 +54,8 @@ export default function SettingsScreen() {
   const [insurance, setInsurance] = useState("");
   const [currentMileage, setCurrentMileage] = useState("");
   const [vin, setVin] = useState("");
+  const [euControlDate, setEuControlDate] = useState("");
+  const [nextEuControlDate, setNextEuControlDate] = useState("");
 
   const isMounted = useRef(true);
   useEffect(() => {
@@ -71,6 +73,8 @@ export default function SettingsScreen() {
       setInsurance(carInfo.insurance);
       setCurrentMileage(carInfo.currentMileage.toString());
       if (carInfo.vin) setVin(carInfo.vin);
+      if (carInfo.euControlDate) setEuControlDate(carInfo.euControlDate);
+      if (carInfo.nextEuControlDate) setNextEuControlDate(carInfo.nextEuControlDate);
     }
   }, [carInfo]);
 
@@ -87,7 +91,7 @@ export default function SettingsScreen() {
     const mileageNum = parseInt(currentMileage.replace(/\D/g, "")) || 0;
 
     updateCarInfo({
-      id: carInfo.id,
+      ...carInfo, // Preserve all existing fields (weight, power, history, etc.)
       make,
       model,
       year,
@@ -95,6 +99,8 @@ export default function SettingsScreen() {
       insurance: insurance || "",
       currentMileage: mileageNum,
       vin,
+      euControlDate: euControlDate || undefined,
+      nextEuControlDate: nextEuControlDate || undefined,
     });
     
     if (mileageNum > 0 && mileageNum !== carInfo.currentMileage) {
@@ -281,6 +287,38 @@ export default function SettingsScreen() {
                   value={insurance}
                   onChangeText={setInsurance}
                   placeholder="F.eks. Gjensidige"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Neste EU-kontroll</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={nextEuControlDate}
+                  onChangeText={setNextEuControlDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Sist godkjent (EU)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={euControlDate}
+                  onChangeText={setEuControlDate}
+                  placeholder="YYYY-MM-DD"
                   placeholderTextColor={Colors.text.light}
                 />
               </View>

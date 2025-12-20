@@ -486,6 +486,38 @@ export default function AddCarScreen() {
                 />
               </View>
             </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Neste EU-kontroll</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={nextEuControlDate}
+                  onChangeText={setNextEuControlDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.inputRow}>
+              <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
+              <View style={styles.inputContent}>
+                <Text style={styles.inputLabel}>Sist godkjent (EU)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={euControlDate}
+                  onChangeText={setEuControlDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={Colors.text.light}
+                />
+              </View>
+            </View>
           </View>
 
           <View style={{ height: 40 }} />

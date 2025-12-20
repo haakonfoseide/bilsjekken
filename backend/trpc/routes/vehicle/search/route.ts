@@ -143,9 +143,15 @@ export default publicProcedure
       const lastEuControl = periodiskKjoretoyKontroll?.sistGodkjent;
       
       const kjorelengder = vehicle.kjorelengdeMaalinger?.kjorelengdeMaaling || [];
-      const sisteKjorelengde = kjorelengder.length > 0 ? kjorelengder[0] : null;
+      
+      // Sort mileage history by date descending (newest first) to ensure accuracy
+      const sortedMileageHistory = [...kjorelengder].sort((a: any, b: any) => {
+        return new Date(b.maalingDato).getTime() - new Date(a.maalingDato).getTime();
+      });
 
-      const mileageHistory = kjorelengder.map((item: any) => ({
+      const sisteKjorelengde = sortedMileageHistory.length > 0 ? sortedMileageHistory[0] : null;
+
+      const mileageHistory = sortedMileageHistory.map((item: any) => ({
         mileage: item.kilometerstand,
         date: item.maalingDato,
         source: 'vegvesen',
