@@ -135,7 +135,7 @@ export default function DashboardScreen() {
       >
         {cars.length > 0 ? (
           <>
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
               <Text style={styles.headerTitle}>Min bil</Text>
               <TouchableOpacity
                 style={styles.headerButton}
@@ -493,7 +493,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 16,
     paddingBottom: 12,
   },
   headerTitle: {
