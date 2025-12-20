@@ -26,7 +26,8 @@ import {
   Download,
   Smartphone,
   Mail,
-  Shield
+  Shield,
+  Trash2
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
@@ -43,7 +44,7 @@ if (Platform.OS === 'android') {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { carInfo, updateCarInfo, addMileageRecord } = useCarData();
+  const { carInfo, updateCarInfo, addMileageRecord, deleteCar } = useCarData();
   const insets = useSafeAreaInsets();
 
   const [make, setMake] = useState("");
@@ -110,7 +111,28 @@ export default function SettingsScreen() {
     router.back();
   };
 
+  const handleDelete = () => {
+    if (!carInfo) return;
 
+    Alert.alert(
+      "Slett bil",
+      `Er du sikker på at du vil slette ${carInfo.make} ${carInfo.model}? Dette kan ikke angres.`,
+      [
+        { text: "Avbryt", style: "cancel" },
+        {
+          text: "Slett",
+          style: "destructive",
+          onPress: () => {
+            deleteCar(carInfo.id);
+            router.back();
+            if (Platform.OS !== "web") {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -264,6 +286,17 @@ export default function SettingsScreen() {
               </View>
             </View>
           </View>
+
+          <Text style={styles.sectionHeader}>Handling</Text>
+          
+          <TouchableOpacity 
+            style={styles.deleteButton} 
+            onPress={handleDelete}
+            activeOpacity={0.7}
+          >
+            <Trash2 size={20} color={Colors.danger} />
+            <Text style={styles.deleteButtonText}>Slett bil</Text>
+          </TouchableOpacity>
 
           <Text style={styles.sectionHeader}>App & data</Text>
 

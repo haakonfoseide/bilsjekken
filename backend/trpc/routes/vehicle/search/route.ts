@@ -139,7 +139,9 @@ export default publicProcedure
       const godkjenning = vehicle.godkjenning?.forstegangsGodkjenning;
       const vekter = teknisk?.vekter;
       const periodiskKjoretoyKontroll = vehicle.periodiskKjoretoyKontroll;
-      const sistePKK = periodiskKjoretoyKontroll?.kontrollfrist;
+      const nextEuControl = periodiskKjoretoyKontroll?.kontrollfrist;
+      const lastEuControl = periodiskKjoretoyKontroll?.sistGodkjent;
+      
       const kjorelengder = vehicle.kjorelengdeMaalinger?.kjorelengdeMaaling || [];
       const sisteKjorelengde = kjorelengder.length > 0 ? kjorelengder[0] : null;
 
@@ -157,8 +159,8 @@ export default publicProcedure
         fuelType: teknisk?.motorOgDrivverk?.motor?.[0]?.drivstoff?.[0]?.drivstoffKode?.navn || "Ukjent",
         registeredMileage: sisteKjorelengde?.kilometerstand || null,
         registeredMileageDate: sisteKjorelengde?.maalingDato || null,
-        euControlDate: sistePKK?.sistKontrollert || null,
-        nextEuControlDate: sistePKK?.kontrollfrist || null,
+        euControlDate: lastEuControl || null,
+        nextEuControlDate: nextEuControl || null,
       };
 
       console.log(`[Vehicle Search] Success! Found: ${result.make} ${result.model}`);

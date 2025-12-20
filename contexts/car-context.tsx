@@ -2,7 +2,7 @@ import createContextHook from "@nkzw/create-context-hook";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpcClient } from "@/lib/trpc";
 import type {
   CarInfo,
   WashRecord,
@@ -461,7 +461,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       if (!car) throw new Error("Bil ikke funnet");
       
       console.log("[CarContext] Refreshing vehicle data for:", car.licensePlate);
-      const vehicleData = await trpc.vehicle.search.query({ licensePlate: car.licensePlate });
+      const vehicleData = await trpcClient.vehicle.search.query({ licensePlate: car.licensePlate });
       return { carId, vehicleData };
     },
     onSuccess: ({ carId, vehicleData }) => {
@@ -476,7 +476,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
               year: vehicleData.year,
               vin: vehicleData.vin || c.vin,
               color: vehicleData.color,
-              currentMileage: vehicleData.registeredMileage || c.currentMileage,
+              currentMileage: c.currentMileage || vehicleData.registeredMileage || c.currentMileage,
               registeredMileage: vehicleData.registeredMileage,
               registeredMileageDate: vehicleData.registeredMileageDate,
               euControlDate: vehicleData.euControlDate,
