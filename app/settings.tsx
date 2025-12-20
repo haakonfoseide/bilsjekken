@@ -14,7 +14,6 @@ import { useState, useEffect, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { 
-  Trash2, 
   CarFront, 
   Calendar, 
   Hash, 
@@ -44,10 +43,8 @@ if (Platform.OS === 'android') {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { carInfo, updateCarInfo, addMileageRecord, cars, addCar, setActiveCar, activeCarId, deleteCar } = useCarData();
+  const { carInfo, updateCarInfo, addMileageRecord } = useCarData();
   const insets = useSafeAreaInsets();
-
-  const [isCreating, setIsCreating] = useState(false);
 
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
@@ -64,10 +61,7 @@ export default function SettingsScreen() {
     };
   }, []);
 
-  // Initialize form with existing data
   useEffect(() => {
-    if (isCreating) return;
-    
     if (carInfo) {
       setMake(carInfo.make);
       setModel(carInfo.model);
@@ -76,14 +70,14 @@ export default function SettingsScreen() {
       setInsurance(carInfo.insurance);
       setCurrentMileage(carInfo.currentMileage.toString());
       if (carInfo.vin) setVin(carInfo.vin);
-    } else {
-        // No car info, maybe reset?
     }
-  }, [carInfo, isCreating]);
+  }, [carInfo]);
 
 
 
   const handleSave = () => {
+    if (!carInfo) return;
+    
     if (!make || !model || !licensePlate) {
       Alert.alert("Mangler info", "Bilmerke, modell og registreringsnummer er påkrevd.");
       return;
@@ -91,7 +85,8 @@ export default function SettingsScreen() {
 
     const mileageNum = parseInt(currentMileage.replace(/\D/g, "")) || 0;
 
-    const carData = {
+    updateCarInfo({
+      id: carInfo.id,
       make,
       model,
       year,
@@ -99,77 +94,32 @@ export default function SettingsScreen() {
       insurance: insurance || "",
       currentMileage: mileageNum,
       vin,
-    };
-
-    if (isCreating) {
-      addCar(carData);
-      setIsCreating(false);
-      Alert.alert("Bil lagt til", `${make} ${model} er nå lagt til i garasjen.`);
-    } else if (carInfo) {
-      updateCarInfo({
-        ...carData,
-        id: carInfo.id,
+    });
+    
+    if (mileageNum > 0 && mileageNum !== carInfo.currentMileage) {
+      addMileageRecord({
+        date: new Date().toISOString(),
+        mileage: mileageNum,
       });
-      // Add mileage record if changed significantly or first time
-      if (mileageNum > 0 && (!carInfo || mileageNum !== carInfo.currentMileage)) {
-        addMileageRecord({
-          date: new Date().toISOString(),
-          mileage: mileageNum,
-        });
-      }
     }
 
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     
-    // Only go back if we are not in settings screen context which might be root of tab
-    // But here SettingsScreen IS a screen in stack? 
-    // Actually SettingsScreen is app/settings.tsx, it's a modal or stack screen.
-    // If we just added a car, maybe we want to stay?
-    // Let's go back for now as per original behavior.
-    if (!isCreating) {
-        router.back();
-    }
+    router.back();
   };
 
-  const handleDelete = () => {
-    if (!carInfo) return;
-    
-    Alert.alert(
-      "Slett bil",
-      `Er du sikker på at du vil slette ${carInfo.make} ${carInfo.model}?`,
-      [
-        { text: "Avbryt", style: "cancel" },
-        { 
-          text: "Slett", 
-          style: "destructive", 
-          onPress: () => {
-            deleteCar(carInfo.id);
-            if (Platform.OS !== "web") {
-               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-            router.back();
-          } 
-        }
-      ]
-    );
-  };
+
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{
-        title: isCreating ? "Ny bil" : "Min Bil",
+        title: "Rediger bil",
         headerStyle: { backgroundColor: Colors.background },
         headerShadowVisible: false,
         headerLeft: () => (
-           <TouchableOpacity onPress={() => {
-               if (isCreating && cars.length > 0) {
-                   setIsCreating(false);
-               } else {
-                   router.back();
-               }
-           }} style={styles.headerButton}>
+           <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
              <Text style={styles.headerButtonText}>Avbryt</Text>
            </TouchableOpacity>
         ),
@@ -193,37 +143,6 @@ export default function SettingsScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.carSelectorContainer}>
-            <Text style={styles.sectionHeader}>Mine biler</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carList} contentContainerStyle={{ paddingHorizontal: 4 }}>
-                {cars.map(car => (
-                    <TouchableOpacity 
-                        key={car.id} 
-                        style={[styles.carChip, activeCarId === car.id && !isCreating && styles.carChipActive]}
-                        onPress={() => {
-                            setActiveCar(car.id);
-                            setIsCreating(false);
-                            Haptics.selectionAsync();
-                        }}
-                    >
-                        <CarFront size={16} color={activeCarId === car.id && !isCreating ? "#fff" : Colors.text.primary} />
-                        <Text style={[styles.carChipText, activeCarId === car.id && !isCreating && styles.carChipTextActive]}>
-                            {car.make} {car.model}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-                <TouchableOpacity 
-                    style={[styles.carChip, isCreating && styles.carChipActive]}
-                    onPress={() => {
-                        router.push("/add-car" as never);
-                        Haptics.selectionAsync();
-                    }}
-                >
-                    <Text style={[styles.carChipText, isCreating && styles.carChipTextActive]}>+ Legg til</Text>
-                </TouchableOpacity>
-            </ScrollView>
-          </View>
-
           <Text style={styles.sectionHeader}>Kjøretøyinformasjon</Text>
 
           {/* Car Details Form */}
@@ -311,7 +230,7 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionHeader}>Drift og Vedlikehold</Text>
+          <Text style={styles.sectionHeader}>Drift og vedlikehold</Text>
 
           <View style={styles.formCard}>
              <View style={styles.inputRow}>
@@ -346,9 +265,7 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {!isCreating && (
-          <View>
-          <Text style={styles.sectionHeader}>App & Data</Text>
+          <Text style={styles.sectionHeader}>App & data</Text>
 
           <View style={styles.formCard}>
             <TouchableOpacity style={styles.inputRow}>
@@ -438,18 +355,9 @@ export default function SettingsScreen() {
               <ChevronRight size={20} color={Colors.text.tertiary} />
             </TouchableOpacity>
           </View>
-          </View>
-          )}
 
-          {carInfo && carInfo.make && !isCreating && (
-             <TouchableOpacity 
-               style={styles.deleteButton} 
-               onPress={handleDelete}
-             >
-               <Trash2 size={20} color={Colors.danger} />
-               <Text style={styles.deleteButtonText}>Slett kjøretøy</Text>
-             </TouchableOpacity>
-          )}
+
+
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -549,35 +457,5 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     marginTop: 2,
   },
-  carSelectorContainer: {
-    marginBottom: 8,
-  },
-  carList: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  carChip: {
-    backgroundColor: Colors.cardBackground,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  carChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  carChipText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.text.primary,
-  },
-  carChipTextActive: {
-    color: "#fff",
-  },
+
 });

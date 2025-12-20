@@ -17,8 +17,9 @@ import {
   CircleSlash2,
   ChevronRight,
   ScanLine,
-  RefreshCw,
   Plus,
+  Edit,
+  Trash2,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -35,6 +36,7 @@ export default function DashboardScreen() {
     tireInfo,
     cars,
     setActiveCar,
+    deleteCar,
   } = useCarData();
 
   const lastWash = getLastWash();
@@ -48,41 +50,36 @@ export default function DashboardScreen() {
     router.push(route as never);
   };
 
-  const handleSwitchCar = () => {
+  const handleDeleteCar = (car: typeof cars[0]) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    if (cars.length === 0) {
-      handlePress("/settings");
-      return;
+    Alert.alert(
+      "Slett bil",
+      `Er du sikker på at du vil slette ${car.make} ${car.model}?`,
+      [
+        { text: "Avbryt", style: "cancel" },
+        {
+          text: "Slett",
+          style: "destructive",
+          onPress: () => {
+            deleteCar(car.id);
+            if (Platform.OS !== "web") {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEditCar = (car: typeof cars[0]) => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-
-    if (cars.length === 1) {
-      Alert.alert(
-        "Legg til flere biler",
-        "Du har bare én bil. Vil du legge til en ny bil?",
-        [
-          { text: "Avbryt", style: "cancel" },
-          { text: "Legg til", onPress: () => handlePress("/settings") }
-        ]
-      );
-      return;
-    }
-
-    const options = cars.map(car => ({
-      text: `${car.make} ${car.model} (${car.licensePlate})`,
-      onPress: () => {
-        setActiveCar(car.id);
-        if (Platform.OS !== "web") {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-      }
-    }));
-
-    options.push({ text: "Avbryt", onPress: () => {} });
-
-    Alert.alert("Velg bil", "Hvilken bil vil du se?", options);
+    setActiveCar(car.id);
+    handlePress("/settings");
   };
 
   const formatDate = (dateString: string) => {
@@ -109,40 +106,80 @@ export default function DashboardScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {carInfo ? (
+        {cars.length > 0 ? (
           <>
-            <View style={styles.carSelectorCard}>
-              <Text style={styles.carSelectorLabel}>Aktiv bil</Text>
-              <TouchableOpacity 
-                style={styles.carInfoHeader}
-                onPress={handleSwitchCar}
-                activeOpacity={0.7}
-              >
-                <Car size={32} color={Colors.primary} strokeWidth={2} />
-                <View style={styles.carInfoText}>
-                  <Text style={styles.carMake}>
-                    {carInfo.make} {carInfo.model}
-                  </Text>
-                  <Text style={styles.carDetails}>
-                    {carInfo.year} • {carInfo.licensePlate}
-                  </Text>
-                </View>
-                {cars.length > 1 && (
-                  <View style={styles.switchIndicator}>
-                    <RefreshCw size={18} color={Colors.primary} strokeWidth={2} />
-                    <Text style={styles.switchText}>Bytt</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Mine biler</Text>
               <TouchableOpacity
-                style={styles.addCarButton}
+                style={styles.addCarIconButton}
                 onPress={() => handlePress("/add-car")}
                 activeOpacity={0.7}
               >
                 <Plus size={20} color={Colors.primary} strokeWidth={2.5} />
-                <Text style={styles.addCarButtonText}>Legg til bil</Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.carsList}>
+              {cars.map((car) => {
+                const isActive = car.id === carInfo?.id;
+                return (
+                  <TouchableOpacity
+                    key={car.id}
+                    style={[
+                      styles.carCard,
+                      isActive && styles.carCardActive,
+                    ]}
+                    onPress={() => {
+                      setActiveCar(car.id);
+                      if (Platform.OS !== "web") {
+                        Haptics.selectionAsync();
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.carCardHeader}>
+                      <Car
+                        size={28}
+                        color={isActive ? Colors.primary : Colors.text.secondary}
+                        strokeWidth={2}
+                      />
+                      <View style={styles.carCardInfo}>
+                        <Text style={styles.carCardTitle}>
+                          {car.make} {car.model}
+                        </Text>
+                        <Text style={styles.carCardSubtitle}>
+                          {car.year} • {car.licensePlate}
+                        </Text>
+                      </View>
+                      {isActive && (
+                        <View style={styles.activeBadge}>
+                          <Text style={styles.activeBadgeText}>Aktiv</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.carCardActions}>
+                      <TouchableOpacity
+                        style={styles.carActionButton}
+                        onPress={() => handleEditCar(car)}
+                        activeOpacity={0.7}
+                      >
+                        <Edit size={18} color={Colors.text.secondary} />
+                        <Text style={styles.carActionText}>Rediger</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.carActionButton}
+                        onPress={() => handleDeleteCar(car)}
+                        activeOpacity={0.7}
+                      >
+                        <Trash2 size={18} color={Colors.danger} />
+                        <Text style={[styles.carActionText, { color: Colors.danger }]}>
+                          Slett
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <View style={styles.statsGrid}>
@@ -184,7 +221,7 @@ export default function DashboardScreen() {
                 </View>
                 <Text style={styles.statLabel}>Kilometerstand</Text>
                 <Text style={styles.statValue}>
-                  {carInfo.currentMileage.toLocaleString("no-NO")} km
+                  {carInfo?.currentMileage.toLocaleString("no-NO") || 0} km
                 </Text>
               </View>
 
@@ -219,12 +256,14 @@ export default function DashboardScreen() {
               </View>
             )}
 
-            <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoTitle}>Forsikring</Text>
+            {carInfo?.insurance && (
+              <View style={styles.infoCard}>
+                <View style={styles.infoHeader}>
+                  <Text style={styles.infoTitle}>Forsikring</Text>
+                </View>
+                <Text style={styles.infoValue}>{carInfo.insurance}</Text>
               </View>
-              <Text style={styles.infoValue}>{carInfo.insurance}</Text>
-            </View>
+            )}
           </>
         ) : (
           <View style={styles.emptyState}>
@@ -238,6 +277,7 @@ export default function DashboardScreen() {
               onPress={() => handlePress("/add-car")}
               activeOpacity={0.7}
             >
+              <Plus size={24} color="#fff" strokeWidth={2.5} />
               <Text style={styles.addButtonText}>Legg til bil</Text>
             </TouchableOpacity>
           </View>
@@ -274,43 +314,98 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
-  carSelectorCard: {
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+  },
+  addCarIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  carsList: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  carCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
+    padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  carSelectorLabel: {
-    fontSize: 12,
-    fontWeight: "600" as const,
-    color: Colors.text.secondary,
-    textTransform: "uppercase" as const,
-    marginBottom: 12,
-    letterSpacing: 0.5,
+  carCardActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + "08",
   },
-  carInfoHeader: {
+  carCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 12,
+    marginBottom: 12,
   },
-  carInfoText: {
+  carCardInfo: {
     flex: 1,
   },
-  carMake: {
-    fontSize: 20,
+  carCardTitle: {
+    fontSize: 18,
     fontWeight: "700" as const,
     color: Colors.text.primary,
     marginBottom: 4,
   },
-  carDetails: {
+  carCardSubtitle: {
     fontSize: 14,
     color: Colors.text.secondary,
     fontWeight: "500" as const,
+  },
+  activeBadge: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  activeBadgeText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    color: "#fff",
+  },
+  carCardActions: {
+    flexDirection: "row",
+    gap: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  carActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+  },
+  carActionText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: Colors.text.secondary,
   },
   statsGrid: {
     flexDirection: "row",
@@ -400,6 +495,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -440,37 +539,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
   },
-  switchIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.primary + "15",
-    borderRadius: 20,
-  },
-  switchText: {
-    fontSize: 13,
-    fontWeight: "600" as const,
-    color: Colors.primary,
-  },
-  addCarButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.primary + "10",
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.primary + "40",
-    borderStyle: "dashed" as const,
-  },
-  addCarButtonText: {
-    fontSize: 15,
-    fontWeight: "600" as const,
-    color: Colors.primary,
-  },
+
 });
