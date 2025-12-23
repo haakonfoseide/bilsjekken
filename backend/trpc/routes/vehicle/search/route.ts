@@ -37,9 +37,18 @@ export default publicProcedure
       }
 
       // 3. Get API Key
+      // In hosted environments, private env vars might not be present.
+      // We therefore also accept a key forwarded from the client (EXPO_PUBLIC_VEGVESEN_API_KEY)
+      // via header to avoid breaking lookups in production builds.
+      const headerKeyRaw = (ctx as any)?.req?.headers?.get?.("x-vegvesen-api-key") ?? null;
       const envApiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
-      console.log("[Vehicle Search] Has API key:", Boolean(envApiKey));
-      if (!envApiKey) {
+      const resolvedKeyRaw = headerKeyRaw || envApiKey;
+
+      console.log("[Vehicle Search] Has API key:", Boolean(resolvedKeyRaw), {
+        from: headerKeyRaw ? "header" : envApiKey ? "env" : "missing",
+      });
+
+      if (!resolvedKeyRaw) {
         console.error("[Vehicle Search] CRITICAL: Missing Vegvesenet API Key");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -47,7 +56,7 @@ export default publicProcedure
         });
       }
 
-      const apiKey = envApiKey.startsWith("Apikey ") ? envApiKey : `Apikey ${envApiKey}`;
+      const apiKey = resolvedKeyRaw.startsWith("Apikey ") ? resolvedKeyRaw : `Apikey ${resolvedKeyRaw}`;
 
       // 4. Call External API
       // Using the Enkeltoppslag API (Production URL)

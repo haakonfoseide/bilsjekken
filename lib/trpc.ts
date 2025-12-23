@@ -75,10 +75,13 @@ const createLinks = () => [
     fetch: async (url, options) => {
       const requestId = `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
       
+      const vegvesenKey = process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
+
       const mergedHeaders = {
         "Content-Type": "application/json",
         "x-rork-request-id": requestId,
         "x-rork-trpc-client": "expo",
+        ...(vegvesenKey ? { "x-vegvesen-api-key": vegvesenKey } : {}),
         ...((options?.headers as Record<string, string>) || {}),
       };
 
