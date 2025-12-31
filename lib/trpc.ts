@@ -3,9 +3,8 @@ import { createTRPCProxyClient, httpLink } from "@trpc/client";
 import Constants from "expo-constants";
 
 // 1. Create the React Query hooks
-// We cast to any to avoid "collision" errors and because we can't easily
-// import the full Router type on the client without runtime issues.
-export const trpc = createTRPCReact<any>() as any;
+import type { AppRouter } from "@/backend/trpc/app-router";
+export const trpc = createTRPCReact<AppRouter>();
 
 const normalizeNoTrailingSlash = (value: string) => (value.endsWith("/") ? value.slice(0, -1) : value);
 
@@ -131,21 +130,16 @@ export const trpcProviderClient = trpc.createClient({
 });
 
 // 4. Create the Vanilla Proxy Client (for usage outside of React components/hooks)
-export const trpcVanillaClient = createTRPCProxyClient<any>({
+export const trpcVanillaClient = createTRPCProxyClient<AppRouter>({
   links: createLinks(),
 });
 
 // 5. Type-safe wrapper for vanilla client calls
 export const trpcClient = {
-  vehicleSearch: {
-    query: async (input: { licensePlate: string }) => {
-      return (trpcVanillaClient as any).vehicleSearch.query(input);
-    },
-  },
   vehicle: {
     search: {
       query: async (input: { licensePlate: string }) => {
-        return (trpcVanillaClient as any).vehicle.search.query(input);
+        return trpcVanillaClient.vehicle.search.query(input);
       },
     },
   },

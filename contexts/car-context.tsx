@@ -11,6 +11,7 @@ import type {
   TireSet,
   MileageRecord,
 } from "@/types/car";
+import type { VehicleSearchResult } from "@/lib/api-types";
 
 const STORAGE_KEY = "@car_data";
 const STORAGE_BACKUP_KEY = "@car_data_backup";
@@ -77,7 +78,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
              const migratedCar: CarInfo = { ...oldCar, id: carId };
              
              // Migrate records
-             const migrateRecord = (r: any) => ({ ...r, carId });
+             const migrateRecord = <T extends { id?: string }>(r: T): T & { carId: string } => ({ ...r, carId });
              
              return {
                cars: [migratedCar],
@@ -521,7 +522,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   }, [currentTireInfo, filteredTireSets]);
 
   const refreshCarInfoMutation = useMutation({
-    mutationFn: async (carId: string) => {
+    mutationFn: async (carId: string): Promise<{ carId: string; vehicleData: VehicleSearchResult }> => {
       const car = data.cars.find((c) => c.id === carId);
       if (!car) throw new Error("Bil ikke funnet");
 
@@ -537,14 +538,12 @@ export const [CarProvider, useCarData] = createContextHook(() => {
 
           const localCurrent = Number.isFinite(c.currentMileage) ? c.currentMileage : 0;
           const vvRegistered = Number.isFinite(vehicleData.registeredMileage)
-            ? (vehicleData.registeredMileage as number)
+            ? vehicleData.registeredMileage
             : null;
 
-          const vvHistory = Array.isArray(vehicleData.mileageHistory)
-            ? (vehicleData.mileageHistory as { mileage: number; date: string; source?: "vegvesen" }[])
-            : undefined;
+          const vvHistory = vehicleData.mileageHistory;
 
-          const computedCurrentMileage = vvRegistered !== null ? Math.max(localCurrent, vvRegistered) : localCurrent;
+          const computedCurrentMileage = vvRegistered !== null && Number.isFinite(vvRegistered) && typeof vvRegistered === "number" ? Math.max(localCurrent, vvRegistered) : localCurrent;
 
           return {
             ...c,
@@ -553,18 +552,18 @@ export const [CarProvider, useCarData] = createContextHook(() => {
             year: vehicleData.year,
             vin: vehicleData.vin || c.vin,
             color: vehicleData.color,
-            weight: vehicleData.weight,
-            totalWeight: (vehicleData as any).totalWeight ?? c.totalWeight,
-            power: vehicleData.power,
+            weight: vehicleData.weight ?? undefined,
+            totalWeight: vehicleData.totalWeight ?? c.totalWeight,
+            power: vehicleData.power ?? undefined,
             fuelType: vehicleData.fuelType,
-            co2Emission: (vehicleData as any).co2Emission ?? c.co2Emission,
-            engineDisplacement: (vehicleData as any).engineDisplacement ?? c.engineDisplacement,
-            transmission: (vehicleData as any).transmission ?? c.transmission,
-            driveType: (vehicleData as any).driveType ?? c.driveType,
-            numberOfSeats: (vehicleData as any).numberOfSeats ?? c.numberOfSeats,
-            numberOfDoors: (vehicleData as any).numberOfDoors ?? c.numberOfDoors,
-            maxTowWeight: (vehicleData as any).maxTowWeight ?? c.maxTowWeight,
-            registrationDate: vehicleData.registrationDate,
+            co2Emission: vehicleData.co2Emission ?? c.co2Emission,
+            engineDisplacement: vehicleData.engineDisplacement ?? c.engineDisplacement,
+            transmission: vehicleData.transmission ?? c.transmission,
+            driveType: vehicleData.driveType ?? c.driveType,
+            numberOfSeats: vehicleData.numberOfSeats ?? c.numberOfSeats,
+            numberOfDoors: vehicleData.numberOfDoors ?? c.numberOfDoors,
+            maxTowWeight: vehicleData.maxTowWeight ?? c.maxTowWeight,
+            registrationDate: vehicleData.registrationDate ? vehicleData.registrationDate : undefined,
             vehicleType: vehicleData.vehicleType,
             currentMileage: computedCurrentMileage,
             registeredMileage: vvRegistered ?? c.registeredMileage,
@@ -572,8 +571,8 @@ export const [CarProvider, useCarData] = createContextHook(() => {
             mileageHistory: vvHistory ?? c.mileageHistory,
             euControlDate: vehicleData.euControlDate ?? c.euControlDate,
             nextEuControlDate: vehicleData.nextEuControlDate ?? c.nextEuControlDate,
-            vehicleSections: (vehicleData as any).vehicleSections ?? c.vehicleSections,
-          };
+            vehicleSections: vehicleData.vehicleSections ?? c.vehicleSections,
+          } as CarInfo;
         });
 
         const newData = { ...prev, cars: newCars };

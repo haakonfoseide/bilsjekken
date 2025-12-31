@@ -37,6 +37,7 @@ import * as Network from "expo-network";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 import { trpcClient } from "@/lib/trpc";
+import type { VehicleSearchResult } from "@/lib/api-types";
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -73,8 +74,8 @@ export default function AddCarScreen() {
 
   const [registeredMileage, setRegisteredMileage] = useState<number | null>(null);
   const [registeredMileageDate, setRegisteredMileageDate] = useState("");
-  const [mileageHistory, setMileageHistory] = useState<any[]>([]);
-  const [vehicleSections, setVehicleSections] = useState<any>(null);
+  const [mileageHistory, setMileageHistory] = useState<{ mileage: number; date: string; source?: "vegvesen" | "user" }[]>([]);
+  const [vehicleSections, setVehicleSections] = useState<VehicleSearchResult["vehicleSections"] | null>(null);
   const [euControlDate, setEuControlDate] = useState("");
   const [nextEuControlDate, setNextEuControlDate] = useState("");
   
@@ -148,8 +149,8 @@ export default function AddCarScreen() {
     const startedAt = Date.now();
 
     try {
-      console.log("[AddCar][VehicleLookup] calling trpc procedure: vehicleSearch.query");
-      const data = await trpcClient.vehicleSearch.query({ licensePlate: plate });
+      console.log("[AddCar][VehicleLookup] calling trpc procedure: vehicle.search.query");
+      const data = await trpcClient.vehicle.search.query({ licensePlate: plate });
       
       if (!isMounted.current) return;
 
@@ -169,20 +170,20 @@ export default function AddCarScreen() {
         setFuelType(data.fuelType || "");
         setRegistrationDate(data.registrationDate || "");
         setVehicleType(data.vehicleType || "");
-        setWeight(data.weight || null);
-        setTotalWeight((data as any).totalWeight || null);
-        setPower(data.power || null);
-        setCo2Emission((data as any).co2Emission || null);
-        setEngineDisplacement((data as any).engineDisplacement || null);
-        setTransmission((data as any).transmission || "");
-        setDriveType((data as any).driveType || "");
-        setNumberOfSeats((data as any).numberOfSeats || null);
-        setNumberOfDoors((data as any).numberOfDoors || null);
-        setMaxTowWeight((data as any).maxTowWeight || null);
+        setWeight(typeof data.weight === "number" ? data.weight : null);
+        setTotalWeight(typeof data.totalWeight === "number" ? data.totalWeight : null);
+        setPower(typeof data.power === "number" ? data.power : null);
+        setCo2Emission(data.co2Emission ?? null);
+        setEngineDisplacement(data.engineDisplacement ?? null);
+        setTransmission(data.transmission ? String(data.transmission) : "");
+        setDriveType(data.driveType ? String(data.driveType) : "");
+        setNumberOfSeats(data.numberOfSeats || null);
+        setNumberOfDoors(data.numberOfDoors || null);
+        setMaxTowWeight(data.maxTowWeight || null);
         setRegisteredMileage(data.registeredMileage || null);
         setRegisteredMileageDate(data.registeredMileageDate || "");
         setMileageHistory(data.mileageHistory || []);
-        setVehicleSections((data as any).vehicleSections || null);
+        setVehicleSections(data.vehicleSections || null);
         setEuControlDate(data.euControlDate || "");
         setNextEuControlDate(data.nextEuControlDate || "");
         
@@ -196,36 +197,37 @@ export default function AddCarScreen() {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isMounted.current) return;
       const durationMs = Date.now() - startedAt;
       console.error("[AddCar][VehicleLookup] FAILED durationMs:", durationMs);
       console.error("[AddCar][VehicleLookup] raw error:", err);
 
-      const trpcData = err?.data;
-      const trpcShape = err?.shape;
+      const errorObj = err as { data?: { httpStatus?: number; code?: string }; shape?: { data?: { httpStatus?: number; code?: string } }; message?: string; name?: string; cause?: unknown; stack?: string };
+      const trpcData = errorObj?.data;
+      const trpcShape = errorObj?.shape;
       const httpStatus = trpcShape?.data?.httpStatus ?? trpcData?.httpStatus;
       const trpcCode = trpcShape?.data?.code ?? trpcData?.code;
 
       console.error("[AddCar][VehicleLookup] parsed:", {
         attemptId,
-        message: err?.message,
-        name: err?.name,
+        message: errorObj?.message,
+        name: errorObj?.name,
         httpStatus,
         trpcCode,
         shape: trpcShape,
         data: trpcData,
-        cause: err?.cause,
-        stack: err?.stack,
+        cause: errorObj?.cause,
+        stack: errorObj?.stack,
       });
 
       let msg = "Kunne ikke finne kjøretøyet.";
 
-      if (trpcCode === "NOT_FOUND" || err?.message?.includes("NOT_FOUND")) {
+      if (trpcCode === "NOT_FOUND" || errorObj?.message?.includes("NOT_FOUND")) {
         msg = "Fant ingen kjøretøy med dette nummeret.";
-      } else if (trpcCode === "UNAUTHORIZED" || err?.message?.includes("UNAUTHORIZED")) {
+      } else if (trpcCode === "UNAUTHORIZED" || errorObj?.message?.includes("UNAUTHORIZED")) {
         msg = "Tjenesten er midlertidig utilgjengelig (Auth).";
-      } else if (httpStatus === 404 || err?.message?.includes("route not found")) {
+      } else if (httpStatus === 404 || errorObj?.message?.includes("route not found")) {
         msg = "Backend-ruten ble ikke funnet (404). Se console logg for URL + RequestId.";
       } else if (httpStatus === 401 || httpStatus === 403) {
         msg = "Vegvesenet API-nøkkel mangler/er ugyldig. Se backend logg.";

@@ -175,7 +175,7 @@ export default function ScanReceiptScreen() {
   const analyzeReceipt = async (imageUri: string) => {
     setAnalyzing(true);
     const maxRetries = 2;
-    let lastError: any = null;
+    let lastError: unknown = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -245,7 +245,7 @@ export default function ScanReceiptScreen() {
         }
         setAnalyzing(false);
         return;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (!isMounted.current) return;
         lastError = error;
         console.error(`[Receipt] Analysis error (attempt ${attempt + 1}):`, error);
@@ -257,21 +257,21 @@ export default function ScanReceiptScreen() {
       }
     }
 
+    const errorObj = lastError as { message?: string; stack?: string; name?: string } | null;
     console.error("[Receipt] All retry attempts failed:", {
-      message: lastError?.message,
-      stack: lastError?.stack,
-      name: lastError?.name,
+      message: errorObj?.message,
+      stack: errorObj?.stack,
+      name: errorObj?.name,
     });
     
     if (!isMounted.current) return;
 
     let errorMessage = "Kunne ikke analysere kvitteringen etter flere forsøk. Legg til manuelt i riktig kategori.";
-    
-    if (lastError?.message?.includes("JSON Parse") || lastError?.message?.includes("parse")) {
+    if (errorObj?.message?.includes("JSON Parse") || errorObj?.message?.includes("parse")) {
       errorMessage = "AI-tjenesten returnerte ugyldig data. Dette kan skyldes nettverksproblemer. Prøv igjen senere eller legg til manuelt.";
-    } else if (lastError?.message?.includes("network") || lastError?.message?.includes("fetch") || lastError?.message?.includes("NetworkError")) {
+    } else if (errorObj?.message?.includes("network") || errorObj?.message?.includes("fetch") || errorObj?.message?.includes("NetworkError")) {
       errorMessage = "Nettverksfeil. Sjekk internettforbindelsen din og prøv igjen.";
-    } else if (lastError?.message?.includes("read image")) {
+    } else if (errorObj?.message?.includes("read image")) {
       errorMessage = "Kunne ikke lese bildet. Prøv å ta et nytt bilde.";
     }
     

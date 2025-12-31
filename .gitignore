@@ -36,6 +36,10 @@ yarn-error.*
 *.tsbuildinfo
 .vercel
 
+# Lock files (bruk kun bun.lock)
+package-lock.json
+yarn.lock
+
 ios/
 android/
 .rork

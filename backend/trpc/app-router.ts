@@ -9,7 +9,6 @@ export const appRouter = createTRPCRouter({
   vehicle: createTRPCRouter({
     search: vehicleSearchProcedure,
   }),
-  vehicleSearch: vehicleSearchProcedure,
 });
 
 export type AppRouter = typeof appRouter;

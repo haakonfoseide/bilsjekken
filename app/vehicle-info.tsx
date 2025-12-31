@@ -15,7 +15,7 @@ import Colors from "@/constants/colors";
 import { useCarData } from "@/contexts/car-context";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
-import type { VehicleSection } from "@/types/car";
+import type { VehicleSection, CarInfo } from "@/types/car";
 
 type SectionKey =
   | "euKontroll"
@@ -45,7 +45,7 @@ export default function VehicleInfoScreen() {
   const { carInfo, refreshCarInfo, isRefreshing, updateCarInfo } = useCarData();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [tempSections, setTempSections] = useState<any>({});
+  const [tempSections, setTempSections] = useState<CarInfo["vehicleSections"]>({});
 
   useEffect(() => {
     if (carInfo?.vehicleSections && !isEditing) {
@@ -88,7 +88,7 @@ export default function VehicleInfoScreen() {
   };
 
   const handleChangeText = (sectionKey: SectionKey, fieldIndex: number, text: string) => {
-    setTempSections((prev: any) => {
+    setTempSections((prev) => {
       const next = JSON.parse(JSON.stringify(prev));
       if (next[sectionKey]?.fields?.[fieldIndex]) {
         next[sectionKey].fields[fieldIndex].value = text;

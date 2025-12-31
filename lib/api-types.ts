@@ -54,7 +54,4 @@ export interface AppRouter {
       query: (input: { licensePlate: string }) => Promise<VehicleSearchResult>;
     };
   };
-  vehicleSearch: {
-    query: (input: { licensePlate: string }) => Promise<VehicleSearchResult>;
-  };
 }

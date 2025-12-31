@@ -1,9 +1,10 @@
 import { publicProcedure } from "../../../create-context";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import type { VehicleSearchResult } from "@/lib/api-types";
 
 // Simple in-memory cache
-const vehicleCache = new Map<string, { data: any; timestamp: number }>();
+const vehicleCache = new Map<string, { data: VehicleSearchResult; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const vehicleSearchSchema = z.object({
@@ -14,7 +15,7 @@ export default publicProcedure
   .input(vehicleSearchSchema)
   .query(async ({ input, ctx }) => {
     const startTime = Date.now();
-    const requestId = (ctx as any)?.requestId ?? "(no-request-id)";
+    const requestId = ctx.requestId ?? "(no-request-id)";
 
     console.log("[Vehicle Search] --------------------------------------------------");
     console.log("[Vehicle Search] requestId:", requestId);
@@ -40,7 +41,7 @@ export default publicProcedure
       // In hosted environments, private env vars might not be present.
       // We therefore also accept a key forwarded from the client (EXPO_PUBLIC_VEGVESEN_API_KEY)
       // via header to avoid breaking lookups in production builds.
-      const headerKeyRaw = (ctx as any)?.req?.headers?.get?.("x-vegvesen-api-key") ?? null;
+      const headerKeyRaw = ctx.req?.headers?.get?.("x-vegvesen-api-key") ?? null;
       const envApiKey = process.env.VEGVESEN_API_KEY || process.env.EXPO_PUBLIC_VEGVESEN_API_KEY;
       const resolvedKeyRaw = headerKeyRaw || envApiKey;
 
@@ -112,7 +113,7 @@ export default publicProcedure
         });
       }
 
-      let data: any = null;
+      let data: unknown = null;
       try {
         data = await response.json();
       } catch (e) {
@@ -130,9 +131,19 @@ export default publicProcedure
       }
 
       // 6. Validate Response Data
-      if (!data || !data.kjoretoydataListe || data.kjoretoydataListe.length === 0) {
+      // Type guard for Vegvesenet API response structure
+      const isValidResponse = (d: unknown): d is { kjoretoydataListe?: Array<unknown> } => {
+        return typeof d === "object" && d !== null;
+      };
+
+      if (!isValidResponse(data) || !data.kjoretoydataListe || data.kjoretoydataListe.length === 0) {
         console.log("[Vehicle Search] Valid JSON but no vehicle list found");
-         throw new TRPCError({
+        console.log("[Vehicle Search] Response structure:", {
+          hasData: !!data,
+          hasListe: !!(data && isValidResponse(data) && data.kjoretoydataListe),
+          keys: data && isValidResponse(data) ? Object.keys(data) : [],
+        });
+        throw new TRPCError({
           code: "NOT_FOUND",
           message: "Ingen kjøretøydata funnet.",
         });
@@ -140,33 +151,86 @@ export default publicProcedure
 
       const vehicle = data.kjoretoydataListe[0];
       
+      // Type guard for vehicle object
+      if (!vehicle || typeof vehicle !== "object") {
+        console.error("[Vehicle Search] Invalid vehicle object structure");
+        throw new TRPCError({
+          code: "BAD_GATEWAY",
+          message: "Ugyldig kjøretøydata-struktur fra Vegvesenet.",
+        });
+      }
+      
       // 7. Map Data
       console.log("[Vehicle Search] Mapping data...");
+      console.log("[Vehicle Search] Vehicle keys:", Object.keys(vehicle));
 
-      const teknisk = vehicle.godkjenning?.tekniskGodkjenning?.tekniskeData;
-      const generelt = teknisk?.generelt;
-      const karosseri = teknisk?.karosseriOgLasteplan;
-      const godkjenning = vehicle.godkjenning?.forstegangsGodkjenning;
-      const vekter = teknisk?.vekter;
-      const periodiskKjoretoyKontroll = vehicle.periodiskKjoretoyKontroll;
+      const vehicleObj = vehicle as Record<string, unknown>;
+      const teknisk = (vehicleObj?.godkjenning as { tekniskGodkjenning?: { tekniskeData?: unknown } } | undefined)?.tekniskGodkjenning?.tekniskeData as {
+        generelt?: unknown;
+        karosseriOgLasteplan?: unknown;
+        vekter?: unknown;
+        motorOgDrivverk?: unknown;
+        miljodata?: unknown;
+        personOgLast?: unknown;
+        tilhengerkopling?: unknown;
+      } | undefined;
+      const generelt = teknisk?.generelt as { merke?: Array<{ merke?: string }>; handelsbetegnelse?: string[] } | undefined;
+      const karosseri = teknisk?.karosseriOgLasteplan as { farge?: Array<{ kodeNavn?: string }>; dorerAntall?: unknown; antallDorer?: unknown } | undefined;
+      const godkjenning = (vehicleObj?.godkjenning as { forstegangsGodkjenning?: { forstegangRegistrertDato?: string } } | undefined)?.forstegangsGodkjenning;
+      const vekter = teknisk?.vekter as { egenvekt?: unknown; tillattTotalvekt?: unknown; totalvekt?: unknown } | undefined;
+      const periodiskKjoretoyKontroll = vehicleObj?.periodiskKjoretoyKontroll as { kontrollfrist?: string; sistGodkjent?: string } | undefined;
       const nextEuControl = periodiskKjoretoyKontroll?.kontrollfrist;
       const lastEuControl = periodiskKjoretoyKontroll?.sistGodkjent;
 
-      const motorOgDrivverk = teknisk?.motorOgDrivverk;
-      const motor = motorOgDrivverk?.motor?.[0];
+      const motorOgDrivverkTyped = teknisk?.motorOgDrivverk as {
+        motor?: Array<{
+          slagvolum?: unknown;
+          slagvolumCm3?: unknown;
+          slagvolumcc?: unknown;
+          drivstoff?: Array<{
+            drivstoffKode?: { navn?: string };
+            maksNettoEffekt?: unknown;
+          }>;
+        }>;
+        girKasse?: {
+          girKasseType?: { navn?: string };
+          girkasseType?: { navn?: string };
+          type?: { navn?: string } | string;
+        };
+        drivlinje?: {
+          driftstype?: { navn?: string } | string;
+        };
+        hjuldrift?: { navn?: string } | string;
+      } | undefined;
+      const motor = motorOgDrivverkTyped?.motor?.[0];
       const drivstoff = motor?.drivstoff?.[0];
-      const miljo = teknisk?.miljodata;
-      const miljoKilde = miljo?.miljodataWLTP ?? miljo?.miljodataNEDC ?? miljo;
-      const seter = teknisk?.personOgLast?.sitteplasserAntall ?? teknisk?.personOgLast?.sitteplasser ?? teknisk?.personOgLast?.antallSitteplasser;
-      const dorAntall = teknisk?.karosseriOgLasteplan?.dorerAntall ?? teknisk?.karosseriOgLasteplan?.antallDorer;
-      const tilhenger = teknisk?.tilhengerkopling;
-      const gir = motorOgDrivverk?.girKasse;
-      const drivlinje = motorOgDrivverk?.drivlinje;
+      const miljoTyped = teknisk?.miljodata as {
+        miljodataWLTP?: { co2UtslippBlandetKjoring?: unknown; co2Utslipp?: unknown; co2?: unknown };
+        miljodataNEDC?: { co2UtslippBlandetKjoring?: unknown; co2Utslipp?: unknown; co2?: unknown };
+        co2UtslippBlandetKjoring?: unknown;
+        co2Utslipp?: unknown;
+        co2?: unknown;
+      } | undefined;
+      const miljoKilde = miljoTyped?.miljodataWLTP ?? miljoTyped?.miljodataNEDC ?? miljoTyped;
+      const personOgLastTyped = teknisk?.personOgLast as {
+        sitteplasserAntall?: unknown;
+        sitteplasser?: unknown;
+        antallSitteplasser?: unknown;
+      } | undefined;
+      const seter = personOgLastTyped?.sitteplasserAntall ?? personOgLastTyped?.sitteplasser ?? personOgLastTyped?.antallSitteplasser;
+      const dorAntall = karosseri?.dorerAntall ?? karosseri?.antallDorer;
+      const tilhengerTyped = teknisk?.tilhengerkopling as {
+        tillattTilhengervektBrems?: unknown;
+        maksTilhengervektBrems?: unknown;
+        tillattTilhengervekt?: unknown;
+      } | undefined;
+      const gir = motorOgDrivverkTyped?.girKasse;
+      const drivlinje = motorOgDrivverkTyped?.drivlinje;
 
       console.log("[Vehicle Search] Technical keys:", {
         tekniskKeys: Object.keys(teknisk || {}),
         motorKeys: Object.keys(motor || {}),
-        miljoKeys: Object.keys(miljo || {}),
+        miljoKeys: Object.keys(miljoTyped || {}),
       });
 
       console.log("[Vehicle Search] PKK data:", JSON.stringify(periodiskKjoretoyKontroll, null, 2));
@@ -188,7 +252,7 @@ export default publicProcedure
         return d.toISOString();
       };
 
-      const getMileageDateRaw = (item: any): unknown =>
+      const getMileageDateRaw = (item: Record<string, unknown>): unknown =>
         item?.maalingDato ??
         item?.maalingdato ??
         item?.maalingsDato ??
@@ -200,7 +264,7 @@ export default publicProcedure
         item?.tidspunkt ??
         item?.kontrollTidspunkt;
 
-      const getMileageValueRaw = (item: any): unknown =>
+      const getMileageValueRaw = (item: Record<string, unknown>): unknown =>
         item?.kilometerstand ??
         item?.kmStand ??
         item?.maalestand ??
@@ -212,32 +276,38 @@ export default publicProcedure
         item?.kilometer ??
         item?.km;
 
-      const normalizeToArray = (maybeArray: unknown): any[] => {
+      const normalizeToArray = (maybeArray: unknown): Array<unknown> => {
         if (!maybeArray) return [];
-        if (Array.isArray(maybeArray)) return maybeArray as any[];
+        if (Array.isArray(maybeArray)) return maybeArray;
         return [maybeArray];
       };
 
-      const extractMileageMeasurements = (vvVehicle: any): any[] => {
+      const extractMileageMeasurements = (vvVehicle: Record<string, unknown>): Array<Record<string, unknown>> => {
+        const vehicleTyped = vvVehicle as {
+          kjorelengdeMaalinger?: { kjorelengdeMaaling?: unknown } | unknown;
+          kjorelengdeMalinger?: { kjorelengdeMaling?: unknown } | unknown;
+          kjorelengdeMaaling?: { kjorelengdeMaaling?: unknown } | unknown;
+        };
+        
         const candidates: unknown[] = [
-          vvVehicle?.kjorelengdeMaalinger?.kjorelengdeMaaling,
-          vvVehicle?.kjorelengdeMaalinger,
-          vvVehicle?.kjorelengdeMalinger?.kjorelengdeMaling,
-          vvVehicle?.kjorelengdeMalinger,
-          vvVehicle?.kjorelengdeMaaling?.kjorelengdeMaaling,
-          vvVehicle?.kjorelengdeMaaling,
+          (vehicleTyped?.kjorelengdeMaalinger as { kjorelengdeMaaling?: unknown } | undefined)?.kjorelengdeMaaling,
+          vehicleTyped?.kjorelengdeMaalinger,
+          (vehicleTyped?.kjorelengdeMalinger as { kjorelengdeMaling?: unknown } | undefined)?.kjorelengdeMaling,
+          vehicleTyped?.kjorelengdeMalinger,
+          (vehicleTyped?.kjorelengdeMaaling as { kjorelengdeMaaling?: unknown } | undefined)?.kjorelengdeMaaling,
+          vehicleTyped?.kjorelengdeMaaling,
         ];
 
         for (const c of candidates) {
           const arr = normalizeToArray(c);
-          const filtered = arr.filter((it) => typeof it === "object" && it !== null);
+          const filtered = arr.filter((it): it is Record<string, unknown> => typeof it === "object" && it !== null);
           if (filtered.length > 0) return filtered;
         }
 
-        const found: any[] = [];
-        const seen = new Set<any>();
+        const found: Array<Record<string, unknown>> = [];
+        const seen = new Set<unknown>();
 
-        const walk = (node: any, depth: number) => {
+        const walk = (node: unknown, depth: number) => {
           if (!node || depth > 6) return;
           if (seen.has(node)) return;
           if (typeof node !== "object") return;
@@ -248,15 +318,16 @@ export default publicProcedure
             return;
           }
 
-          const hasMileage = toIntOrNull(getMileageValueRaw(node)) !== null;
-          const hasDate = toIsoOrNull(getMileageDateRaw(node)) !== null;
+          const hasMileage = toIntOrNull(getMileageValueRaw(node as Record<string, unknown>)) !== null;
+          const hasDate = toIsoOrNull(getMileageDateRaw(node as Record<string, unknown>)) !== null;
           const maybeLooksLikeMileage = hasMileage && hasDate;
           if (maybeLooksLikeMileage) {
-            found.push(node);
+            found.push(node as Record<string, unknown>);
           }
 
-          for (const key of Object.keys(node)) {
-            walk(node[key], depth + 1);
+          const nodeObj = node as Record<string, unknown>;
+          for (const key of Object.keys(nodeObj)) {
+            walk(nodeObj[key], depth + 1);
           }
         };
 
@@ -264,7 +335,7 @@ export default publicProcedure
         return found;
       };
 
-      const kjorelengder = extractMileageMeasurements(vehicle);
+      const kjorelengder = extractMileageMeasurements(vehicleObj);
 
       const firstMileageKeys = kjorelengder[0] ? Object.keys(kjorelengder[0]) : [];
       console.log(`[Vehicle Search] Found ${kjorelengder.length} mileage entries. First keys:`, firstMileageKeys);
@@ -273,7 +344,7 @@ export default publicProcedure
       }
 
       const normalizedMileageHistory = kjorelengder
-        .map((item: any) => {
+        .map((item: Record<string, unknown>) => {
           const mileage = toIntOrNull(getMileageValueRaw(item));
           const dateIso = toIsoOrNull(getMileageDateRaw(item));
           if (mileage === null || dateIso === null) return null;
@@ -299,10 +370,11 @@ export default publicProcedure
         return Number.isFinite(parsed) ? parsed : null;
       };
 
+      const miljoKildeTyped = miljoKilde as { co2UtslippBlandetKjoring?: unknown; co2Utslipp?: unknown; co2?: unknown } | undefined;
       const co2Emission =
-        toNumberOrNull(miljoKilde?.co2UtslippBlandetKjoring) ??
-        toNumberOrNull(miljoKilde?.co2Utslipp) ??
-        toNumberOrNull(miljoKilde?.co2) ??
+        toNumberOrNull(miljoKildeTyped?.co2UtslippBlandetKjoring) ??
+        toNumberOrNull(miljoKildeTyped?.co2Utslipp) ??
+        toNumberOrNull(miljoKildeTyped?.co2) ??
         null;
 
       const engineDisplacement =
@@ -311,19 +383,19 @@ export default publicProcedure
         toNumberOrNull(motor?.slagvolumcc) ??
         null;
 
+      const girTyped = gir as { girKasseType?: { navn?: string }; girkasseType?: { navn?: string }; type?: { navn?: string } | string } | undefined;
       const transmission =
-        gir?.girKasseType?.navn ??
-        gir?.girkasseType?.navn ??
-        gir?.type?.navn ??
-        gir?.type ??
+        girTyped?.girKasseType?.navn ??
+        girTyped?.girkasseType?.navn ??
+        (typeof girTyped?.type === "object" ? girTyped.type?.navn : girTyped?.type) ??
         null;
 
-      const driveType =
-        drivlinje?.driftstype?.navn ??
-        drivlinje?.driftstype ??
-        motorOgDrivverk?.hjuldrift?.navn ??
-        motorOgDrivverk?.hjuldrift ??
+      const drivlinjeTyped = drivlinje as { driftstype?: { navn?: string } | string } | undefined;
+      const driveTypeRaw =
+        (typeof drivlinjeTyped?.driftstype === "object" ? drivlinjeTyped.driftstype?.navn : drivlinjeTyped?.driftstype) ??
+        (motorOgDrivverkTyped?.hjuldrift && typeof motorOgDrivverkTyped.hjuldrift === "object" ? motorOgDrivverkTyped.hjuldrift.navn : motorOgDrivverkTyped?.hjuldrift) ??
         null;
+      const driveType = typeof driveTypeRaw === "string" ? driveTypeRaw : (driveTypeRaw && typeof driveTypeRaw === "object" ? driveTypeRaw.navn : null);
 
       const totalWeight =
         toIntOrNull(vekter?.tillattTotalvekt) ??
@@ -331,9 +403,9 @@ export default publicProcedure
         null;
 
       const maxTowWeight =
-        toIntOrNull(tilhenger?.tillattTilhengervektBrems) ??
-        toIntOrNull(tilhenger?.maksTilhengervektBrems) ??
-        toIntOrNull(tilhenger?.tillattTilhengervekt) ??
+        toIntOrNull(tilhengerTyped?.tillattTilhengervektBrems) ??
+        toIntOrNull(tilhengerTyped?.maksTilhengervektBrems) ??
+        toIntOrNull(tilhengerTyped?.tillattTilhengervekt) ??
         null;
 
       const numberOfSeats = toIntOrNull(seter);
@@ -359,17 +431,24 @@ export default publicProcedure
         buildField("Kontrollfrist", nextEuControl || null),
       ]);
 
+      const kjoretoyId = vehicleObj?.kjoretoyId as { kjennemerke?: string; understellsnummer?: string } | undefined;
+      const godkjenningFull = vehicleObj?.godkjenning as {
+        tekniskGodkjenning?: {
+          kjoretoyklassifisering?: { beskrivelse?: string };
+        };
+      } | undefined;
+
       const registreringsdataSection = buildSection("Registreringsdata", [
-        buildField("Kjennemerke", vehicle.kjoretoyId?.kjennemerke || cleanedPlate),
+        buildField("Kjennemerke", kjoretoyId?.kjennemerke || cleanedPlate),
         buildField("Merke", generelt?.merke?.[0]?.merke || null),
         buildField("Modell", generelt?.handelsbetegnelse?.[0] || null),
         buildField("Årsmodell", godkjenning?.forstegangRegistrertDato?.split("-")[0] || null),
         buildField("Førstegangsregistrert", registrationDateRaw),
-        buildField("VIN", vehicle.kjoretoyId?.understellsnummer || null),
+        buildField("VIN", kjoretoyId?.understellsnummer || null),
         buildField("Farge", karosseri?.farge?.[0]?.kodeNavn || null),
         buildField(
           "Kjøretøytype",
-          vehicle.godkjenning?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || null
+          godkjenningFull?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || null
         ),
       ]);
 
@@ -398,17 +477,17 @@ export default publicProcedure
       ]);
 
       const result = {
-        licensePlate: vehicle.kjoretoyId?.kjennemerke || cleanedPlate,
+        licensePlate: kjoretoyId?.kjennemerke || cleanedPlate,
         make: generelt?.merke?.[0]?.merke || "Ukjent",
         model: generelt?.handelsbetegnelse?.[0] || "Ukjent",
         year: godkjenning?.forstegangRegistrertDato?.split("-")[0] || "Ukjent",
-        vin: vehicle.kjoretoyId?.understellsnummer || "",
+        vin: kjoretoyId?.understellsnummer || "",
         color: karosseri?.farge?.[0]?.kodeNavn || "Ukjent",
-        registrationDate: registrationDateRaw,
-        vehicleType: vehicle.godkjenning?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
-        weight: vekter?.egenvekt || null,
+        registrationDate: registrationDateRaw ?? null,
+        vehicleType: godkjenningFull?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
+        weight: typeof vekter?.egenvekt === "number" ? vekter.egenvekt : null,
         totalWeight,
-        power: drivstoff?.maksNettoEffekt ?? null,
+        power: typeof drivstoff?.maksNettoEffekt === "number" ? drivstoff.maksNettoEffekt : null,
         fuelType: drivstoff?.drivstoffKode?.navn || "Ukjent",
         co2Emission,
         engineDisplacement,

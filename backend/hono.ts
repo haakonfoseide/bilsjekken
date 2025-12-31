@@ -37,7 +37,7 @@ app.use("*", async (c, next) => {
 });
 
 // Health check
-const healthHandler = (c: any) => c.json({
+const healthHandler = (c: { json: (data: unknown) => Response }) => c.json({
   status: "ok",
   timestamp: new Date().toISOString(),
   message: "Backend is healthy"

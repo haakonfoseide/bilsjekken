@@ -16,10 +16,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.bilsjekken2",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
+        "NSPhotoLibraryUsageDescription": "Appen trenger tilgang til bilder for å skanne kvitteringer og bildekk.",
+        "NSCameraUsageDescription": "Appen trenger tilgang til kameraet for å ta bilder av kvitteringer og bildekk.",
+        "NSMicrophoneUsageDescription": "Appen trenger ikke tilgang til mikrofonen.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -56,7 +61,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends."
+          "photosPermission": "Appen trenger tilgang til bilder for å skanne kvitteringer og bildekk."
         }
       ]
     ],
