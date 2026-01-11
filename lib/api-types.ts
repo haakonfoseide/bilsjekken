@@ -24,12 +24,24 @@ export interface VehicleSearchResult {
 
   totalWeight?: number | null;
   co2Emission?: number | null;
+  noxEmission?: number | null;
+  euroClass?: string | null;
   engineDisplacement?: number | null;
   transmission?: string | null;
   driveType?: string | null;
   numberOfSeats?: number | null;
   numberOfDoors?: number | null;
   maxTowWeight?: number | null;
+
+  registrationStatus?: string | null;
+  lengthMm?: number | null;
+  widthMm?: number | null;
+  payload?: number | null;
+
+  tireDimensions?: {
+    front?: string | null;
+    rear?: string | null;
+  };
 
   registeredMileage?: number | null;
   registeredMileageDate?: string | null;

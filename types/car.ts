@@ -28,6 +28,8 @@ export interface CarInfo {
   power?: number;
 
   co2Emission?: number;
+  noxEmission?: number;
+  euroClass?: string;
   engineDisplacement?: number;
   transmission?: string;
   driveType?: string;
@@ -35,6 +37,16 @@ export interface CarInfo {
   numberOfDoors?: number;
   maxTowWeight?: number;
   totalWeight?: number;
+
+  registrationStatus?: string;
+  lengthMm?: number;
+  widthMm?: number;
+  payload?: number;
+
+  tireDimensions?: {
+    front?: string | null;
+    rear?: string | null;
+  };
 
   registeredMileage?: number;
   registeredMileageDate?: string;

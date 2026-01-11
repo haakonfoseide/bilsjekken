@@ -28,7 +28,7 @@ type SectionKey =
 const ORDER: { key: SectionKey; title: string }[] = [
   { key: "euKontroll", title: "EU-kontroll" },
   { key: "registreringsdata", title: "Registreringsdata" },
-  { key: "utslipp", title: "Utslipp" },
+  { key: "utslipp", title: "Miljødata" },
   { key: "malOgVekt", title: "Mål og vekt" },
   { key: "motorKraftoverforing", title: "Motor / kraftoverføring" },
   { key: "dekkOgFelg", title: "Dekk og felg" },

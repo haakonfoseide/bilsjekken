@@ -557,6 +557,8 @@ export const [CarProvider, useCarData] = createContextHook(() => {
             power: vehicleData.power ?? undefined,
             fuelType: vehicleData.fuelType,
             co2Emission: vehicleData.co2Emission ?? c.co2Emission,
+            noxEmission: vehicleData.noxEmission ?? c.noxEmission,
+            euroClass: vehicleData.euroClass ?? c.euroClass,
             engineDisplacement: vehicleData.engineDisplacement ?? c.engineDisplacement,
             transmission: vehicleData.transmission ?? c.transmission,
             driveType: vehicleData.driveType ?? c.driveType,
@@ -571,6 +573,11 @@ export const [CarProvider, useCarData] = createContextHook(() => {
             mileageHistory: vvHistory ?? c.mileageHistory,
             euControlDate: vehicleData.euControlDate ?? c.euControlDate,
             nextEuControlDate: vehicleData.nextEuControlDate ?? c.nextEuControlDate,
+            registrationStatus: vehicleData.registrationStatus ?? c.registrationStatus,
+            lengthMm: vehicleData.lengthMm ?? c.lengthMm,
+            widthMm: vehicleData.widthMm ?? c.widthMm,
+            payload: vehicleData.payload ?? c.payload,
+            tireDimensions: vehicleData.tireDimensions ?? c.tireDimensions,
             vehicleSections: vehicleData.vehicleSections ?? c.vehicleSections,
           } as CarInfo;
         });

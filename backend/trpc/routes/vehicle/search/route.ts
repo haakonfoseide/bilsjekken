@@ -132,7 +132,7 @@ export default publicProcedure
 
       // 6. Validate Response Data
       // Type guard for Vegvesenet API response structure
-      const isValidResponse = (d: unknown): d is { kjoretoydataListe?: Array<unknown> } => {
+      const isValidResponse = (d: unknown): d is { kjoretoydataListe?: unknown[] } => {
         return typeof d === "object" && d !== null;
       };
 
@@ -173,25 +173,53 @@ export default publicProcedure
         miljodata?: unknown;
         personOgLast?: unknown;
         tilhengerkopling?: unknown;
+        hjulOgDekk?: unknown;
+        dekkOgFelg?: unknown;
       } | undefined;
-      const generelt = teknisk?.generelt as { merke?: Array<{ merke?: string }>; handelsbetegnelse?: string[] } | undefined;
-      const karosseri = teknisk?.karosseriOgLasteplan as { farge?: Array<{ kodeNavn?: string }>; dorerAntall?: unknown; antallDorer?: unknown } | undefined;
+      const generelt = teknisk?.generelt as { merke?: { merke?: string }[]; handelsbetegnelse?: string[] } | undefined;
+      const karosseri = teknisk?.karosseriOgLasteplan as {
+        farge?: { kodeNavn?: string }[];
+        dorerAntall?: unknown;
+        antallDorer?: unknown;
+        lengde?: unknown;
+        bredde?: unknown;
+        hoyde?: unknown;
+      } | undefined;
       const godkjenning = (vehicleObj?.godkjenning as { forstegangsGodkjenning?: { forstegangRegistrertDato?: string } } | undefined)?.forstegangsGodkjenning;
-      const vekter = teknisk?.vekter as { egenvekt?: unknown; tillattTotalvekt?: unknown; totalvekt?: unknown } | undefined;
+      const vekter = teknisk?.vekter as {
+        egenvekt?: unknown;
+        tillattTotalvekt?: unknown;
+        totalvekt?: unknown;
+        nyttelast?: unknown;
+        tillattLastevekt?: unknown;
+      } | undefined;
       const periodiskKjoretoyKontroll = vehicleObj?.periodiskKjoretoyKontroll as { kontrollfrist?: string; sistGodkjent?: string } | undefined;
+
+      const registreringTyped = (vehicleObj as { registrering?: unknown } | undefined)?.registrering as
+        | {
+            status?: { navn?: string } | string;
+            registreringsstatus?: { navn?: string } | string;
+          }
+        | undefined;
+      const registrationStatusRaw =
+        (typeof registreringTyped?.status === "object" ? registreringTyped?.status?.navn : registreringTyped?.status) ??
+        (typeof registreringTyped?.registreringsstatus === "object"
+          ? registreringTyped?.registreringsstatus?.navn
+          : registreringTyped?.registreringsstatus) ??
+        null;
       const nextEuControl = periodiskKjoretoyKontroll?.kontrollfrist;
       const lastEuControl = periodiskKjoretoyKontroll?.sistGodkjent;
 
       const motorOgDrivverkTyped = teknisk?.motorOgDrivverk as {
-        motor?: Array<{
+        motor?: {
           slagvolum?: unknown;
           slagvolumCm3?: unknown;
           slagvolumcc?: unknown;
-          drivstoff?: Array<{
+          drivstoff?: {
             drivstoffKode?: { navn?: string };
             maksNettoEffekt?: unknown;
-          }>;
-        }>;
+          }[];
+        }[];
         girKasse?: {
           girKasseType?: { navn?: string };
           girkasseType?: { navn?: string };
@@ -205,11 +233,28 @@ export default publicProcedure
       const motor = motorOgDrivverkTyped?.motor?.[0];
       const drivstoff = motor?.drivstoff?.[0];
       const miljoTyped = teknisk?.miljodata as {
-        miljodataWLTP?: { co2UtslippBlandetKjoring?: unknown; co2Utslipp?: unknown; co2?: unknown };
-        miljodataNEDC?: { co2UtslippBlandetKjoring?: unknown; co2Utslipp?: unknown; co2?: unknown };
+        miljodataWLTP?: {
+          co2UtslippBlandetKjoring?: unknown;
+          co2Utslipp?: unknown;
+          co2?: unknown;
+          nox?: unknown;
+          noxUtslipp?: unknown;
+          noxUtslippBlandetKjoring?: unknown;
+        };
+        miljodataNEDC?: {
+          co2UtslippBlandetKjoring?: unknown;
+          co2Utslipp?: unknown;
+          co2?: unknown;
+          nox?: unknown;
+          noxUtslipp?: unknown;
+          noxUtslippBlandetKjoring?: unknown;
+        };
         co2UtslippBlandetKjoring?: unknown;
         co2Utslipp?: unknown;
         co2?: unknown;
+        nox?: unknown;
+        noxUtslipp?: unknown;
+        euroKlasse?: { navn?: string } | string;
       } | undefined;
       const miljoKilde = miljoTyped?.miljodataWLTP ?? miljoTyped?.miljodataNEDC ?? miljoTyped;
       const personOgLastTyped = teknisk?.personOgLast as {
@@ -276,13 +321,13 @@ export default publicProcedure
         item?.kilometer ??
         item?.km;
 
-      const normalizeToArray = (maybeArray: unknown): Array<unknown> => {
+      const normalizeToArray = (maybeArray: unknown): unknown[] => {
         if (!maybeArray) return [];
         if (Array.isArray(maybeArray)) return maybeArray;
         return [maybeArray];
       };
 
-      const extractMileageMeasurements = (vvVehicle: Record<string, unknown>): Array<Record<string, unknown>> => {
+      const extractMileageMeasurements = (vvVehicle: Record<string, unknown>): Record<string, unknown>[] => {
         const vehicleTyped = vvVehicle as {
           kjorelengdeMaalinger?: { kjorelengdeMaaling?: unknown } | unknown;
           kjorelengdeMalinger?: { kjorelengdeMaling?: unknown } | unknown;
@@ -304,7 +349,7 @@ export default publicProcedure
           if (filtered.length > 0) return filtered;
         }
 
-        const found: Array<Record<string, unknown>> = [];
+        const found: Record<string, unknown>[] = [];
         const seen = new Set<unknown>();
 
         const walk = (node: unknown, depth: number) => {
@@ -370,12 +415,59 @@ export default publicProcedure
         return Number.isFinite(parsed) ? parsed : null;
       };
 
-      const miljoKildeTyped = miljoKilde as { co2UtslippBlandetKjoring?: unknown; co2Utslipp?: unknown; co2?: unknown } | undefined;
+      const deepCollectStrings = (node: unknown, maxDepth = 6): string[] => {
+        const out: string[] = [];
+        const seen = new Set<unknown>();
+
+        const walk = (n: unknown, depth: number) => {
+          if (!n || depth > maxDepth) return;
+          if (seen.has(n)) return;
+          if (typeof n === "string") {
+            const s = n.trim();
+            if (s) out.push(s);
+            return;
+          }
+          if (typeof n !== "object") return;
+          seen.add(n);
+
+          if (Array.isArray(n)) {
+            for (const item of n) walk(item, depth + 1);
+            return;
+          }
+
+          const obj = n as Record<string, unknown>;
+          for (const k of Object.keys(obj)) {
+            walk(obj[k], depth + 1);
+          }
+        };
+
+        walk(node, 0);
+        return out;
+      };
+
+      const miljoKildeTyped = miljoKilde as {
+        co2UtslippBlandetKjoring?: unknown;
+        co2Utslipp?: unknown;
+        co2?: unknown;
+        nox?: unknown;
+        noxUtslipp?: unknown;
+        noxUtslippBlandetKjoring?: unknown;
+      } | undefined;
       const co2Emission =
         toNumberOrNull(miljoKildeTyped?.co2UtslippBlandetKjoring) ??
         toNumberOrNull(miljoKildeTyped?.co2Utslipp) ??
         toNumberOrNull(miljoKildeTyped?.co2) ??
         null;
+
+      const noxEmission =
+        toNumberOrNull(miljoKildeTyped?.noxUtslippBlandetKjoring) ??
+        toNumberOrNull(miljoKildeTyped?.noxUtslipp) ??
+        toNumberOrNull(miljoKildeTyped?.nox) ??
+        null;
+
+      const euroClassRaw =
+        (typeof miljoTyped?.euroKlasse === "object" ? miljoTyped?.euroKlasse?.navn : miljoTyped?.euroKlasse) ?? null;
+      const euroClass = typeof euroClassRaw === "string" ? euroClassRaw : null;
 
       const engineDisplacement =
         toNumberOrNull(motor?.slagvolum) ??
@@ -407,6 +499,24 @@ export default publicProcedure
         toIntOrNull(tilhengerTyped?.maksTilhengervektBrems) ??
         toIntOrNull(tilhengerTyped?.tillattTilhengervekt) ??
         null;
+
+      const lengthMm = toIntOrNull(karosseri?.lengde);
+      const widthMm = toIntOrNull(karosseri?.bredde);
+
+      const payload =
+        toIntOrNull(vekter?.nyttelast) ??
+        toIntOrNull(vekter?.tillattLastevekt) ??
+        (totalWeight !== null && toIntOrNull(vekter?.egenvekt) !== null
+          ? totalWeight - (toIntOrNull(vekter?.egenvekt) as number)
+          : null);
+
+      const powerKw = typeof drivstoff?.maksNettoEffekt === "number" ? drivstoff.maksNettoEffekt : toNumberOrNull(drivstoff?.maksNettoEffekt);
+      const powerHp = powerKw !== null ? Math.round(powerKw * 1.35962) : null;
+
+      const tireDimensionRegex = /\b\d{3}\/\d{2}R\d{2}\b/i;
+      const tireCandidates = deepCollectStrings(teknisk?.hjulOgDekk ?? teknisk?.dekkOgFelg ?? teknisk).filter((s) => tireDimensionRegex.test(s));
+      const frontTire = tireCandidates[0] ?? null;
+      const rearTire = tireCandidates[1] ?? null;
 
       const numberOfSeats = toIntOrNull(seter);
       const numberOfDoors = toIntOrNull(dorAntall);
@@ -444,6 +554,7 @@ export default publicProcedure
         buildField("Modell", generelt?.handelsbetegnelse?.[0] || null),
         buildField("Årsmodell", godkjenning?.forstegangRegistrertDato?.split("-")[0] || null),
         buildField("Førstegangsregistrert", registrationDateRaw),
+        buildField("Status", registrationStatusRaw),
         buildField("VIN", kjoretoyId?.understellsnummer || null),
         buildField("Farge", karosseri?.farge?.[0]?.kodeNavn || null),
         buildField(
@@ -452,28 +563,36 @@ export default publicProcedure
         ),
       ]);
 
-      const utslippSection = buildSection("Utslipp", [
+      const utslippSection = buildSection("Miljødata", [
         buildField("Drivstoff", drivstoff?.drivstoffKode?.navn || null),
         buildField("CO₂", co2Emission, "g/km"),
+        buildField("NOx", noxEmission, "mg/km"),
+        buildField("Euro-klasse", euroClass),
       ]);
 
       const malOgVektSection = buildSection("Mål og vekt", [
+        buildField("Lengde", lengthMm, "mm"),
+        buildField("Bredde", widthMm, "mm"),
         buildField("Egenvekt", vekter?.egenvekt ?? null, "kg"),
         buildField("Tillatt totalvekt", totalWeight, "kg"),
+        buildField("Nyttelast", payload, "kg"),
         buildField("Tilhengervekt (brems)", maxTowWeight, "kg"),
         buildField("Seter", numberOfSeats),
         buildField("Dører", numberOfDoors),
       ]);
 
       const motorKraftSection = buildSection("Motor / kraftoverføring", [
-        buildField("Effekt", drivstoff?.maksNettoEffekt ?? null, "kW"),
+        buildField("Effekt", powerKw, "kW"),
+        buildField("Effekt", powerHp, "hk"),
         buildField("Slagvolum", engineDisplacement, "cm³"),
         buildField("Drivlinje", driveType),
         buildField("Gir", transmission),
       ]);
 
       const dekkFelgSection = buildSection("Dekk og felg", [
-        buildField("(ikke tilgjengelig i enkeltoppslag)", "Legges inn manuelt"),
+        buildField("Foran", frontTire),
+        buildField("Bak", rearTire),
+        buildField("Merk", frontTire || rearTire ? "" : "(ikke tilgjengelig i enkeltoppslag)"),
       ]);
 
       const result = {
@@ -487,7 +606,7 @@ export default publicProcedure
         vehicleType: godkjenningFull?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
         weight: typeof vekter?.egenvekt === "number" ? vekter.egenvekt : null,
         totalWeight,
-        power: typeof drivstoff?.maksNettoEffekt === "number" ? drivstoff.maksNettoEffekt : null,
+        power: powerKw,
         fuelType: drivstoff?.drivstoffKode?.navn || "Ukjent",
         co2Emission,
         engineDisplacement,
@@ -501,6 +620,16 @@ export default publicProcedure
         mileageHistory,
         euControlDate: lastEuControl || null,
         nextEuControlDate: nextEuControl || null,
+        registrationStatus: registrationStatusRaw,
+        lengthMm,
+        widthMm,
+        payload,
+        noxEmission,
+        euroClass,
+        tireDimensions: {
+          front: frontTire,
+          rear: rearTire,
+        },
         vehicleSections: {
           euKontroll: euKontrollSection || undefined,
           registreringsdata: registreringsdataSection || undefined,
