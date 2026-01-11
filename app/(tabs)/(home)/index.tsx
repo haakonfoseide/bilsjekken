@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   Car,
   Droplet,
@@ -24,6 +24,9 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
+  Fuel,
+  Palette,
+  ShieldCheck,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -88,6 +91,61 @@ export default function DashboardScreen() {
     }
     refreshCarInfo();
   }, [refreshCarInfo]);
+
+  const carHighlights = useMemo(() => {
+    if (!carInfo) return [];
+
+    const items: {
+      key: "color" | "fuel" | "insurance";
+      label: string;
+      value: string;
+      icon: "Palette" | "Fuel" | "ShieldCheck";
+      tint: string;
+      bg: string;
+      border: string;
+    }[] = [];
+
+    const colorValue = (carInfo.color ?? "").trim();
+    if (colorValue) {
+      items.push({
+        key: "color",
+        label: "Farge",
+        value: colorValue,
+        icon: "Palette",
+        tint: "#7C3AED",
+        bg: "#F5F3FF",
+        border: "#DDD6FE",
+      });
+    }
+
+    const fuelValue = (carInfo.fuelType ?? "").trim();
+    if (fuelValue) {
+      items.push({
+        key: "fuel",
+        label: "Drivstoff",
+        value: fuelValue,
+        icon: "Fuel",
+        tint: "#0E7490",
+        bg: "#ECFEFF",
+        border: "#A5F3FC",
+      });
+    }
+
+    const insuranceValue = (carInfo.insurance ?? "").trim();
+    if (insuranceValue) {
+      items.push({
+        key: "insurance",
+        label: "Forsikring",
+        value: insuranceValue,
+        icon: "ShieldCheck",
+        tint: "#15803D",
+        bg: "#ECFDF5",
+        border: "#BBF7D0",
+      });
+    }
+
+    return items.slice(0, 3);
+  }, [carInfo]);
 
 
 
@@ -191,6 +249,36 @@ export default function DashboardScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
+
+                  {carHighlights.length > 0 && (
+                    <View style={styles.highlightsRow} testID="car-highlights">
+                      {carHighlights.map((it: (typeof carHighlights)[number]) => {
+                        const Icon =
+                          it.icon === "Palette" ? Palette : it.icon === "Fuel" ? Fuel : ShieldCheck;
+
+                        return (
+                          <View
+                            key={it.key}
+                            style={[
+                              styles.highlightChip,
+                              { backgroundColor: it.bg, borderColor: it.border },
+                            ]}
+                            testID={`car-highlight-${it.key}`}
+                          >
+                            <View style={[styles.highlightIcon, { backgroundColor: it.tint + "14" }]}>
+                              <Icon size={14} color={it.tint} strokeWidth={2.5} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.highlightLabel}>{it.label}</Text>
+                              <Text style={styles.highlightValue} numberOfLines={1}>
+                                {it.value}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
 
                   <View style={styles.statsRow}>
                     <TouchableOpacity 
@@ -491,6 +579,44 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  highlightsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+  },
+  highlightChip: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 52,
+  },
+  highlightIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  highlightLabel: {
+    fontSize: 10,
+    color: Colors.text.secondary,
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  highlightValue: {
+    fontSize: 12,
+    color: Colors.text.primary,
+    fontWeight: "800" as const,
+    letterSpacing: -0.1,
   },
 
   statsRow: {
