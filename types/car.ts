@@ -122,3 +122,11 @@ export interface MileageRecord {
   date: string;
   mileage: number;
 }
+
+export interface InsuranceDocument {
+  id: string;
+  carId: string;
+  imageUri: string;
+  addedDate: string;
+  notes?: string;
+}

@@ -10,6 +10,7 @@ import type {
   TireInfo,
   TireSet,
   MileageRecord,
+  InsuranceDocument,
 } from "@/types/car";
 import type { VehicleSearchResult } from "@/lib/api-types";
 
@@ -27,6 +28,7 @@ interface CarData {
   serviceRecords: ServiceRecord[];
   tireSets: TireSet[];
   mileageRecords: MileageRecord[];
+  insuranceDocuments: InsuranceDocument[];
   
   // Legacy/Singular support (mapped by carId in memory, or just kept for compatibility?)
   // We'll try to support tireInfo per car.
@@ -48,6 +50,7 @@ const defaultData: CarData = {
   serviceRecords: [],
   tireSets: [],
   mileageRecords: [],
+  insuranceDocuments: [],
   tireInfos: {},
 };
 
@@ -148,6 +151,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
         serviceRecords: loadedData.serviceRecords || [],
         tireSets: loadedData.tireSets || [],
         mileageRecords: loadedData.mileageRecords || [],
+        insuranceDocuments: loadedData.insuranceDocuments || [],
         tireInfos: loadedData.tireInfos || {},
       };
       dataRef.current = newData;
@@ -444,6 +448,36 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [activeCarId, mutate]
   );
 
+  const addInsuranceDocument = useCallback(
+    (document: Omit<InsuranceDocument, "id" | "carId">) => {
+      if (!activeCarId) return;
+      const newDoc = { ...document, id: Date.now().toString(), carId: activeCarId };
+      setData((prev) => {
+        const newData = {
+          ...prev,
+          insuranceDocuments: [newDoc, ...prev.insuranceDocuments],
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
+  const deleteInsuranceDocument = useCallback(
+    (id: string) => {
+      setData((prev) => {
+        const newData = {
+          ...prev,
+          insuranceDocuments: prev.insuranceDocuments.filter(d => d.id !== id),
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [mutate]
+  );
+
   // -- GETTERS --
   // Filter by activeCarId
 
@@ -470,6 +504,11 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   const filteredMileageRecords = useMemo(() =>
     data.mileageRecords.filter(r => r.carId === activeCarId),
     [data.mileageRecords, activeCarId]
+  );
+
+  const filteredInsuranceDocuments = useMemo(() =>
+    data.insuranceDocuments.filter(d => d.carId === activeCarId),
+    [data.insuranceDocuments, activeCarId]
   );
 
   const currentTireInfo = useMemo(() => 
@@ -626,6 +665,9 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       addMileageRecord,
       updateMileageRecord,
       deleteMileageRecord,
+      addInsuranceDocument,
+      deleteInsuranceDocument,
+      insuranceDocuments: filteredInsuranceDocuments,
       
       // Helpers
       getLastWash,

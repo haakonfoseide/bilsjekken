@@ -256,25 +256,30 @@ export default function DashboardScreen() {
                         const Icon =
                           it.icon === "Palette" ? Palette : it.icon === "Fuel" ? Fuel : ShieldCheck;
 
+                        const isInsurance = it.key === "insurance";
+                        const ChipWrapper = isInsurance ? TouchableOpacity : View;
+                        const chipProps = isInsurance ? {
+                          onPress: () => handlePress("/insurance-documents"),
+                          activeOpacity: 0.7,
+                        } : {};
+
                         return (
-                          <View
+                          <ChipWrapper
                             key={it.key}
                             style={[
                               styles.highlightChip,
                               { backgroundColor: it.bg, borderColor: it.border },
                             ]}
                             testID={`car-highlight-${it.key}`}
+                            {...chipProps}
                           >
                             <View style={[styles.highlightIcon, { backgroundColor: it.tint + "14" }]}>
-                              <Icon size={14} color={it.tint} strokeWidth={2.5} />
+                              <Icon size={16} color={it.tint} strokeWidth={2.5} />
                             </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.highlightLabel}>{it.label}</Text>
-                              <Text style={styles.highlightValue} numberOfLines={1}>
-                                {it.value}
-                              </Text>
-                            </View>
-                          </View>
+                            <Text style={[styles.highlightValue, { color: it.tint }]} numberOfLines={1}>
+                              {it.value}
+                            </Text>
+                          </ChipWrapper>
                         );
                       })}
                     </View>
@@ -588,34 +593,26 @@ const styles = StyleSheet.create({
   },
   highlightChip: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    minHeight: 52,
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 40,
   },
   highlightIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
-  highlightLabel: {
-    fontSize: 10,
-    color: Colors.text.secondary,
-    fontWeight: "700" as const,
-    textTransform: "uppercase" as const,
-    letterSpacing: 0.4,
-    marginBottom: 2,
-  },
   highlightValue: {
     fontSize: 12,
-    color: Colors.text.primary,
-    fontWeight: "800" as const,
+    fontWeight: "700" as const,
     letterSpacing: -0.1,
   },
 
