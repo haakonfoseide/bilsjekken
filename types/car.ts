@@ -123,10 +123,25 @@ export interface MileageRecord {
   mileage: number;
 }
 
+export interface FuelRecord {
+  id: string;
+  carId: string;
+  date: string;
+  liters: number;
+  pricePerLiter?: number;
+  totalCost?: number;
+  mileage?: number;
+  fullTank?: boolean;
+  notes?: string;
+  location?: string;
+}
+
 export interface InsuranceDocument {
   id: string;
   carId: string;
-  imageUri: string;
+  uri: string;
+  type: 'image' | 'pdf' | 'note';
+  name?: string;
   addedDate: string;
   notes?: string;
 }

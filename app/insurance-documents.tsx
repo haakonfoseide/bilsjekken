@@ -10,6 +10,8 @@ import {
   Modal,
   Dimensions,
   ActivityIndicator,
+  TextInput,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,8 +24,12 @@ import {
   ZoomIn,
   ShieldCheck,
   FileText,
+  File,
+  StickyNote,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
+import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
@@ -37,6 +43,11 @@ export default function InsuranceDocumentsScreen() {
   
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Note Modal State
+  const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [noteTitle, setNoteTitle] = useState("");
 
   const requestCameraPermission = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -81,9 +92,10 @@ export default function InsuranceDocumentsScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].uri;
+        const uri = result.assets[0].uri;
         addInsuranceDocument({
-          imageUri,
+          uri,
+          type: 'image',
           addedDate: new Date().toISOString(),
         });
         
@@ -119,7 +131,8 @@ export default function InsuranceDocumentsScreen() {
       if (!result.canceled && result.assets.length > 0) {
         result.assets.forEach((asset) => {
           addInsuranceDocument({
-            imageUri: asset.uri,
+            uri: asset.uri,
+            type: 'image',
             addedDate: new Date().toISOString(),
           });
         });
@@ -135,6 +148,62 @@ export default function InsuranceDocumentsScreen() {
       setIsLoading(false);
     }
   }, [requestMediaPermission, addInsuranceDocument]);
+
+  const pickPdf = useCallback(async () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        addInsuranceDocument({
+          uri: asset.uri,
+          type: 'pdf',
+          name: asset.name,
+          addedDate: new Date().toISOString(),
+        });
+        
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (error) {
+      console.error("[InsuranceDocuments] PDF picker error:", error);
+      Alert.alert("Feil", "Kunne ikke velge PDF. Prøv igjen.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addInsuranceDocument]);
+
+  const handleSaveNote = useCallback(() => {
+    if (!noteText.trim()) {
+      Alert.alert("Mangler tekst", "Du må skrive noe i notatet.");
+      return;
+    }
+
+    addInsuranceDocument({
+      uri: "", // No URI for notes
+      type: 'note',
+      name: noteTitle || "Notat",
+      notes: noteText,
+      addedDate: new Date().toISOString(),
+    });
+
+    setNoteText("");
+    setNoteTitle("");
+    setIsNoteModalVisible(false);
+
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [noteText, noteTitle, addInsuranceDocument]);
 
   const handleDeleteDocument = useCallback((doc: InsuranceDocument) => {
     Alert.alert(
@@ -155,6 +224,25 @@ export default function InsuranceDocumentsScreen() {
       ]
     );
   }, [deleteInsuranceDocument]);
+
+  const handleOpenDocument = useCallback(async (doc: InsuranceDocument) => {
+    if (doc.type === 'image') {
+      setSelectedImage(doc.uri);
+    } else if (doc.type === 'pdf') {
+      try {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(doc.uri);
+        } else {
+          Alert.alert("Info", "Deling er ikke tilgjengelig på denne enheten.");
+        }
+      } catch (error) {
+        console.error("Error sharing PDF:", error);
+        Alert.alert("Feil", "Kunne ikke åpne PDF.");
+      }
+    } else if (doc.type === 'note') {
+      Alert.alert(doc.name || "Notat", doc.notes);
+    }
+  }, []);
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -191,32 +279,52 @@ export default function InsuranceDocumentsScreen() {
               {carInfo?.insurance || "Ingen forsikring registrert"}
             </Text>
             <Text style={styles.infoSubtitle}>
-              Last opp eller ta bilde av forsikringsdokumentene dine for enkel oversikt
+              Last opp forsikringsdokumenter, bilder av skademelding, eller skriv notater.
             </Text>
           </View>
         </View>
 
-        <View style={styles.actionButtons}>
+        <View style={styles.actionButtonsRow}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.cameraButton]}
+            style={[styles.actionButton, { backgroundColor: Colors.primary }]}
             onPress={takePhoto}
             activeOpacity={0.8}
             disabled={isLoading}
           >
-            <Camera size={22} color="#fff" strokeWidth={2.5} />
+            <Camera size={20} color="#fff" strokeWidth={2.5} />
             <Text style={styles.actionButtonText}>Ta bilde</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, styles.uploadButton]}
+            style={[styles.actionButton, { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#DBEAFE" }]}
             onPress={pickImage}
             activeOpacity={0.8}
             disabled={isLoading}
           >
-            <ImagePlus size={22} color={Colors.primary} strokeWidth={2.5} />
-            <Text style={[styles.actionButtonText, { color: Colors.primary }]}>
-              Last opp
-            </Text>
+            <ImagePlus size={20} color={Colors.primary} strokeWidth={2.5} />
+            <Text style={[styles.actionButtonText, { color: Colors.primary }]}>Bilde</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.actionButtonsRow}>
+           <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#FFF7ED", borderWidth: 1, borderColor: "#FFEDD5" }]}
+            onPress={pickPdf}
+            activeOpacity={0.8}
+            disabled={isLoading}
+          >
+            <File size={20} color="#F97316" strokeWidth={2.5} />
+            <Text style={[styles.actionButtonText, { color: "#C2410C" }]}>PDF</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#F0FDF4", borderWidth: 1, borderColor: "#DCFCE7" }]}
+            onPress={() => setIsNoteModalVisible(true)}
+            activeOpacity={0.8}
+            disabled={isLoading}
+          >
+            <StickyNote size={20} color="#16A34A" strokeWidth={2.5} />
+            <Text style={[styles.actionButtonText, { color: "#15803D" }]}>Notat</Text>
           </TouchableOpacity>
         </View>
 
@@ -236,23 +344,53 @@ export default function InsuranceDocumentsScreen() {
               {insuranceDocuments.map((doc) => (
                 <View key={doc.id} style={styles.documentCard}>
                   <TouchableOpacity
-                    style={styles.documentImageContainer}
-                    onPress={() => setSelectedImage(doc.imageUri)}
+                    style={styles.documentPreview}
+                    onPress={() => handleOpenDocument(doc)}
                     activeOpacity={0.9}
                   >
-                    <Image
-                      source={{ uri: doc.imageUri }}
-                      style={styles.documentImage}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.zoomOverlay}>
-                      <ZoomIn size={20} color="#fff" />
-                    </View>
+                    {doc.type === 'image' ? (
+                      <>
+                        <Image
+                          source={{ uri: doc.uri }}
+                          style={styles.documentImage}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.zoomOverlay}>
+                          <ZoomIn size={20} color="#fff" />
+                        </View>
+                      </>
+                    ) : (
+                      <View style={[styles.documentIconPreview, 
+                        doc.type === 'pdf' ? { backgroundColor: "#FFF7ED" } : { backgroundColor: "#F0FDF4" }
+                      ]}>
+                        {doc.type === 'pdf' ? (
+                           <File size={48} color="#F97316" strokeWidth={1.5} />
+                        ) : (
+                           <StickyNote size={48} color="#16A34A" strokeWidth={1.5} />
+                        )}
+                        {doc.type === 'pdf' && (
+                           <View style={styles.zoomOverlay}>
+                             <ZoomIn size={20} color="#fff" />
+                           </View>
+                        )}
+                      </View>
+                    )}
                   </TouchableOpacity>
+                  
                   <View style={styles.documentInfo}>
-                    <Text style={styles.documentDate}>
-                      {formatDate(doc.addedDate)}
-                    </Text>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={styles.documentName} numberOfLines={1}>
+                        {doc.name || (doc.type === 'image' ? 'Bilde' : doc.type === 'pdf' ? 'Dokument' : 'Notat')}
+                      </Text>
+                      {doc.type === 'note' && doc.notes && (
+                         <Text style={styles.notePreview} numberOfLines={2}>
+                           {doc.notes}
+                         </Text>
+                      )}
+                      <Text style={styles.documentDate}>
+                        {formatDate(doc.addedDate)}
+                      </Text>
+                    </View>
                     <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={() => handleDeleteDocument(doc)}
@@ -272,12 +410,13 @@ export default function InsuranceDocumentsScreen() {
             </View>
             <Text style={styles.emptyTitle}>Ingen dokumenter</Text>
             <Text style={styles.emptyText}>
-              Ta bilde eller last opp forsikringsdokumentene dine for å ha de lett tilgjengelig
+              Last opp forsikringsdokumenter for å ha de lett tilgjengelig.
             </Text>
           </View>
         )}
       </ScrollView>
 
+      {/* Image Modal */}
       <Modal
         visible={selectedImage !== null}
         transparent
@@ -299,6 +438,59 @@ export default function InsuranceDocumentsScreen() {
             />
           )}
         </View>
+      </Modal>
+
+      {/* Add Note Modal */}
+      <Modal
+        visible={isNoteModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsNoteModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.noteModalOverlay}
+        >
+          <View style={styles.noteModalContent}>
+            <View style={styles.noteModalHeader}>
+              <Text style={styles.noteModalTitle}>Nytt notat</Text>
+              <TouchableOpacity onPress={() => setIsNoteModalVisible(false)}>
+                <X size={24} color={Colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.inputGroup}>
+               <Text style={styles.label}>Tittel (valgfri)</Text>
+               <TextInput
+                 style={styles.input}
+                 value={noteTitle}
+                 onChangeText={setNoteTitle}
+                 placeholder="F.eks. Skademelding info"
+                 placeholderTextColor="#94A3B8"
+               />
+            </View>
+
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+               <Text style={styles.label}>Innhold</Text>
+               <TextInput
+                 style={[styles.input, styles.textArea]}
+                 value={noteText}
+                 onChangeText={setNoteText}
+                 placeholder="Skriv notatet her..."
+                 placeholderTextColor="#94A3B8"
+                 multiline
+                 textAlignVertical="top"
+               />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.saveButton}
+              onPress={handleSaveNote}
+            >
+              <Text style={styles.saveButtonText}>Lagre notat</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -350,10 +542,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  actionButtons: {
+  actionButtonsRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 12,
   },
   actionButton: {
     flex: 1,
@@ -363,14 +555,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     borderRadius: 14,
-  },
-  cameraButton: {
-    backgroundColor: Colors.primary,
-  },
-  uploadButton: {
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
   },
   actionButtonText: {
     fontSize: 15,
@@ -389,7 +573,7 @@ const styles = StyleSheet.create({
   },
 
   documentsSection: {
-    marginTop: 4,
+    marginTop: 12,
   },
   sectionTitle: {
     fontSize: 16,
@@ -410,14 +594,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  documentImageContainer: {
+  documentPreview: {
     width: "100%",
-    height: 200,
+    height: 180,
     position: "relative",
+    backgroundColor: "#F1F5F9",
   },
   documentImage: {
     width: "100%",
     height: "100%",
+  },
+  documentIconPreview: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   zoomOverlay: {
     position: "absolute",
@@ -432,13 +623,25 @@ const styles = StyleSheet.create({
   },
   documentInfo: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     padding: 14,
   },
-  documentDate: {
+  documentName: {
+     fontSize: 15,
+     fontWeight: "600" as const,
+     color: Colors.text.primary,
+     marginBottom: 4,
+  },
+  notePreview: {
     fontSize: 13,
     color: Colors.text.secondary,
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  documentDate: {
+    fontSize: 12,
+    color: Colors.text.light,
     fontWeight: "500" as const,
   },
   deleteButton: {
@@ -498,5 +701,68 @@ const styles = StyleSheet.create({
   modalImage: {
     width: SCREEN_WIDTH - 40,
     height: "80%",
+  },
+
+  noteModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  noteModalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    height: "70%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  noteModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  noteModalTitle: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: Colors.text.secondary,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: Colors.text.primary,
+  },
+  textArea: {
+    flex: 1,
+    minHeight: 120,
+  },
+  saveButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700" as const,
   },
 });

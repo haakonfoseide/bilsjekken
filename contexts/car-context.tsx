@@ -11,6 +11,7 @@ import type {
   TireSet,
   MileageRecord,
   InsuranceDocument,
+  FuelRecord,
 } from "@/types/car";
 import type { VehicleSearchResult } from "@/lib/api-types";
 
@@ -28,6 +29,7 @@ interface CarData {
   serviceRecords: ServiceRecord[];
   tireSets: TireSet[];
   mileageRecords: MileageRecord[];
+  fuelRecords: FuelRecord[];
   insuranceDocuments: InsuranceDocument[];
   
   // Legacy/Singular support (mapped by carId in memory, or just kept for compatibility?)
@@ -50,6 +52,7 @@ const defaultData: CarData = {
   serviceRecords: [],
   tireSets: [],
   mileageRecords: [],
+  fuelRecords: [],
   insuranceDocuments: [],
   tireInfos: {},
 };
@@ -90,8 +93,24 @@ export const [CarProvider, useCarData] = createContextHook(() => {
                serviceRecords: (parsed.serviceRecords || []).map(migrateRecord),
                tireSets: (parsed.tireSets || []).map(migrateRecord),
                mileageRecords: (parsed.mileageRecords || []).map(migrateRecord),
+               fuelRecords: (parsed.fuelRecords || []).map(migrateRecord),
                tireInfos: parsed.tireInfo ? { [carId]: parsed.tireInfo } : {},
              };
+          }
+
+          // Migration for InsuranceDocument (imageUri -> uri, add type)
+          if (parsed.insuranceDocuments) {
+            parsed.insuranceDocuments = parsed.insuranceDocuments.map((doc: any) => {
+              if (doc.imageUri) {
+                return {
+                  ...doc,
+                  uri: doc.imageUri,
+                  type: doc.type || "image",
+                  imageUri: undefined, // Cleanup
+                };
+              }
+              return doc;
+            });
           }
 
           return parsed;
@@ -151,6 +170,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
         serviceRecords: loadedData.serviceRecords || [],
         tireSets: loadedData.tireSets || [],
         mileageRecords: loadedData.mileageRecords || [],
+        fuelRecords: loadedData.fuelRecords || [],
         insuranceDocuments: loadedData.insuranceDocuments || [],
         tireInfos: loadedData.tireInfos || {},
       };
@@ -199,6 +219,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
          const newService = prev.serviceRecords.filter(r => r.carId !== carId);
          const newTires = prev.tireSets.filter(r => r.carId !== carId);
          const newMileage = prev.mileageRecords.filter(r => r.carId !== carId);
+         const newFuel = prev.fuelRecords.filter(r => r.carId !== carId);
          const newTireInfos = { ...prev.tireInfos };
          delete newTireInfos[carId];
 
@@ -215,6 +236,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
             serviceRecords: newService,
             tireSets: newTires,
             mileageRecords: newMileage,
+            fuelRecords: newFuel,
             tireInfos: newTireInfos,
          };
          dataRef.current = newData;
@@ -448,6 +470,36 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [activeCarId, mutate]
   );
 
+  const addFuelRecord = useCallback(
+    (record: Omit<FuelRecord, "id" | "carId">) => {
+      if (!activeCarId) return;
+      const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
+      setData((prev) => {
+        const newData = {
+            ...prev,
+            fuelRecords: [newRecord, ...prev.fuelRecords],
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
+  const deleteFuelRecord = useCallback(
+    (id: string) => {
+      setData((prev) => {
+        const newData = {
+            ...prev,
+            fuelRecords: prev.fuelRecords.filter(r => r.id !== id),
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [mutate]
+  );
+
   const addInsuranceDocument = useCallback(
     (document: Omit<InsuranceDocument, "id" | "carId">) => {
       if (!activeCarId) return;
@@ -504,6 +556,11 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   const filteredMileageRecords = useMemo(() =>
     data.mileageRecords.filter(r => r.carId === activeCarId),
     [data.mileageRecords, activeCarId]
+  );
+
+  const filteredFuelRecords = useMemo(() =>
+    data.fuelRecords.filter(r => r.carId === activeCarId),
+    [data.fuelRecords, activeCarId]
   );
 
   const filteredInsuranceDocuments = useMemo(() =>
@@ -645,6 +702,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       serviceRecords: filteredServiceRecords,
       tireSets: filteredTireSets,
       mileageRecords: filteredMileageRecords,
+      fuelRecords: filteredFuelRecords,
       tireInfo: currentTireInfo, // Alias
 
       // Actions
@@ -665,6 +723,8 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       addMileageRecord,
       updateMileageRecord,
       deleteMileageRecord,
+      addFuelRecord,
+      deleteFuelRecord,
       addInsuranceDocument,
       deleteInsuranceDocument,
       insuranceDocuments: filteredInsuranceDocuments,
