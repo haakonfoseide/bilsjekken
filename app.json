@@ -25,7 +25,8 @@
       },
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "usesIcloudStorage": true
     },
     "android": {
       "adaptiveIcon": {
@@ -63,7 +64,14 @@
         {
           "photosPermission": "Appen trenger tilgang til bilder for å skanne kvitteringer og bildekk."
         }
-      ]
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

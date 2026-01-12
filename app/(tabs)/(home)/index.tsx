@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   StyleSheet,
   Text,
@@ -33,6 +34,7 @@ import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 
 export default function DashboardScreen() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -67,23 +69,23 @@ export default function DashboardScreen() {
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return "I dag";
-    if (diffDays === 1) return "I går";
-    if (diffDays < 7) return `${diffDays} dager siden`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} uker siden`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} mnd siden`;
-    return `${Math.floor(diffDays / 365)} år siden`;
-  }, []);
+    if (diffDays === 0) return t('today');
+    if (diffDays === 1) return t('yesterday');
+    if (diffDays < 7) return t('days_ago', { count: diffDays });
+    if (diffDays < 30) return t('weeks_ago', { count: Math.floor(diffDays / 7) });
+    if (diffDays < 365) return t('months_ago', { count: Math.floor(diffDays / 30) });
+    return t('years_ago', { count: Math.floor(diffDays / 365) });
+  }, [t]);
 
   const formatDateSimple = useCallback((dateString: string | null | undefined) => {
-    if (!dateString) return "Ukjent";
+    if (!dateString) return t('unknown');
     const date = new Date(dateString);
-    return date.toLocaleDateString("no-NO", {
+    return date.toLocaleDateString(i18n.language, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
-  }, []);
+  }, [t, i18n.language]);
 
   const handleRefresh = useCallback(() => {
     if (Platform.OS !== "web") {
@@ -109,7 +111,7 @@ export default function DashboardScreen() {
     if (colorValue) {
       items.push({
         key: "color",
-        label: "Farge",
+        label: t('color'),
         value: colorValue,
         icon: "Palette",
         tint: "#7C3AED",
@@ -122,7 +124,7 @@ export default function DashboardScreen() {
     if (fuelValue) {
       items.push({
         key: "fuel",
-        label: "Drivstoff",
+        label: t('fuel'),
         value: fuelValue,
         icon: "Fuel",
         tint: "#0E7490",
@@ -132,20 +134,19 @@ export default function DashboardScreen() {
     }
 
     const insuranceValue = (carInfo.insurance ?? "").trim();
-    if (insuranceValue) {
-      items.push({
-        key: "insurance",
-        label: "Forsikring",
-        value: insuranceValue,
-        icon: "ShieldCheck",
-        tint: "#15803D",
-        bg: "#ECFDF5",
-        border: "#BBF7D0",
-      });
-    }
+    // Always show insurance button
+    items.push({
+      key: "insurance",
+      label: t('insurance'),
+      value: insuranceValue || t('insurance'),
+      icon: "ShieldCheck",
+      tint: "#15803D",
+      bg: "#ECFDF5",
+      border: "#BBF7D0",
+    });
 
-    return items.slice(0, 3);
-  }, [carInfo]);
+    return items;
+  }, [carInfo, t]);
 
 
 
@@ -162,7 +163,7 @@ export default function DashboardScreen() {
         {cars.length > 0 ? (
           <>
             <View style={[styles.header, { paddingTop: insets.top + 24, paddingBottom: 16 }]}>
-              <Text style={styles.headerTitle}>Min bil</Text>
+              <Text style={styles.headerTitle}>{t('my_car')}</Text>
               <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => handlePress("/add-car")}
@@ -293,19 +294,19 @@ export default function DashboardScreen() {
                     >
                       <View style={styles.statHeader}>
                         <Gauge size={16} color={Colors.primary} />
-                        <Text style={styles.statLabel}>Kilometerstand</Text>
+                        <Text style={styles.statLabel}>{t('mileage')}</Text>
                         <ChevronRight size={14} color={Colors.text.light} />
                       </View>
                       <Text style={styles.statValue}>
                         {Number.isFinite(carInfo.currentMileage)
-                          ? `${carInfo.currentMileage.toLocaleString("no-NO")} km`
+                          ? `${carInfo.currentMileage.toLocaleString(i18n.language)} km`
                           : "—"}
                       </Text>
                       {carInfo.registeredMileage && carInfo.registeredMileage > carInfo.currentMileage && (
                         <View style={styles.warningBadge}>
                           <AlertCircle size={10} color={Colors.danger} />
                           <Text style={styles.warningText}>
-                            Vegvesenet: {carInfo.registeredMileage.toLocaleString("no-NO")}
+                            {t('vegvesenet_mileage', { value: carInfo.registeredMileage.toLocaleString(i18n.language) })}
                           </Text>
                         </View>
                       )}
@@ -316,12 +317,12 @@ export default function DashboardScreen() {
                     <View style={styles.statItem}>
                       <View style={styles.statHeader}>
                         <Calendar size={16} color={Colors.success} />
-                        <Text style={styles.statLabel}>EU-kontroll</Text>
+                        <Text style={styles.statLabel}>{t('eu_control')}</Text>
                       </View>
                       <Text style={styles.statValue}>
                         {carInfo.nextEuControlDate 
                           ? formatDateSimple(carInfo.nextEuControlDate)
-                          : "Ukjent"
+                          : t('unknown')
                         }
                       </Text>
                     </View>
@@ -338,9 +339,9 @@ export default function DashboardScreen() {
                       <Droplet size={20} color="#2563EB" strokeWidth={2.5} />
                     </View>
                     <View style={styles.quickActionContent}>
-                      <Text style={[styles.quickActionTitle, { color: "#1E40AF" }]}>Vask</Text>
+                      <Text style={[styles.quickActionTitle, { color: "#1E40AF" }]}>{t('wash')}</Text>
                       <Text style={[styles.quickActionValue, { color: "#3B82F6" }]}>
-                        {lastWash ? formatDate(lastWash.date) : "Ikke registrert"}
+                        {lastWash ? formatDate(lastWash.date) : t('not_registered')}
                       </Text>
                     </View>
                     <ChevronRight size={18} color="#93C5FD" />
@@ -355,13 +356,13 @@ export default function DashboardScreen() {
                       <Wrench size={20} color="#059669" strokeWidth={2.5} />
                     </View>
                     <View style={styles.quickActionContent}>
-                      <Text style={[styles.quickActionTitle, { color: "#065F46" }]}>Service</Text>
+                      <Text style={[styles.quickActionTitle, { color: "#065F46" }]}>{t('service')}</Text>
                       <Text style={[styles.quickActionValue, { color: "#10B981" }]}>
                         {nextService
                           ? nextService.mileage > 0
-                            ? `${nextService.mileage.toLocaleString("no-NO")} km til`
-                            : "Forfalt"
-                          : "Ikke planlagt"}
+                            ? t('km_until', { value: nextService.mileage.toLocaleString(i18n.language) })
+                            : t('overdue')
+                          : t('not_planned')}
                       </Text>
                     </View>
                     <ChevronRight size={18} color="#6EE7B7" />
@@ -376,9 +377,9 @@ export default function DashboardScreen() {
                       <CircleSlash2 size={20} color="#DC2626" strokeWidth={2.5} />
                     </View>
                     <View style={styles.quickActionContent}>
-                      <Text style={[styles.quickActionTitle, { color: "#991B1B" }]}>Dekk</Text>
+                      <Text style={[styles.quickActionTitle, { color: "#991B1B" }]}>{t('tires')}</Text>
                       <Text style={[styles.quickActionValue, { color: "#EF4444" }]}>
-                        {tireAge ? `${tireAge.years} år gammel` : "Ikke registrert"}
+                        {tireAge ? t('year_old', { count: tireAge.years }) : t('not_registered')}
                       </Text>
                     </View>
                     <ChevronRight size={18} color="#FCA5A5" />
@@ -396,9 +397,9 @@ export default function DashboardScreen() {
                       <Car size={18} color={Colors.primary} strokeWidth={2.5} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.vehicleInfoCtaTitle}>Kjøretøydata fra Vegvesenet</Text>
+                      <Text style={styles.vehicleInfoCtaTitle}>{t('vehicle_data_source')}</Text>
                       <Text style={styles.vehicleInfoCtaSubtitle} numberOfLines={1}>
-                        EU-kontroll • Registreringsdata • Utslipp • Mål/vekt
+                        {t('vehicle_data_subtitle')}
                       </Text>
                     </View>
                   </View>
@@ -414,8 +415,8 @@ export default function DashboardScreen() {
                     <ScanLine size={22} color="#fff" strokeWidth={2.5} />
                   </View>
                   <View style={styles.scanContent}>
-                    <Text style={styles.scanTitle}>Skann kvittering</Text>
-                    <Text style={styles.scanSubtitle}>Registrer utgifter med AI</Text>
+                    <Text style={styles.scanTitle}>{t('scan_receipt')}</Text>
+                    <Text style={styles.scanSubtitle}>{t('scan_receipt_subtitle')}</Text>
                   </View>
                   <ChevronRight size={20} color="rgba(255,255,255,0.6)" />
                 </TouchableOpacity>
@@ -427,9 +428,9 @@ export default function DashboardScreen() {
             <View style={styles.emptyIcon}>
               <Car size={48} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-            <Text style={styles.emptyTitle}>Velkommen!</Text>
+            <Text style={styles.emptyTitle}>{t('welcome')}</Text>
             <Text style={styles.emptyText}>
-              Legg til bilen din for å komme i gang med vedlikeholdsoversikt
+              {t('add_car_desc')}
             </Text>
             <TouchableOpacity
               style={styles.emptyButton}
@@ -437,7 +438,7 @@ export default function DashboardScreen() {
               activeOpacity={0.8}
             >
               <Plus size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.emptyButtonText}>Legg til bil</Text>
+              <Text style={styles.emptyButtonText}>{t('add_car')}</Text>
             </TouchableOpacity>
           </View>
         )}

@@ -1,3 +1,5 @@
+import "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -48,13 +50,14 @@ const queryClient = new QueryClient({
 });
 
 function RootLayoutNav() {
+  const { t } = useTranslation();
   return (
-    <Stack screenOptions={{ headerBackTitle: "Tilbake" }}>
+    <Stack screenOptions={{ headerBackTitle: t('back') }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: true }} />
       <Stack.Screen name="scan-receipt" options={{ headerShown: true, presentation: "modal" }} />
-      <Stack.Screen name="vehicle-info" options={{ headerShown: true, title: "Kjøretøydata" }} />
-      <Stack.Screen name="insurance-documents" options={{ headerShown: true, title: "Forsikringsdokumenter" }} />
+      <Stack.Screen name="vehicle-info" options={{ headerShown: true, title: t('vehicle_info') }} />
+      <Stack.Screen name="insurance-documents" options={{ headerShown: true, title: t('insurance_documents') }} />
     </Stack>
   );
 }

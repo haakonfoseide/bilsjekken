@@ -3,10 +3,12 @@ import { Car, Droplet, Wrench, CircleSlash2 } from "lucide-react-native";
 import React from "react";
 import { Platform, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
+import { useTranslation } from "react-i18next";
 
 import Colors from "@/constants/colors";
 
 export default function TabLayout() {
+  const { t } = useTranslation();
   return (
     <Tabs
       screenOptions={{
@@ -40,28 +42,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="(home)"
         options={{
-          title: "Oversikt",
+          title: t('overview'),
           tabBarIcon: ({ color }) => <Car size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="wash"
         options={{
-          title: "Vask",
+          title: t('wash'),
           tabBarIcon: ({ color }) => <Droplet size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="service"
         options={{
-          title: "Service",
+          title: t('service'),
           tabBarIcon: ({ color }) => <Wrench size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="tires"
         options={{
-          title: "Dekk",
+          title: t('tires'),
           tabBarIcon: ({ color }) => <CircleSlash2 size={24} color={color} strokeWidth={2} />,
         }}
       />

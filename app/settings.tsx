@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   StyleSheet,
   Text,
@@ -45,6 +46,7 @@ if (Platform.OS === 'android') {
 }
 
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { carInfo, updateCarInfo, addMileageRecord, deleteCar } = useCarData();
   const insets = useSafeAreaInsets();
@@ -90,7 +92,7 @@ export default function SettingsScreen() {
     if (!carInfo) return;
     
     if (!make || !model || !licensePlate) {
-      Alert.alert("Mangler info", "Bilmerke, modell og registreringsnummer er påkrevd.");
+      Alert.alert(t('missing_info'), t('missing_info_desc'));
       return;
     }
 
@@ -129,12 +131,12 @@ export default function SettingsScreen() {
     if (!carInfo) return;
 
     Alert.alert(
-      "Slett bil",
-      `Er du sikker på at du vil slette ${carInfo.make} ${carInfo.model}? Dette kan ikke angres.`,
+      t('delete_car'),
+      t('delete_car_confirm', { car: `${carInfo.make} ${carInfo.model}` }),
       [
-        { text: "Avbryt", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "Slett",
+          text: t('delete_car'),
           style: "destructive",
           onPress: () => {
             deleteCar(carInfo.id);
@@ -151,17 +153,17 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{
-        title: "Rediger bil",
+        title: t('edit_car'),
         headerStyle: { backgroundColor: Colors.background },
         headerShadowVisible: false,
         headerLeft: () => (
            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-             <Text style={styles.headerButtonText}>Avbryt</Text>
+             <Text style={styles.headerButtonText}>{t('cancel')}</Text>
            </TouchableOpacity>
         ),
         headerRight: () => (
           <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-            <Text style={[styles.headerButtonText, styles.headerButtonPrimary]}>Lagre</Text>
+            <Text style={[styles.headerButtonText, styles.headerButtonPrimary]}>{t('save')}</Text>
           </TouchableOpacity>
         ),
       }} />
@@ -179,7 +181,7 @@ export default function SettingsScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.sectionHeader}>Kjøretøyinformasjon</Text>
+          <Text style={styles.sectionHeader}>{t('vehicle_information')}</Text>
 
           {/* Car Details Form */}
           <View style={styles.formCard}>
@@ -187,7 +189,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <CarFront size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Merke</Text>
+                <Text style={styles.inputLabel}>{t('make')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={make}
@@ -203,7 +205,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <Hash size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Modell</Text>
+                <Text style={styles.inputLabel}>{t('model')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={model}
@@ -219,7 +221,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Årsmodell</Text>
+                <Text style={styles.inputLabel}>{t('year')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={year}
@@ -236,7 +238,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <Info size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Registreringsnummer</Text>
+                <Text style={styles.inputLabel}>{t('license_plate')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={licensePlate}
@@ -253,7 +255,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <FileKey size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>VIN / Understellsnummer</Text>
+                <Text style={styles.inputLabel}>{t('vin')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={vin}
@@ -270,7 +272,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <Palette size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Farge</Text>
+                <Text style={styles.inputLabel}>{t('color')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={color}
@@ -286,7 +288,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <Fuel size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Drivstoff</Text>
+                <Text style={styles.inputLabel}>{t('fuel')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={fuelType}
@@ -298,13 +300,13 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionHeader}>Drift og vedlikehold</Text>
+          <Text style={styles.sectionHeader}>{t('maintenance_ops')}</Text>
 
           <View style={styles.formCard}>
              <View style={styles.inputRow}>
               <Gauge size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Kilometerstand</Text>
+                <Text style={styles.inputLabel}>{t('mileage')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={currentMileage}
@@ -321,7 +323,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <ShieldCheck size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Forsikringsselskap</Text>
+                <Text style={styles.inputLabel}>{t('insurance_company')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={insurance}
@@ -337,7 +339,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Neste EU-kontroll</Text>
+                <Text style={styles.inputLabel}>{t('next_eu_control')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={nextEuControlDate}
@@ -353,7 +355,7 @@ export default function SettingsScreen() {
             <View style={styles.inputRow}>
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Sist godkjent (EU)</Text>
+                <Text style={styles.inputLabel}>{t('last_eu_control')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={euControlDate}
@@ -365,7 +367,7 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionHeader}>Handling</Text>
+          <Text style={styles.sectionHeader}>{t('actions')}</Text>
           
           <TouchableOpacity 
             style={styles.deleteButton} 
@@ -373,16 +375,16 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <Trash2 size={20} color={Colors.danger} />
-            <Text style={styles.deleteButtonText}>Slett bil</Text>
+            <Text style={styles.deleteButtonText}>{t('delete_car')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.sectionHeader}>App & data</Text>
+          <Text style={styles.sectionHeader}>{t('app_data')}</Text>
 
           <View style={styles.formCard}>
             <TouchableOpacity style={styles.inputRow}>
               <Smartphone size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.settingTitle}>App versjon</Text>
+                <Text style={styles.settingTitle}>{t('app_version')}</Text>
                 <Text style={styles.settingValue}>1.0.0</Text>
               </View>
             </TouchableOpacity>
@@ -393,37 +395,37 @@ export default function SettingsScreen() {
               style={styles.inputRow}
               onPress={() => {
                 Alert.alert(
-                  "Eksporter data",
-                  "Denne funksjonen lar deg eksportere all bildata til en fil.",
+                  t('export_data'),
+                  t('export_desc'),
                   [{ text: "OK" }]
                 );
               }}
             >
               <Download size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.settingTitle}>Eksporter data</Text>
-                <Text style={styles.settingValue}>Last ned en kopi</Text>
+                <Text style={styles.settingTitle}>{t('export_data')}</Text>
+                <Text style={styles.settingValue}>{t('download_copy')}</Text>
               </View>
               <ChevronRight size={20} color={Colors.text.tertiary} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionHeader}>Support</Text>
+          <Text style={styles.sectionHeader}>{t('support')}</Text>
 
           <View style={styles.formCard}>
             <TouchableOpacity 
               style={styles.inputRow}
               onPress={() => {
                 Alert.alert(
-                  "Hjelp",
-                  "Trenger du hjelp? Ta kontakt på haakon.foseide@gmail.com",
+                  t('help_support'),
+                  t('help_desc'),
                   [{ text: "OK" }]
                 );
               }}
             >
               <HelpCircle size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.settingTitle}>Hjelp & Support</Text>
+                <Text style={styles.settingTitle}>{t('help_support')}</Text>
               </View>
               <ChevronRight size={20} color={Colors.text.tertiary} />
             </TouchableOpacity>
@@ -434,15 +436,15 @@ export default function SettingsScreen() {
               style={styles.inputRow}
               onPress={() => {
                 Alert.alert(
-                  "Kontakt oss",
-                  "E-post: haakon.foseide@gmail.com\nTelefon: +47 412 89 330",
+                  t('contact_us'),
+                  t('contact_desc'),
                   [{ text: "OK" }]
                 );
               }}
             >
               <Mail size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.settingTitle}>Kontakt oss</Text>
+                <Text style={styles.settingTitle}>{t('contact_us')}</Text>
               </View>
               <ChevronRight size={20} color={Colors.text.tertiary} />
             </TouchableOpacity>
@@ -453,15 +455,15 @@ export default function SettingsScreen() {
               style={styles.inputRow}
               onPress={() => {
                 Alert.alert(
-                  "Personvern & Vilkår",
-                  "Personvern:\nVi tar ditt personvern på alvor. All bildata og vedlikeholdsinformasjon lagres lokalt på enheten din. Vi samler ikke inn personlig informasjon utover det som er nødvendig for appens funksjonalitet.\n\nVilkår:\nDenne appen tilbys som den er, uten noen form for garanti. Ved å bruke appen aksepterer du å ta fullt ansvar for all informasjon som registreres. Appens utvikler er ikke ansvarlig for eventuelle feil eller mangler i data.\n\nFor spørsmål, kontakt haakon.foseide@gmail.com",
+                  t('privacy_terms'),
+                  t('privacy_desc'),
                   [{ text: "OK" }]
                 );
               }}
             >
               <Shield size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.settingTitle}>Personvern & Vilkår</Text>
+                <Text style={styles.settingTitle}>{t('privacy_terms')}</Text>
               </View>
               <ChevronRight size={20} color={Colors.text.tertiary} />
             </TouchableOpacity>
