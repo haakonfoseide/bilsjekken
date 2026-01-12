@@ -8,9 +8,10 @@ import {
   Platform,
   TextInput,
   KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp, ArrowLeft, AlertCircle, ExternalLink, Pencil } from "lucide-react-native";
+import { ChevronDown, ChevronUp, ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { useCarData } from "@/contexts/car-context";
 import * as Haptics from "expo-haptics";
@@ -42,18 +43,45 @@ function formatValue(value: string, unit?: string) {
 
 export default function VehicleInfoScreen() {
   const router = useRouter();
-  const { carInfo, refreshCarInfo, isRefreshing, updateCarInfo } = useCarData();
+  const { carInfo, refreshCarInfo, isRefreshing, updateCarInfo, deleteCar, addMileageRecord } = useCarData();
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempSections, setTempSections] = useState<CarInfo["vehicleSections"]>({});
 
-  useEffect(() => {
-    if (carInfo?.vehicleSections && !isEditing) {
-      setTempSections(JSON.parse(JSON.stringify(carInfo.vehicleSections)));
-    }
-  }, [carInfo?.vehicleSections, isEditing]);
+  // Core fields state
+  const [make, setMake] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
+  const [insurance, setInsurance] = useState("");
+  const [currentMileage, setCurrentMileage] = useState("");
+  const [color, setColor] = useState("");
+  const [vin, setVin] = useState("");
+  const [fuelType, setFuelType] = useState("");
+  const [euControlDate, setEuControlDate] = useState("");
+  const [nextEuControlDate, setNextEuControlDate] = useState("");
 
-  const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
+  useEffect(() => {
+    if (carInfo && !isEditing) {
+      setTempSections(JSON.parse(JSON.stringify(carInfo.vehicleSections || {})));
+      
+      // Initialize core fields
+      setMake(carInfo.make);
+      setModel(carInfo.model);
+      setYear(carInfo.year);
+      setLicensePlate(carInfo.licensePlate);
+      setInsurance(carInfo.insurance || "");
+      setCurrentMileage(carInfo.currentMileage?.toString() || "");
+      setColor(carInfo.color || "");
+      setVin(carInfo.vin || "");
+      setFuelType(carInfo.fuelType || "");
+      setEuControlDate(carInfo.euControlDate || "");
+      setNextEuControlDate(carInfo.nextEuControlDate || "");
+    }
+  }, [carInfo, isEditing]);
+
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    generelt: true,
     euKontroll: true,
     registreringsdata: true,
     utslipp: true,
@@ -75,9 +103,7 @@ export default function VehicleInfoScreen() {
     return result;
   }, [carInfo?.vehicleSections, tempSections, isEditing]);
 
-  const hasAny = sections.length > 0;
-
-  const handleToggle = (key: SectionKey) => {
+  const handleToggle = (key: string) => {
     setExpanded((prev) => {
       const next = { ...prev, [key]: !prev[key] };
       return next;
@@ -99,10 +125,32 @@ export default function VehicleInfoScreen() {
 
   const handleSave = () => {
     if (!carInfo) return;
+
+    const mileageNum = parseInt(currentMileage.replace(/\D/g, "")) || 0;
+
     updateCarInfo({
       ...carInfo,
+      make,
+      model,
+      year,
+      licensePlate,
+      insurance,
+      currentMileage: mileageNum,
+      color,
+      vin,
+      fuelType,
+      euControlDate,
+      nextEuControlDate,
       vehicleSections: tempSections,
     });
+
+    if (mileageNum > 0 && mileageNum !== carInfo.currentMileage) {
+      addMileageRecord({
+        date: new Date().toISOString(),
+        mileage: mileageNum,
+      });
+    }
+
     setIsEditing(false);
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -111,9 +159,30 @@ export default function VehicleInfoScreen() {
 
   const handleCancel = () => {
     setIsEditing(false);
-    if (carInfo?.vehicleSections) {
-      setTempSections(JSON.parse(JSON.stringify(carInfo.vehicleSections)));
-    }
+    // Reset handled by useEffect
+  };
+
+  const handleDelete = () => {
+    if (!carInfo) return;
+
+    Alert.alert(
+      "Slett bil",
+      `Er du sikker på at du vil slette ${carInfo.make} ${carInfo.model}?`,
+      [
+        { text: "Avbryt", style: "cancel" },
+        {
+          text: "Slett",
+          style: "destructive",
+          onPress: () => {
+            deleteCar(carInfo.id);
+            router.replace("/");
+            if (Platform.OS !== "web") {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleRefresh = () => {
@@ -189,28 +258,74 @@ export default function VehicleInfoScreen() {
           testID="vehicle-info-scroll"
         >
           <View style={styles.heroCard}>
-          <View style={styles.heroTop}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.heroTitle}>{carInfo ? `${carInfo.make} ${carInfo.model}` : "Kjøretøy"}</Text>
-              <Text style={styles.heroSubtitle} numberOfLines={1}>
-                {carInfo?.licensePlate ? carInfo.licensePlate : ""}
-                {carInfo?.vin ? `  •  VIN ${carInfo.vin}` : ""}
-              </Text>
+            <View style={styles.heroTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.heroTitle}>{make} {model}</Text>
+                <Text style={styles.heroSubtitle} numberOfLines={1}>
+                  {licensePlate ? licensePlate : ""}
+                  {carInfo?.vin ? `  •  VIN ${carInfo.vin}` : ""}
+                </Text>
+              </View>
             </View>
           </View>
 
-          {!hasAny && (
-            <View style={styles.emptyCard} testID="vehicle-info-empty">
-              <AlertCircle size={18} color={Colors.text.secondary} />
-              <Text style={styles.emptyText}>
-                Ingen detaljer ble returnert fra Vegvesenet for denne bilen. Trykk “Oppdater” eller legg inn manuelt der
-                det er relevant.
-              </Text>
-            </View>
-          )}
-        </View>
+          {/* Core Fields Section */}
+          <View style={styles.sectionCard} testID="vehicle-section-generelt">
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={() => handleToggle("generelt")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.sectionTitle}>Generell informasjon</Text>
+              {expanded["generelt"] ? (
+                <ChevronUp size={18} color={Colors.text.secondary} />
+              ) : (
+                <ChevronDown size={18} color={Colors.text.secondary} />
+              )}
+            </TouchableOpacity>
 
-        {sections.map(({ key, section }) => {
+            {expanded["generelt"] && (
+              <View style={styles.fields}>
+                {[
+                  { label: "Merke", value: make, onChange: setMake },
+                  { label: "Modell", value: model, onChange: setModel },
+                  { label: "Årsmodell", value: year, onChange: setYear, keyboardType: "numeric" },
+                  { label: "Reg.nr", value: licensePlate, onChange: setLicensePlate, autoCapitalize: "characters" },
+                  { label: "VIN", value: vin, onChange: setVin, autoCapitalize: "characters" },
+                  { label: "Kilometerstand", value: currentMileage, onChange: setCurrentMileage, keyboardType: "numeric", unit: "km" },
+                  { label: "Forsikring", value: insurance, onChange: setInsurance, placeholder: "F.eks. Gjensidige" },
+                  { label: "Farge", value: color, onChange: setColor },
+                  { label: "Drivstoff", value: fuelType, onChange: setFuelType },
+                  { label: "Neste EU-kontroll", value: nextEuControlDate, onChange: setNextEuControlDate, placeholder: "YYYY-MM-DD" },
+                  { label: "Sist godkjent EU", value: euControlDate, onChange: setEuControlDate, placeholder: "YYYY-MM-DD" },
+                ].map((field, idx) => (
+                  <View key={field.label} style={[styles.row, idx === 10 && styles.rowLast]}>
+                    <Text style={styles.label}>{field.label}</Text>
+                    {isEditing ? (
+                      <View style={styles.inputContainer}>
+                        <TextInput
+                          style={styles.input}
+                          value={field.value}
+                          onChangeText={field.onChange}
+                          placeholder={field.placeholder || "Verdi"}
+                          placeholderTextColor={Colors.text.light}
+                          keyboardType={field.keyboardType as any}
+                          autoCapitalize={field.autoCapitalize as any}
+                        />
+                        {field.unit && <Text style={styles.unitText}>{field.unit}</Text>}
+                      </View>
+                    ) : (
+                      <Text style={styles.value} numberOfLines={2}>
+                        {formatValue(field.value, field.unit)}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {sections.map(({ key, section }) => {
           const isOpen = Boolean(expanded[key]);
           return (
             <View key={key} style={styles.sectionCard} testID={`vehicle-section-${key}`}>
@@ -274,6 +389,15 @@ export default function VehicleInfoScreen() {
             <Text style={styles.externalLinkTitle}>Åpne Min side</Text>
             <Text style={styles.externalLinkSubtitle}>Logg inn hos Vegvesenet for å se flere detaljer</Text>
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDelete}
+          activeOpacity={0.7}
+        >
+          <Trash2 size={20} color={Colors.danger} />
+          <Text style={styles.deleteButtonText}>Slett bil</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
@@ -498,5 +622,20 @@ const styles = StyleSheet.create({
   externalLinkSubtitle: {
     fontSize: 12,
     color: Colors.text.secondary,
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#FEE2E2",
+  },
+  deleteButtonText: {
+    color: Colors.danger,
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,14 +19,13 @@ import {
   ChevronRight,
   ScanLine,
   Plus,
-  Settings,
-  RefreshCw,
   Calendar,
   CheckCircle2,
   AlertCircle,
   Fuel,
   Palette,
   ShieldCheck,
+  Info,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -46,8 +44,6 @@ export default function DashboardScreen() {
     getTireAge,
     cars,
     setActiveCar,
-    refreshCarInfo,
-    isRefreshing,
   } = useCarData();
 
   const lastWash = getLastWash();
@@ -60,8 +56,6 @@ export default function DashboardScreen() {
     }
     router.push(route as never);
   }, [router]);
-
-
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -86,13 +80,6 @@ export default function DashboardScreen() {
       year: "numeric",
     });
   }, [t, i18n.language]);
-
-  const handleRefresh = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
-    refreshCarInfo();
-  }, [refreshCarInfo]);
 
   const carHighlights = useMemo(() => {
     if (!carInfo) return [];
@@ -229,25 +216,6 @@ export default function DashboardScreen() {
                         </View>
                         <Text style={styles.carYear}>{carInfo.year}</Text>
                       </View>
-                    </View>
-                    <View style={styles.carActions}>
-                      <TouchableOpacity
-                        style={styles.actionBtn}
-                        onPress={handleRefresh}
-                        disabled={isRefreshing}
-                      >
-                        {isRefreshing ? (
-                          <ActivityIndicator size="small" color={Colors.primary} />
-                        ) : (
-                          <RefreshCw size={18} color={Colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.actionBtn}
-                        onPress={() => handlePress("/settings")}
-                      >
-                        <Settings size={18} color={Colors.text.secondary} />
-                      </TouchableOpacity>
                     </View>
                   </View>
 
@@ -394,12 +362,12 @@ export default function DashboardScreen() {
                 >
                   <View style={styles.vehicleInfoCtaLeft}>
                     <View style={styles.vehicleInfoCtaIcon}>
-                      <Car size={18} color={Colors.primary} strokeWidth={2.5} />
+                      <Info size={20} color={Colors.primary} strokeWidth={2.5} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.vehicleInfoCtaTitle}>{t('vehicle_data_source')}</Text>
+                      <Text style={styles.vehicleInfoCtaTitle}>Informasjon</Text>
                       <Text style={styles.vehicleInfoCtaSubtitle} numberOfLines={1}>
-                        {t('vehicle_data_subtitle')}
+                        Se og endre informasjon om bilen
                       </Text>
                     </View>
                   </View>
