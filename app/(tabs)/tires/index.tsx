@@ -14,7 +14,7 @@ import {
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  CircleSlash2,
+  Disc,
   Camera,
   X,
   Plus,
@@ -82,16 +82,44 @@ export default function TiresScreen() {
         
         if (!isMounted.current) return;
 
-        if (data.merchant) setBrand(data.merchant);
+        if (data.tireBrand) {
+          setBrand(data.tireBrand);
+        } else if (data.merchant) {
+          setBrand(data.merchant);
+        }
         if (data.date) setPurchaseDate(data.date);
         if (data.description) setNotes(data.description);
         if (data.receiptImages && Array.isArray(data.receiptImages)) {
           setReceiptImages(data.receiptImages);
         }
+        
+        // Fill in tire dimensions
+        if (data.tireDimensions) {
+          setSize(data.tireDimensions);
+        } else if (data.tireWidth && data.tireProfile && data.tireRimSize) {
+          setSize(`${data.tireWidth}/${data.tireProfile} R${data.tireRimSize}`);
+        }
+        
+        // Set tire type based on analysis
+        if (data.tireType === "winter") {
+          setTireType("winter");
+        } else if (data.tireType === "summer") {
+          setTireType("summer");
+        }
+        
+        // Build notes with additional info
+        let notesText = data.description || "";
+        if (data.tireModel) {
+          notesText = notesText ? `${notesText}\nModell: ${data.tireModel}` : `Modell: ${data.tireModel}`;
+        }
+        if (data.tireQuantity) {
+          notesText = notesText ? `${notesText}\nAntall: ${data.tireQuantity} stk` : `Antall: ${data.tireQuantity} stk`;
+        }
         if (data.items && data.items.length > 0) {
           const itemsText = data.items.join(", ");
-          setNotes((prev) => prev ? `${prev}\n\nPoster: ${itemsText}` : `Poster: ${itemsText}`);
+          notesText = notesText ? `${notesText}\n\nPoster: ${itemsText}` : `Poster: ${itemsText}`;
         }
+        if (notesText) setNotes(notesText);
         
         setShowAddForm(true);
         
@@ -463,7 +491,7 @@ export default function TiresScreen() {
         {tireSets.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <CircleSlash2 size={32} color={Colors.text.light} strokeWidth={1.5} />
+              <Disc size={32} color={Colors.text.light} strokeWidth={1.5} />
             </View>
             <Text style={styles.emptyTitle}>{t('no_tire_sets')}</Text>
             <Text style={styles.emptyText}>{t('add_tires_desc')}</Text>

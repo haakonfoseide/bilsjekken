@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Car, Droplet, Wrench, CircleSlash2 } from "lucide-react-native";
+import { Car, Droplet, Wrench, Disc } from "lucide-react-native";
 import React from "react";
 import { Platform, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
@@ -64,7 +64,7 @@ export default function TabLayout() {
         name="tires"
         options={{
           title: t('tires'),
-          tabBarIcon: ({ color }) => <CircleSlash2 size={24} color={color} strokeWidth={2} />,
+          tabBarIcon: ({ color }) => <Disc size={24} color={color} strokeWidth={2} />,
         }}
       />
     </Tabs>

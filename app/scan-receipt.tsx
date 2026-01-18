@@ -20,7 +20,7 @@ import {
   CheckCircle2,
   Wrench,
   Droplet,
-  CircleSlash2,
+  Disc,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -57,6 +57,46 @@ const ReceiptSchema = z.object({
     .nullable()
     .optional()
     .describe("Car mileage/odometer reading if mentioned. For service booklets this is usually prominently displayed."),
+  tireDimensions: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Tire dimensions if visible (e.g., '205/55 R16', '225/45 R17'). Look for width/profile/rim size pattern."),
+  tireWidth: z
+    .number()
+    .nullable()
+    .optional()
+    .describe("Tire width in mm (e.g., 205, 225)"),
+  tireProfile: z
+    .number()
+    .nullable()
+    .optional()
+    .describe("Tire profile/aspect ratio (e.g., 55, 45)"),
+  tireRimSize: z
+    .number()
+    .nullable()
+    .optional()
+    .describe("Tire rim size in inches (e.g., 16, 17)"),
+  tireBrand: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Tire brand if visible (e.g., Michelin, Continental, Pirelli, Nokian)"),
+  tireModel: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Tire model name if visible (e.g., Pilot Sport, WinterContact)"),
+  tireType: z
+    .enum(["summer", "winter", "allseason", "unknown"])
+    .nullable()
+    .optional()
+    .describe("Type of tire: summer, winter, allseason, or unknown"),
+  tireQuantity: z
+    .number()
+    .nullable()
+    .optional()
+    .describe("Number of tires purchased (usually 2 or 4)"),
   isServiceBooklet: z
     .boolean()
     .optional()
@@ -220,6 +260,11 @@ export default function ScanReceiptScreen() {
                     "  * What work was performed (oil change, filter replacement, inspection, brake service, etc.)\n" +
                     "  * Workshop/mechanic name\n" +
                     "  * Next service due mileage if mentioned\n" +
+                    "- For TIRE receipts/invoices, pay special attention to:\n" +
+                    "  * Tire dimensions (format: width/profile Rrim, e.g., 205/55 R16)\n" +
+                    "  * Tire brand and model\n" +
+                    "  * Type of tire (summer, winter, all-season)\n" +
+                    "  * Number of tires purchased\n" +
                     "- For regular receipts, extract: amount, date, merchant, description, items, and mileage if mentioned\n" +
                     "- Provide a confidence score (0-100) for your categorization\n" +
                     "- Use null for any field that cannot be determined from the image\n\n" +
@@ -333,6 +378,14 @@ export default function ScanReceiptScreen() {
           date: analysis.date ?? undefined,
           items: analysis.items,
           receiptImages: selectedImage ? [selectedImage] : undefined,
+          tireDimensions: analysis.tireDimensions ?? undefined,
+          tireWidth: analysis.tireWidth ?? undefined,
+          tireProfile: analysis.tireProfile ?? undefined,
+          tireRimSize: analysis.tireRimSize ?? undefined,
+          tireBrand: analysis.tireBrand ?? undefined,
+          tireModel: analysis.tireModel ?? undefined,
+          tireType: analysis.tireType ?? undefined,
+          tireQuantity: analysis.tireQuantity ?? undefined,
         };
         
         console.log("[Receipt] Navigating to tires with data:", tireData);
@@ -369,7 +422,7 @@ export default function ScanReceiptScreen() {
       case "service":
         return <Wrench size={24} color={Colors.success} strokeWidth={2} />;
       case "tires":
-        return <CircleSlash2 size={24} color={Colors.danger} strokeWidth={2} />;
+        return <Disc size={24} color={Colors.danger} strokeWidth={2} />;
       default:
         return <Sparkles size={24} color={Colors.text.secondary} strokeWidth={2} />;
     }
