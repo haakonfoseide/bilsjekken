@@ -58,6 +58,9 @@ function RootLayoutNav() {
       <Stack.Screen name="scan-receipt" options={{ headerShown: true, presentation: "modal" }} />
       <Stack.Screen name="vehicle-info" options={{ headerShown: true, title: t('vehicle_info') }} />
       <Stack.Screen name="insurance-documents" options={{ headerShown: true, title: t('insurance_documents') }} />
+      <Stack.Screen name="fuel" options={{ headerShown: true, title: t('fuel') }} />
+      <Stack.Screen name="mileage-history" options={{ headerShown: true, title: t('mileage_history') }} />
+      <Stack.Screen name="add-car" options={{ headerShown: true, title: t('add_car') }} />
     </Stack>
   );
 }

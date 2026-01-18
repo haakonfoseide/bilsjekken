@@ -225,10 +225,15 @@ export default function DashboardScreen() {
                         const Icon =
                           it.icon === "Palette" ? Palette : it.icon === "Fuel" ? Fuel : ShieldCheck;
 
-                        const isInsurance = it.key === "insurance";
-                        const ChipWrapper = isInsurance ? TouchableOpacity : View;
-                        const chipProps = isInsurance ? {
-                          onPress: () => handlePress("/insurance-documents"),
+                        const isClickable = it.key === "insurance" || it.key === "fuel";
+                        const ChipWrapper = isClickable ? TouchableOpacity : View;
+                        const getChipRoute = () => {
+                          if (it.key === "insurance") return "/insurance-documents";
+                          if (it.key === "fuel") return "/fuel";
+                          return "";
+                        };
+                        const chipProps = isClickable ? {
+                          onPress: () => handlePress(getChipRoute()),
                           activeOpacity: 0.7,
                         } : {};
 
