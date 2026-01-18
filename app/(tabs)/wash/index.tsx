@@ -6,17 +6,16 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
-  Alert,
   Keyboard,
 } from "react-native";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Droplet, Plus, Trash2, X, Check, Sparkles } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors, { typography } from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
+import { hapticFeedback, confirmDelete, formatDateLocalized, getDaysAgo } from "@/lib/utils";
 
 const WASH_TYPES = ["Håndvask", "Automatvask", "Selvvask", "Polering"];
 
@@ -30,11 +29,15 @@ export default function WashScreen() {
   const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
 
-  const handleAdd = () => {
-    if (!date) {
-      Alert.alert("Feil", "Vennligst velg dato");
-      return;
-    }
+  const resetForm = useCallback(() => {
+    setDate(new Date().toISOString().split("T")[0]);
+    setType("");
+    setNotes("");
+    setShowAddForm(false);
+  }, []);
+
+  const handleAdd = useCallback(() => {
+    if (!date) return;
 
     addWashRecord({
       date: new Date(date).toISOString(),
@@ -42,50 +45,27 @@ export default function WashScreen() {
       notes: notes || undefined,
     });
 
-    setDate(new Date().toISOString().split("T")[0]);
-    setType("");
-    setNotes("");
-    setShowAddForm(false);
+    resetForm();
+    hapticFeedback.success();
+  }, [date, type, notes, addWashRecord, resetForm]);
 
-    if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    Alert.alert("Slett vask", "Er du sikker på at du vil slette denne vasken?", [
-      { text: "Avbryt", style: "cancel" },
-      {
-        text: "Slett",
-        style: "destructive",
-        onPress: () => {
-          deleteWashRecord(id);
-          if (Platform.OS !== "web") {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          }
-        },
-      },
-    ]);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(i18n.language, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
+  const handleDelete = useCallback((id: string) => {
+    confirmDelete("Slett vask", "Er du sikker på at du vil slette denne vasken?", () => {
+      deleteWashRecord(id);
+      hapticFeedback.success();
     });
-  };
+  }, [deleteWashRecord]);
 
-  const getDaysAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return t('today');
-    if (diffDays === 1) return t('yesterday');
-    return t('days_ago', { count: diffDays });
-  };
+  const formatDate = useCallback((dateString: string) => {
+    return formatDateLocalized(dateString, i18n.language);
+  }, [i18n.language]);
+
+  const formatDaysAgo = useCallback((dateString: string) => {
+    const days = getDaysAgo(dateString);
+    if (days === 0) return t('today');
+    if (days === 1) return t('yesterday');
+    return t('days_ago', { count: days });
+  }, [t]);
 
   return (
     <View style={styles.container}>
@@ -103,9 +83,7 @@ export default function WashScreen() {
             style={styles.addButton}
             onPress={() => {
               setShowAddForm(true);
-              if (Platform.OS !== "web") {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }
+              hapticFeedback.light();
             }}
             activeOpacity={0.8}
           >
@@ -119,10 +97,8 @@ export default function WashScreen() {
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
-                  setShowAddForm(false);
-                  if (Platform.OS !== "web") {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
+                  resetForm();
+                  hapticFeedback.light();
                 }}
               >
                 <X size={20} color={Colors.text.secondary} />
@@ -147,9 +123,7 @@ export default function WashScreen() {
                     style={[styles.typeChip, type === washType && styles.typeChipActive]}
                     onPress={() => {
                       setType(type === washType ? "" : washType);
-                      if (Platform.OS !== "web") {
-                        Haptics.selectionAsync();
-                      }
+                      hapticFeedback.selection();
                     }}
                   >
                     <Text style={[styles.typeChipText, type === washType && styles.typeChipTextActive]}>
@@ -215,7 +189,7 @@ export default function WashScreen() {
                 <View style={styles.recordContent}>
                   <View style={styles.recordHeader}>
                     <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
-                    <Text style={styles.recordDaysAgo}>{getDaysAgo(record.date)}</Text>
+                    <Text style={styles.recordDaysAgo}>{formatDaysAgo(record.date)}</Text>
                   </View>
                   {record.type && (
                     <View style={styles.recordTypeBadge}>

@@ -1,7 +1,7 @@
 import createContextHook from "@nkzw/create-context-hook";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { trpcClient } from "@/lib/trpc";
 import type {
   CarInfo,
@@ -17,7 +17,7 @@ import type { VehicleSearchResult } from "@/lib/api-types";
 
 const STORAGE_KEY = "@car_data";
 const STORAGE_BACKUP_KEY = "@car_data_backup";
-const STORAGE_VERSION = "2.0"; // Bump version for migration
+const STORAGE_VERSION = "2.0";
 
 interface CarData {
   // New structure
@@ -60,11 +60,10 @@ const defaultData: CarData = {
 export const [CarProvider, useCarData] = createContextHook(() => {
   const [data, setData] = useState<CarData>(defaultData);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const dataRef = useRef<CarData>(defaultData);
 
   const { data: loadedData, isLoading } = useQuery({
     queryKey: ["carData"],
-    queryFn: async () => {
+    queryFn: async (): Promise<CarData> => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (!stored) {
@@ -72,61 +71,46 @@ export const [CarProvider, useCarData] = createContextHook(() => {
           return defaultData;
         }
 
-        try {
-          const parsed = JSON.parse(stored);
-          console.log("[CarContext] Successfully loaded data from storage");
+        const parsed = JSON.parse(stored);
+        console.log("[CarContext] Successfully loaded data from storage");
+        
+        if (!parsed.cars && parsed.carInfo) {
+          console.log("[CarContext] Migrating from v1 to v2");
+          const oldCar = parsed.carInfo;
+          const carId = "default-car";
+          const migratedCar: CarInfo = { ...oldCar, id: carId };
+          const migrateRecord = <T extends { id?: string }>(r: T): T & { carId: string } => ({ ...r, carId });
           
-          // MIGRATION LOGIC
-          if (!parsed.cars && parsed.carInfo) {
-             console.log("[CarContext] Migrating from v1 to v2");
-             const oldCar = parsed.carInfo;
-             const carId = "default-car";
-             const migratedCar: CarInfo = { ...oldCar, id: carId };
-             
-             // Migrate records
-             const migrateRecord = <T extends { id?: string }>(r: T): T & { carId: string } => ({ ...r, carId });
-             
-             return {
-               cars: [migratedCar],
-               activeCarId: carId,
-               washRecords: (parsed.washRecords || []).map(migrateRecord),
-               serviceRecords: (parsed.serviceRecords || []).map(migrateRecord),
-               tireSets: (parsed.tireSets || []).map(migrateRecord),
-               mileageRecords: (parsed.mileageRecords || []).map(migrateRecord),
-               fuelRecords: (parsed.fuelRecords || []).map(migrateRecord),
-               tireInfos: parsed.tireInfo ? { [carId]: parsed.tireInfo } : {},
-             };
-          }
-
-          // Migration for InsuranceDocument (imageUri -> uri, add type)
-          if (parsed.insuranceDocuments) {
-            parsed.insuranceDocuments = parsed.insuranceDocuments.map((doc: any) => {
-              if (doc.imageUri) {
-                return {
-                  ...doc,
-                  uri: doc.imageUri,
-                  type: doc.type || "image",
-                  imageUri: undefined, // Cleanup
-                };
-              }
-              return doc;
-            });
-          }
-
-          return parsed;
-        } catch (e) {
-          console.error("[CarContext] Failed to parse stored data. Resetting storage.", e);
-          // If the data is corrupted (e.g. "object Object"), we must clear it to allow the app to start.
-          await AsyncStorage.removeItem(STORAGE_KEY);
-          return defaultData;
+          return {
+            cars: [migratedCar],
+            activeCarId: carId,
+            washRecords: (parsed.washRecords || []).map(migrateRecord),
+            serviceRecords: (parsed.serviceRecords || []).map(migrateRecord),
+            tireSets: (parsed.tireSets || []).map(migrateRecord),
+            mileageRecords: (parsed.mileageRecords || []).map(migrateRecord),
+            fuelRecords: (parsed.fuelRecords || []).map(migrateRecord),
+            insuranceDocuments: [],
+            tireInfos: parsed.tireInfo ? { [carId]: parsed.tireInfo } : {},
+          };
         }
+
+        if (parsed.insuranceDocuments) {
+          parsed.insuranceDocuments = parsed.insuranceDocuments.map((doc: { imageUri?: string; uri?: string; type?: string }) => {
+            if (doc.imageUri) {
+              return { ...doc, uri: doc.imageUri, type: doc.type || "image", imageUri: undefined };
+            }
+            return doc;
+          });
+        }
+
+        return parsed;
       } catch (error) {
         console.error("[CarContext] Error loading data:", error);
-        // Try backup...
         try {
-           const backup = await AsyncStorage.getItem(STORAGE_BACKUP_KEY);
-           if (backup) return JSON.parse(backup); // Note: might need migration too if backup is old
+          const backup = await AsyncStorage.getItem(STORAGE_BACKUP_KEY);
+          if (backup) return JSON.parse(backup);
         } catch {}
+        await AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
         return defaultData;
       }
     },
@@ -163,9 +147,9 @@ export const [CarProvider, useCarData] = createContextHook(() => {
 
   useEffect(() => {
     if (loadedData) {
-      const newData = {
-        ...loadedData,
+      setData({
         cars: loadedData.cars || [],
+        activeCarId: loadedData.activeCarId,
         washRecords: loadedData.washRecords || [],
         serviceRecords: loadedData.serviceRecords || [],
         tireSets: loadedData.tireSets || [],
@@ -173,10 +157,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
         fuelRecords: loadedData.fuelRecords || [],
         insuranceDocuments: loadedData.insuranceDocuments || [],
         tireInfos: loadedData.tireInfos || {},
-      };
-      dataRef.current = newData;
-      setData(newData);
-      
+      });
       if (isInitialLoad) setIsInitialLoad(false);
     }
   }, [loadedData, isInitialLoad]);
@@ -190,68 +171,54 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     const newCar = { ...car, id };
     
     setData((prev) => {
-       const newCars = [...prev.cars, newCar];
-       const newData = {
-         ...prev,
-         cars: newCars,
-         activeCarId: prev.activeCarId || id,
-       };
-       dataRef.current = newData;
-       mutate(newData);
-       return newData;
+      const newData = {
+        ...prev,
+        cars: [...prev.cars, newCar],
+        activeCarId: prev.activeCarId || id,
+      };
+      mutate(newData);
+      return newData;
     });
   }, [mutate]);
 
   const updateCarInfo = useCallback((carInfo: CarInfo) => {
-      setData((prev) => {
-         const newCars = prev.cars.map(c => c.id === carInfo.id ? carInfo : c);
-         const newData = { ...prev, cars: newCars };
-         dataRef.current = newData;
-         mutate(newData);
-         return newData;
-      });
+    setData((prev) => {
+      const newData = { ...prev, cars: prev.cars.map(c => c.id === carInfo.id ? carInfo : c) };
+      mutate(newData);
+      return newData;
+    });
   }, [mutate]);
 
   const deleteCar = useCallback((carId: string) => {
-      setData((prev) => {
-         const newCars = prev.cars.filter(c => c.id !== carId);
-         const newWash = prev.washRecords.filter(r => r.carId !== carId);
-         const newService = prev.serviceRecords.filter(r => r.carId !== carId);
-         const newTires = prev.tireSets.filter(r => r.carId !== carId);
-         const newMileage = prev.mileageRecords.filter(r => r.carId !== carId);
-         const newFuel = prev.fuelRecords.filter(r => r.carId !== carId);
-         const newTireInfos = { ...prev.tireInfos };
-         delete newTireInfos[carId];
+    setData((prev) => {
+      const newCars = prev.cars.filter(c => c.id !== carId);
+      const { [carId]: _, ...newTireInfos } = prev.tireInfos;
+      const newActiveId = prev.activeCarId === carId 
+        ? (newCars.length > 0 ? newCars[0].id : null) 
+        : prev.activeCarId;
 
-         let newActiveId = prev.activeCarId;
-         if (newActiveId === carId) {
-            newActiveId = newCars.length > 0 ? newCars[0].id : null;
-         }
-
-         const newData = {
-            ...prev,
-            cars: newCars,
-            activeCarId: newActiveId,
-            washRecords: newWash,
-            serviceRecords: newService,
-            tireSets: newTires,
-            mileageRecords: newMileage,
-            fuelRecords: newFuel,
-            tireInfos: newTireInfos,
-         };
-         dataRef.current = newData;
-         mutate(newData);
-         return newData;
-      });
+      const newData = {
+        ...prev,
+        cars: newCars,
+        activeCarId: newActiveId,
+        washRecords: prev.washRecords.filter(r => r.carId !== carId),
+        serviceRecords: prev.serviceRecords.filter(r => r.carId !== carId),
+        tireSets: prev.tireSets.filter(r => r.carId !== carId),
+        mileageRecords: prev.mileageRecords.filter(r => r.carId !== carId),
+        fuelRecords: prev.fuelRecords.filter(r => r.carId !== carId),
+        tireInfos: newTireInfos,
+      };
+      mutate(newData);
+      return newData;
+    });
   }, [mutate]);
 
   const setActiveCar = useCallback((carId: string) => {
-      setData((prev) => {
-         const newData = { ...prev, activeCarId: carId };
-         dataRef.current = newData;
-         mutate(newData);
-         return newData;
-      });
+    setData((prev) => {
+      const newData = { ...prev, activeCarId: carId };
+      mutate(newData);
+      return newData;
+    });
   }, [mutate]);
 
   // -- RECORD ACTIONS --
@@ -374,20 +341,14 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [mutate]
   );
 
-  const updateTireInfo = useCallback(
-    (info: TireInfo) => {
-       if (!activeCarId) return;
-       setData((prev) => {
-          const newData = {
-              ...prev,
-              tireInfos: { ...prev.tireInfos, [activeCarId]: info },
-          };
-          mutate(newData);
-          return newData;
-       });
-    },
-    [activeCarId, mutate]
-  );
+  const updateTireInfo = useCallback((info: TireInfo) => {
+    if (!activeCarId) return;
+    setData((prev) => {
+      const newData = { ...prev, tireInfos: { ...prev.tireInfos, [activeCarId]: info } };
+      mutate(newData);
+      return newData;
+    });
+  }, [activeCarId, mutate]);
   
   const addMileageRecord = useCallback(
     (record: Omit<MileageRecord, "id" | "carId">) => {
@@ -574,9 +535,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   );
 
   const getLastWash = useCallback(() => {
-    if (filteredWashRecords.length === 0) return null;
-    // Assuming sorted by new->old
-    return filteredWashRecords[0];
+    return filteredWashRecords.length > 0 ? filteredWashRecords[0] : null;
   }, [filteredWashRecords]);
 
   const getNextService = useCallback(() => {
@@ -592,29 +551,20 @@ export const [CarProvider, useCarData] = createContextHook(() => {
   }, [filteredServiceRecords, activeCar]);
 
   const getTireAge = useCallback(() => {
-    if (!currentTireInfo) {
-        // Fallback to active tire set?
-        const activeSet = filteredTireSets.find(t => t.isActive);
-        if (activeSet) {
-             const purchaseDate = new Date(activeSet.purchaseDate);
-             const now = new Date();
-             const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
-             const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
-             const diffMonths = Math.floor(
-               (diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30)
-             );
-             return { years: diffYears, months: diffMonths };
-        }
-        return null;
-    }
-    const purchaseDate = new Date(currentTireInfo.purchaseDate);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
-    const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
-    const diffMonths = Math.floor(
-      (diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30)
-    );
-    return { years: diffYears, months: diffMonths };
+    const calcAge = (dateStr: string) => {
+      const purchaseDate = new Date(dateStr);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
+      return {
+        years: Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365)),
+        months: Math.floor((diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30)),
+      };
+    };
+
+    if (currentTireInfo) return calcAge(currentTireInfo.purchaseDate);
+    const activeSet = filteredTireSets.find(t => t.isActive);
+    if (activeSet) return calcAge(activeSet.purchaseDate);
+    return null;
   }, [currentTireInfo, filteredTireSets]);
 
   const refreshCarInfoMutation = useMutation({

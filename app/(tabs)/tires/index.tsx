@@ -27,12 +27,18 @@ import {
   MapPin,
   Clock,
 } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import { useLocalSearchParams } from "expo-router";
 import Colors, { typography } from "@/constants/colors";
+import {
+  hapticFeedback,
+  confirmDelete,
+  calculateAge,
+  pickImagesFromGallery,
+  takePhotoWithCamera,
+  showImagePickerOptions,
+} from "@/lib/utils";
 
 export default function TiresScreen() {
   const { t } = useTranslation();
@@ -123,9 +129,7 @@ export default function TiresScreen() {
         
         setShowAddForm(true);
         
-        if (Platform.OS !== "web") {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
+        hapticFeedback.success();
       } catch (error) {
         console.error("[Tires] Error parsing prefill data:", error);
       }
@@ -152,111 +156,48 @@ export default function TiresScreen() {
       hasRemounting,
     });
 
-    if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-
+    hapticFeedback.success();
     resetForm();
   }, [brand, purchaseDate, size, tireType, isAtTireHotel, hotelLocation, notes, receiptImages, tireSets.length, hasBalancing, hasRemounting, addTireSet, resetForm]);
 
   const handleDelete = useCallback((id: string) => {
-    Alert.alert(
-      "Slett dekksett",
-      "Er du sikker på at du vil slette dette dekksettet?",
-      [
-        { text: "Avbryt", style: "cancel" },
-        {
-          text: "Slett",
-          style: "destructive",
-          onPress: () => {
-            deleteTireSet(id);
-            if (Platform.OS !== "web") {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-          },
-        },
-      ]
-    );
+    confirmDelete("Slett dekksett", "Er du sikker på at du vil slette dette dekksettet?", () => {
+      deleteTireSet(id);
+      hapticFeedback.success();
+    });
   }, [deleteTireSet]);
 
   const handleSetActive = useCallback((id: string) => {
     setActiveTireSet(id);
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+    hapticFeedback.medium();
   }, [setActiveTireSet]);
 
   const getTireAge = useCallback((purchaseDate: string) => {
-    const purchase = new Date(purchaseDate);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - purchase.getTime());
-    const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
-    const diffMonths = Math.floor(
-      (diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30)
-    );
-    return { years: diffYears, months: diffMonths };
+    return calculateAge(purchaseDate);
   }, []);
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Tillatelse påkrevd", "Vi trenger tilgang til bildegalleriet.");
-      return;
-    }
+  const pickImage = useCallback(async () => {
+    const result = await pickImagesFromGallery();
+    if (!isMounted.current || result.cancelled) return;
+    setReceiptImages(prev => [...prev, ...result.images]);
+    hapticFeedback.light();
+  }, []);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    });
+  const takePhoto = useCallback(async () => {
+    const result = await takePhotoWithCamera();
+    if (!isMounted.current || result.cancelled) return;
+    setReceiptImages(prev => [...prev, ...result.images]);
+    hapticFeedback.light();
+  }, []);
 
-    if (!isMounted.current) return;
+  const removeImage = useCallback((index: number) => {
+    setReceiptImages(prev => prev.filter((_, i) => i !== index));
+    hapticFeedback.light();
+  }, []);
 
-    if (!result.canceled && result.assets) {
-      const newImages = result.assets.map((asset) => asset.uri);
-      setReceiptImages([...receiptImages, ...newImages]);
-      if (Platform.OS !== "web") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Tillatelse påkrevd", "Vi trenger tilgang til kameraet.");
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-
-    if (!isMounted.current) return;
-
-    if (!result.canceled && result.assets && result.assets[0]) {
-      setReceiptImages([...receiptImages, result.assets[0].uri]);
-      if (Platform.OS !== "web") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setReceiptImages(receiptImages.filter((_, i) => i !== index));
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  };
-
-  const showImageOptions = () => {
-    Alert.alert("Legg til kvittering", "Velg et alternativ", [
-      { text: "Ta bilde", onPress: takePhoto },
-      { text: "Velg fra galleri", onPress: pickImage },
-      { text: "Avbryt", style: "cancel" },
-    ]);
-  };
+  const handleShowImageOptions = useCallback(() => {
+    showImagePickerOptions(takePhoto, pickImage);
+  }, [takePhoto, pickImage]);
 
   const summerTires = useMemo(() => tireSets.filter((t) => t.type === "summer"), [tireSets]);
   const winterTires = useMemo(() => tireSets.filter((t) => t.type === "winter"), [tireSets]);
@@ -277,9 +218,7 @@ export default function TiresScreen() {
             style={styles.addButton}
             onPress={() => {
               setShowAddForm(true);
-              if (Platform.OS !== "web") {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }
+              hapticFeedback.light();
             }}
             activeOpacity={0.8}
           >
@@ -294,9 +233,7 @@ export default function TiresScreen() {
                 style={styles.closeButton}
                 onPress={() => {
                   resetForm();
-                  if (Platform.OS !== "web") {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
+                  hapticFeedback.light();
                 }}
               >
                 <X size={20} color={Colors.text.secondary} />
@@ -310,7 +247,7 @@ export default function TiresScreen() {
                   style={[styles.typeButton, tireType === "summer" && styles.typeButtonSummer]}
                   onPress={() => {
                     setTireType("summer");
-                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    hapticFeedback.selection();
                   }}
                   activeOpacity={0.8}
                 >
@@ -324,7 +261,7 @@ export default function TiresScreen() {
                   style={[styles.typeButton, tireType === "winter" && styles.typeButtonWinter]}
                   onPress={() => {
                     setTireType("winter");
-                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    hapticFeedback.selection();
                   }}
                   activeOpacity={0.8}
                 >
@@ -389,7 +326,7 @@ export default function TiresScreen() {
                   value={isAtTireHotel}
                   onValueChange={(value) => {
                     setIsAtTireHotel(value);
-                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    hapticFeedback.selection();
                   }}
                   trackColor={{ false: "#E2E8F0", true: Colors.primary }}
                   thumbColor="#fff"
@@ -418,7 +355,7 @@ export default function TiresScreen() {
                   value={hasBalancing}
                   onValueChange={(value) => {
                     setHasBalancing(value);
-                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    hapticFeedback.selection();
                   }}
                   trackColor={{ false: "#E2E8F0", true: Colors.success }}
                   thumbColor="#fff"
@@ -432,7 +369,7 @@ export default function TiresScreen() {
                   value={hasRemounting}
                   onValueChange={(value) => {
                     setHasRemounting(value);
-                    if (Platform.OS !== "web") Haptics.selectionAsync();
+                    hapticFeedback.selection();
                   }}
                   trackColor={{ false: "#E2E8F0", true: Colors.success }}
                   thumbColor="#fff"
@@ -460,7 +397,7 @@ export default function TiresScreen() {
               <Text style={styles.label}>Kvitteringer</Text>
               <TouchableOpacity
                 style={styles.addImageButton}
-                onPress={showImageOptions}
+                onPress={handleShowImageOptions}
                 activeOpacity={0.8}
               >
                 <Camera size={20} color={Colors.primary} strokeWidth={2} />
