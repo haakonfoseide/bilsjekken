@@ -179,6 +179,9 @@ export default publicProcedure
       const generelt = teknisk?.generelt as { merke?: { merke?: string }[]; handelsbetegnelse?: string[] } | undefined;
       const karosseri = teknisk?.karosseriOgLasteplan as {
         farge?: { kodeNavn?: string; kodeBeskrivelse?: string; kodeVerdi?: string; navn?: string }[];
+        rpiData?: {
+          farge?: { kodeNavn?: string; kodeBeskrivelse?: string; kodeVerdi?: string; navn?: string }[];
+        };
         dorerAntall?: unknown;
         antallDorer?: unknown;
         lengde?: unknown;
@@ -188,18 +191,109 @@ export default publicProcedure
 
       // Extract color with multiple fallback paths
       const extractColor = (): string | null => {
-        const fargeArray = karosseri?.farge;
-        if (!fargeArray || !Array.isArray(fargeArray) || fargeArray.length === 0) {
-          console.log("[Vehicle Search] No farge array found", { karosseriKeys: Object.keys(karosseri || {}) });
+        // Try multiple paths for farge
+        const fargeCandidates = [
+          karosseri?.farge,
+          karosseri?.rpiData?.farge,
+          (teknisk as Record<string, unknown>)?.farge,
+        ];
+        
+        console.log("[Vehicle Search] Looking for farge in karosseri:", JSON.stringify(karosseri, null, 2)?.substring(0, 500));
+        
+        for (const fargeArray of fargeCandidates) {
+          if (!fargeArray) continue;
+          
+          // Handle if it's a direct string
+          if (typeof fargeArray === 'string') {
+            console.log("[Vehicle Search] Farge found as string:", fargeArray);
+            return fargeArray;
+          }
+          
+          // Handle if it's an object with color properties directly
+          if (typeof fargeArray === 'object' && !Array.isArray(fargeArray)) {
+            const fargeObj = fargeArray as { kodeNavn?: string; kodeBeskrivelse?: string; kodeVerdi?: string; navn?: string };
+            const colorValue = fargeObj.kodeNavn || fargeObj.kodeBeskrivelse || fargeObj.navn || fargeObj.kodeVerdi || null;
+            if (colorValue) {
+              console.log("[Vehicle Search] Farge object (non-array):", JSON.stringify(fargeObj), "-> extracted:", colorValue);
+              return colorValue;
+            }
+          }
+          
+          // Handle array
+          if (Array.isArray(fargeArray) && fargeArray.length > 0) {
+            const fargeObj = fargeArray[0];
+            if (typeof fargeObj === 'string') {
+              console.log("[Vehicle Search] Farge array[0] is string:", fargeObj);
+              return fargeObj;
+            }
+            if (typeof fargeObj === 'object' && fargeObj) {
+              const colorValue = fargeObj.kodeNavn || fargeObj.kodeBeskrivelse || fargeObj.navn || fargeObj.kodeVerdi || null;
+              console.log("[Vehicle Search] Farge object:", JSON.stringify(fargeObj), "-> extracted:", colorValue);
+              if (colorValue) return colorValue;
+            }
+          }
+        }
+        
+        // Deep search for farge in the entire vehicle object
+        const deepSearchFarge = (obj: unknown, depth: number = 0): string | null => {
+          if (depth > 5 || !obj || typeof obj !== 'object') return null;
+          
+          const record = obj as Record<string, unknown>;
+          
+          // Check if this object has farge-related keys
+          if ('fpiData' in record || 'rpiData' in record) {
+            const fpiData = record.fpiData as Record<string, unknown> | undefined;
+            const rpiData = record.rpiData as Record<string, unknown> | undefined;
+            const fargeFromFpi = fpiData?.fpiNavn ?? fpiData?.kodeBeskrivelse ?? fpiData?.kodeNavn;
+            const fargeFromRpi = rpiData?.fpiNavn ?? rpiData?.kodeBeskrivelse ?? rpiData?.kodeNavn;
+            if (typeof fargeFromFpi === 'string') return fargeFromFpi;
+            if (typeof fargeFromRpi === 'string') return fargeFromRpi;
+          }
+          
+          if ('fpiNavn' in record && typeof record.fpiNavn === 'string') {
+            console.log("[Vehicle Search] Found fpiNavn:", record.fpiNavn);
+            return record.fpiNavn;
+          }
+          
+          for (const key of Object.keys(record)) {
+            if (key.toLowerCase().includes('farge') || key.toLowerCase().includes('color')) {
+              const val = record[key];
+              if (typeof val === 'string' && val.length > 0 && val.length < 50) {
+                console.log(`[Vehicle Search] Found color at key '${key}':`, val);
+                return val;
+              }
+              if (typeof val === 'object' && val) {
+                const valObj = val as Record<string, unknown>;
+                const extracted = valObj.kodeNavn ?? valObj.kodeBeskrivelse ?? valObj.navn ?? valObj.fpiNavn;
+                if (typeof extracted === 'string') {
+                  console.log(`[Vehicle Search] Found color object at key '${key}':`, extracted);
+                  return extracted;
+                }
+                if (Array.isArray(val) && val.length > 0) {
+                  const first = val[0] as Record<string, unknown>;
+                  const arrExtracted = first?.kodeNavn ?? first?.kodeBeskrivelse ?? first?.navn ?? first?.fpiNavn;
+                  if (typeof arrExtracted === 'string') {
+                    console.log(`[Vehicle Search] Found color in array at key '${key}':`, arrExtracted);
+                    return arrExtracted;
+                  }
+                }
+              }
+            }
+            
+            const result = deepSearchFarge(record[key], depth + 1);
+            if (result) return result;
+          }
+          
           return null;
+        };
+        
+        const deepResult = deepSearchFarge(vehicleObj);
+        if (deepResult) {
+          console.log("[Vehicle Search] Found farge via deep search:", deepResult);
+          return deepResult;
         }
-        const fargeObj = fargeArray[0];
-        if (typeof fargeObj === 'string') return fargeObj;
-        if (typeof fargeObj === 'object' && fargeObj) {
-          const colorValue = fargeObj.kodeNavn || fargeObj.kodeBeskrivelse || fargeObj.navn || fargeObj.kodeVerdi || null;
-          console.log("[Vehicle Search] Farge object:", JSON.stringify(fargeObj), "-> extracted:", colorValue);
-          return colorValue;
-        }
+        
+        console.log("[Vehicle Search] No farge found anywhere");
         return null;
       };
       const extractedColor = extractColor();
