@@ -18,6 +18,36 @@ import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import type { VehicleSection, CarInfo } from "@/types/car";
 
+const getColorHex = (colorName: string): string => {
+  const colorMap: Record<string, string> = {
+    'svart': '#1a1a1a',
+    'hvit': '#f5f5f5',
+    'grå': '#6b7280',
+    'sølv': '#c0c0c0',
+    'blå': '#3b82f6',
+    'rød': '#ef4444',
+    'grønn': '#22c55e',
+    'gul': '#eab308',
+    'oransje': '#f97316',
+    'brun': '#92400e',
+    'beige': '#d4c5a9',
+    'sort': '#1a1a1a',
+    'white': '#f5f5f5',
+    'black': '#1a1a1a',
+    'gray': '#6b7280',
+    'grey': '#6b7280',
+    'silver': '#c0c0c0',
+    'blue': '#3b82f6',
+    'red': '#ef4444',
+    'green': '#22c55e',
+    'yellow': '#eab308',
+    'orange': '#f97316',
+    'brown': '#92400e',
+  };
+  const lower = colorName.toLowerCase();
+  return colorMap[lower] || '#9ca3af';
+};
+
 type SectionKey =
   | "euKontroll"
   | "registreringsdata"
@@ -267,6 +297,21 @@ export default function VehicleInfoScreen() {
                 </Text>
               </View>
             </View>
+            {(color || fuelType) && (
+              <View style={styles.heroBadges}>
+                {color ? (
+                  <View style={styles.heroBadge}>
+                    <View style={[styles.colorDot, { backgroundColor: getColorHex(color) }]} />
+                    <Text style={styles.heroBadgeText}>{color}</Text>
+                  </View>
+                ) : null}
+                {fuelType ? (
+                  <View style={styles.heroBadge}>
+                    <Text style={styles.heroBadgeText}>{fuelType}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
           </View>
 
           {/* Core Fields Section */}
@@ -524,6 +569,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.secondary,
     fontWeight: "500" as const,
+  },
+  heroBadges: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  heroBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  heroBadgeText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+  },
+  colorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   emptyCard: {
     marginTop: 12,
