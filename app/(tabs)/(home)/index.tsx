@@ -23,7 +23,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Fuel,
-  Palette,
+
   ShieldCheck,
   Info,
   Settings,
@@ -86,27 +86,14 @@ export default function DashboardScreen() {
     if (!carInfo) return [];
 
     const items: {
-      key: "color" | "fuel" | "insurance";
+      key: "fuel" | "insurance";
       label: string;
       value: string;
-      icon: "Palette" | "Fuel" | "ShieldCheck";
+      icon: "Fuel" | "ShieldCheck";
       tint: string;
       bg: string;
       border: string;
     }[] = [];
-
-    const colorValue = (carInfo.color ?? "").trim();
-    if (colorValue) {
-      items.push({
-        key: "color",
-        label: t('color'),
-        value: colorValue,
-        icon: "Palette",
-        tint: "#7C3AED",
-        bg: "#F5F3FF",
-        border: "#DDD6FE",
-      });
-    }
 
     const fuelValue = (carInfo.fuelType ?? "").trim();
     if (fuelValue) {
@@ -233,8 +220,7 @@ export default function DashboardScreen() {
                   {carHighlights.length > 0 && (
                     <View style={styles.highlightsRow} testID="car-highlights">
                       {carHighlights.map((it: (typeof carHighlights)[number]) => {
-                        const Icon =
-                          it.icon === "Palette" ? Palette : it.icon === "Fuel" ? Fuel : ShieldCheck;
+                        const Icon = it.icon === "Fuel" ? Fuel : ShieldCheck;
 
                         const isClickable = it.key === "insurance" || it.key === "fuel";
                         const ChipWrapper = isClickable ? TouchableOpacity : View;
