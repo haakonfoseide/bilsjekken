@@ -37,7 +37,7 @@ import Colors from "@/constants/colors";
 const LANGUAGE_STORAGE_KEY = "@app_language";
 const NOTIFICATIONS_STORAGE_KEY = "@notification_settings";
 
-type FrequencyType = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "custom_days" | "custom_km";
+type FrequencyType = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "custom_days" | "custom_km" | "1_month_before" | "2_months_before" | "3_months_before" | "6_months_before";
 
 interface NotificationFrequency {
   type: FrequencyType;
@@ -65,7 +65,7 @@ const defaultNotifications: NotificationSettings = {
   },
   euControlReminder: {
     enabled: true,
-    frequency: { type: "monthly" },
+    frequency: { type: "3_months_before" },
   },
   serviceReminder: {
     enabled: true,
@@ -100,6 +100,13 @@ const FREQUENCY_OPTIONS: FrequencyOption[] = [
   { type: "quarterly", labelKey: "freq_quarterly" },
   { type: "custom_days", labelKey: "freq_custom_days", requiresCustomValue: true, customUnit: "days" },
   { type: "custom_km", labelKey: "freq_custom_km", requiresCustomValue: true, customUnit: "km" },
+];
+
+const DEADLINE_FREQUENCY_OPTIONS: FrequencyOption[] = [
+  { type: "1_month_before", labelKey: "freq_1_month_before" },
+  { type: "2_months_before", labelKey: "freq_2_months_before" },
+  { type: "3_months_before", labelKey: "freq_3_months_before" },
+  { type: "6_months_before", labelKey: "freq_6_months_before" },
 ];
 
 interface LanguageOption {
@@ -237,6 +244,10 @@ export default function AppSettingsScreen() {
   };
 
   const getFrequencyLabel = (freq: NotificationFrequency): string => {
+    const deadlineOption = DEADLINE_FREQUENCY_OPTIONS.find(o => o.type === freq.type);
+    if (deadlineOption) {
+      return t(deadlineOption.labelKey);
+    }
     const option = FREQUENCY_OPTIONS.find(o => o.type === freq.type);
     if (!option) return "";
     if (freq.customValue) {
@@ -571,86 +582,116 @@ export default function AppSettingsScreen() {
             </View>
 
             <View style={styles.frequencyOptions}>
-              {FREQUENCY_OPTIONS.filter(o => !o.requiresCustomValue).map((option, index) => {
-                const isSelected = selectedNotification && 
-                  notifications[selectedNotification].frequency.type === option.type;
-                return (
+              {selectedNotification === "euControlReminder" ? (
+                DEADLINE_FREQUENCY_OPTIONS.map((option, index) => {
+                  const isSelected = notifications[selectedNotification].frequency.type === option.type;
+                  return (
+                    <TouchableOpacity
+                      key={option.type}
+                      style={[
+                        styles.frequencyOption,
+                        isSelected && styles.frequencyOptionSelected,
+                        index === 0 && styles.frequencyOptionFirst,
+                      ]}
+                      onPress={() => selectFrequency(option)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.frequencyOptionText,
+                        isSelected && styles.frequencyOptionTextSelected,
+                      ]}>
+                        {t(option.labelKey)}
+                      </Text>
+                      {isSelected && <Check size={20} color={Colors.primary} />}
+                    </TouchableOpacity>
+                  );
+                })
+              ) : (
+                FREQUENCY_OPTIONS.filter(o => !o.requiresCustomValue).map((option, index) => {
+                  const isSelected = selectedNotification && 
+                    notifications[selectedNotification].frequency.type === option.type;
+                  return (
+                    <TouchableOpacity
+                      key={option.type}
+                      style={[
+                        styles.frequencyOption,
+                        isSelected && styles.frequencyOptionSelected,
+                        index === 0 && styles.frequencyOptionFirst,
+                      ]}
+                      onPress={() => selectFrequency(option)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.frequencyOptionText,
+                        isSelected && styles.frequencyOptionTextSelected,
+                      ]}>
+                        {t(option.labelKey)}
+                      </Text>
+                      {isSelected && <Check size={20} color={Colors.primary} />}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
+
+            {selectedNotification !== "euControlReminder" && (
+              <>
+                <Text style={styles.customSectionHeader}>{t("custom_interval")}</Text>
+
+                <View style={styles.customInputRow}>
+                  <View style={styles.customInputWrapper}>
+                    <Text style={styles.customInputLabel}>{t("value")}</Text>
+                    <View style={styles.customInput}>
+                      <Text 
+                        style={styles.customInputText}
+                        onPress={() => {
+                          Alert.prompt(
+                            t("enter_value"),
+                            t("enter_number_prompt"),
+                            [
+                              { text: t("cancel"), style: "cancel" },
+                              { 
+                                text: "OK", 
+                                onPress: (value?: string) => {
+                                  if (value) setTempCustomValue(value);
+                                }
+                              },
+                            ],
+                            "plain-text",
+                            tempCustomValue,
+                            "numeric"
+                          );
+                        }}
+                      >
+                        {tempCustomValue || "—"}
+                      </Text>
+                    </View>
+                  </View>
+
                   <TouchableOpacity
-                    key={option.type}
-                    style={[
-                      styles.frequencyOption,
-                      isSelected && styles.frequencyOptionSelected,
-                      index === 0 && styles.frequencyOptionFirst,
-                    ]}
-                    onPress={() => selectFrequency(option)}
+                    style={styles.customButton}
+                    onPress={() => {
+                      const daysOption = FREQUENCY_OPTIONS.find(o => o.type === "custom_days")!;
+                      selectFrequency(daysOption);
+                    }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[
-                      styles.frequencyOptionText,
-                      isSelected && styles.frequencyOptionTextSelected,
-                    ]}>
-                      {t(option.labelKey)}
-                    </Text>
-                    {isSelected && <Check size={20} color={Colors.primary} />}
+                    <Text style={styles.customButtonText}>{t("days")}</Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
 
-            <Text style={styles.customSectionHeader}>{t("custom_interval")}</Text>
-
-            <View style={styles.customInputRow}>
-              <View style={styles.customInputWrapper}>
-                <Text style={styles.customInputLabel}>{t("value")}</Text>
-                <View style={styles.customInput}>
-                  <Text 
-                    style={styles.customInputText}
+                  <TouchableOpacity
+                    style={styles.customButton}
                     onPress={() => {
-                      Alert.prompt(
-                        t("enter_value"),
-                        t("enter_number_prompt"),
-                        [
-                          { text: t("cancel"), style: "cancel" },
-                          { 
-                            text: "OK", 
-                            onPress: (value?: string) => {
-                              if (value) setTempCustomValue(value);
-                            }
-                          },
-                        ],
-                        "plain-text",
-                        tempCustomValue,
-                        "numeric"
-                      );
+                      const kmOption = FREQUENCY_OPTIONS.find(o => o.type === "custom_km")!;
+                      selectFrequency(kmOption);
                     }}
+                    activeOpacity={0.7}
                   >
-                    {tempCustomValue || "—"}
-                  </Text>
+                    <Text style={styles.customButtonText}>{t("km")}</Text>
+                  </TouchableOpacity>
                 </View>
-              </View>
-
-              <TouchableOpacity
-                style={styles.customButton}
-                onPress={() => {
-                  const daysOption = FREQUENCY_OPTIONS.find(o => o.type === "custom_days")!;
-                  selectFrequency(daysOption);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.customButtonText}>{t("days")}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.customButton}
-                onPress={() => {
-                  const kmOption = FREQUENCY_OPTIONS.find(o => o.type === "custom_km")!;
-                  selectFrequency(kmOption);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.customButtonText}>{t("km")}</Text>
-              </TouchableOpacity>
-            </View>
+              </>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>

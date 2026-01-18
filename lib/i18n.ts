@@ -126,7 +126,11 @@ const resources = {
       "invalid_value": "Ugyldig verdi",
       "enter_valid_number": "Vennligst skriv inn et gyldig tall",
       "enter_value": "Skriv inn verdi",
-      "enter_number_prompt": "Skriv inn antall dager eller kilometer"
+      "enter_number_prompt": "Skriv inn antall dager eller kilometer",
+      "freq_1_month_before": "1 måned før frist",
+      "freq_2_months_before": "2 måneder før frist",
+      "freq_3_months_before": "3 måneder før frist",
+      "freq_6_months_before": "6 måneder før frist"
     }
   },
   en: {
@@ -247,7 +251,11 @@ const resources = {
       "invalid_value": "Invalid value",
       "enter_valid_number": "Please enter a valid number",
       "enter_value": "Enter value",
-      "enter_number_prompt": "Enter the number of days or kilometers"
+      "enter_number_prompt": "Enter the number of days or kilometers",
+      "freq_1_month_before": "1 month before deadline",
+      "freq_2_months_before": "2 months before deadline",
+      "freq_3_months_before": "3 months before deadline",
+      "freq_6_months_before": "6 months before deadline"
     }
   },
   es: {
@@ -368,7 +376,11 @@ const resources = {
       "invalid_value": "Valor inválido",
       "enter_valid_number": "Por favor ingrese un número válido",
       "enter_value": "Ingresar valor",
-      "enter_number_prompt": "Ingrese el número de días o kilómetros"
+      "enter_number_prompt": "Ingrese el número de días o kilómetros",
+      "freq_1_month_before": "1 mes antes del vencimiento",
+      "freq_2_months_before": "2 meses antes del vencimiento",
+      "freq_3_months_before": "3 meses antes del vencimiento",
+      "freq_6_months_before": "6 meses antes del vencimiento"
     }
   },
   fr: {
@@ -489,7 +501,11 @@ const resources = {
       "invalid_value": "Valeur invalide",
       "enter_valid_number": "Veuillez entrer un nombre valide",
       "enter_value": "Entrer la valeur",
-      "enter_number_prompt": "Entrez le nombre de jours ou kilomètres"
+      "enter_number_prompt": "Entrez le nombre de jours ou kilomètres",
+      "freq_1_month_before": "1 mois avant l'échéance",
+      "freq_2_months_before": "2 mois avant l'échéance",
+      "freq_3_months_before": "3 mois avant l'échéance",
+      "freq_6_months_before": "6 mois avant l'échéance"
     }
   },
   de: {
@@ -610,7 +626,11 @@ const resources = {
       "invalid_value": "Ungültiger Wert",
       "enter_valid_number": "Bitte geben Sie eine gültige Zahl ein",
       "enter_value": "Wert eingeben",
-      "enter_number_prompt": "Geben Sie die Anzahl der Tage oder Kilometer ein"
+      "enter_number_prompt": "Geben Sie die Anzahl der Tage oder Kilometer ein",
+      "freq_1_month_before": "1 Monat vor Ablauf",
+      "freq_2_months_before": "2 Monate vor Ablauf",
+      "freq_3_months_before": "3 Monate vor Ablauf",
+      "freq_6_months_before": "6 Monate vor Ablauf"
     }
   },
   zh: {
@@ -731,7 +751,11 @@ const resources = {
       "invalid_value": "无效数值",
       "enter_valid_number": "请输入有效数字",
       "enter_value": "输入数值",
-      "enter_number_prompt": "输入天数或公里数"
+      "enter_number_prompt": "输入天数或公里数",
+      "freq_1_month_before": "截止日期前1个月",
+      "freq_2_months_before": "截止日期前2个月",
+      "freq_3_months_before": "截止日期前3个月",
+      "freq_6_months_before": "截止日期前6个月"
     }
   },
   pt: {
@@ -852,7 +876,11 @@ const resources = {
       "invalid_value": "Valor inválido",
       "enter_valid_number": "Por favor insira um número válido",
       "enter_value": "Inserir valor",
-      "enter_number_prompt": "Insira o número de dias ou quilômetros"
+      "enter_number_prompt": "Insira o número de dias ou quilômetros",
+      "freq_1_month_before": "1 mês antes do prazo",
+      "freq_2_months_before": "2 meses antes do prazo",
+      "freq_3_months_before": "3 meses antes do prazo",
+      "freq_6_months_before": "6 meses antes do prazo"
     }
   }
 };
