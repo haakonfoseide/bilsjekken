@@ -13,12 +13,14 @@ import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Droplet, Plus, Trash2, X, Check, Sparkles } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
-import Colors from "@/constants/colors";
+import Colors, { typography } from "@/constants/colors";
 
 const WASH_TYPES = ["Håndvask", "Automatvask", "Selvvask", "Polering"];
 
 export default function WashScreen() {
+  const { t, i18n } = useTranslation();
   const { washRecords, addWashRecord, deleteWashRecord } = useCarData();
   const insets = useSafeAreaInsets();
 
@@ -67,7 +69,7 @@ export default function WashScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("no-NO", {
+    return date.toLocaleDateString(i18n.language, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -79,9 +81,9 @@ export default function WashScreen() {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return "I dag";
-    if (diffDays === 1) return "I går";
-    return `${diffDays} dager siden`;
+    if (diffDays === 0) return t('today');
+    if (diffDays === 1) return t('yesterday');
+    return t('days_ago', { count: diffDays });
   };
 
   return (
@@ -107,12 +109,12 @@ export default function WashScreen() {
             activeOpacity={0.8}
           >
             <Plus size={20} color="#fff" strokeWidth={2.5} />
-            <Text style={styles.addButtonText}>Registrer vask</Text>
+            <Text style={styles.addButtonText}>{t('register_wash')}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>Ny vask</Text>
+              <Text style={styles.formTitle}>{t('new_wash')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -188,16 +190,16 @@ export default function WashScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Historikk</Text>
+        <Text style={styles.sectionTitle}>{t('history')}</Text>
 
         {washRecords.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Sparkles size={32} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-            <Text style={styles.emptyTitle}>Ingen vasker ennå</Text>
+            <Text style={styles.emptyTitle}>{t('no_washes_yet')}</Text>
             <Text style={styles.emptyText}>
-              Hold oversikt over når bilen ble vasket
+              {t('track_wash_desc')}
             </Text>
           </View>
         ) : (
@@ -271,8 +273,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.button,
   },
   formCard: {
     backgroundColor: "#fff",
@@ -292,8 +293,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   formTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
+    ...typography.formTitle,
     color: Colors.text.primary,
   },
   closeButton: {
@@ -308,8 +308,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600" as const,
+    ...typography.label,
     color: Colors.text.secondary,
     marginBottom: 10,
   },
@@ -364,12 +363,10 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.button,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700" as const,
+    ...typography.sectionTitle,
     color: Colors.text.primary,
     marginBottom: 14,
   },
@@ -388,15 +385,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
+    ...typography.emptyTitle,
     color: Colors.text.primary,
     marginBottom: 6,
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.emptyText,
     color: Colors.text.secondary,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   recordsList: {
     gap: 10,

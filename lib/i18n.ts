@@ -77,7 +77,24 @@ const resources = {
       "privacy_desc": "Personvern:\\nVi tar ditt personvern på alvor. All bildata og vedlikeholdsinformasjon lagres lokalt på enheten din. Vi samler ikke inn personlig informasjon utover det som er nødvendig for appens funksjonalitet.\\n\\nVilkår:\\nDenne appen tilbys som den er, uten noen form for garanti. Ved å bruke appen aksepterer du å ta fullt ansvar for all informasjon som registreres. Appens utvikler er ikke ansvarlig for eventuelle feil eller mangler i data.\\n\\nFor spørsmål, kontakt haakon.foseide@gmail.com",
       "language": "Språk",
       "information": "Informasjon",
-      "view_edit_car_info": "Se og endre informasjon om bilen"
+      "view_edit_car_info": "Se og endre informasjon om bilen",
+      "wash_history": "Vaskehistorikk",
+      "service_history": "Servicehistorikk",
+      "new_service": "Ny service",
+      "new_wash": "Ny vask",
+      "new_tire_set": "Nytt dekksett",
+      "register_service": "Registrer service",
+      "register_wash": "Registrer vask",
+      "add_tire_set": "Legg til dekksett",
+      "no_service_registered": "Ingen service registrert",
+      "no_washes_yet": "Ingen vasker ennå",
+      "no_tire_sets": "Ingen dekksett",
+      "log_service_desc": "Logg service for å holde oversikt over vedlikehold",
+      "track_wash_desc": "Hold oversikt over når bilen ble vasket",
+      "add_tires_desc": "Legg til dekk for å holde oversikt",
+      "summer_tires": "Sommerdekk",
+      "winter_tires": "Vinterdekk",
+      "history": "Historikk"
     }
   },
   en: {
@@ -149,7 +166,24 @@ const resources = {
       "privacy_desc": "Privacy:\\nWe take your privacy seriously. All car data is stored locally on your device.\\n\\nTerms:\\nThis app is provided as is, without warranty. By using the app you accept full responsibility for all information registered.\\n\\nFor questions, contact haakon.foseide@gmail.com",
       "language": "Language",
       "information": "Information",
-      "view_edit_car_info": "View and edit car information"
+      "view_edit_car_info": "View and edit car information",
+      "wash_history": "Wash History",
+      "service_history": "Service History",
+      "new_service": "New Service",
+      "new_wash": "New Wash",
+      "new_tire_set": "New Tire Set",
+      "register_service": "Register Service",
+      "register_wash": "Register Wash",
+      "add_tire_set": "Add Tire Set",
+      "no_service_registered": "No service registered",
+      "no_washes_yet": "No washes yet",
+      "no_tire_sets": "No tire sets",
+      "log_service_desc": "Log service to track maintenance",
+      "track_wash_desc": "Keep track of when the car was washed",
+      "add_tires_desc": "Add tires to keep track",
+      "summer_tires": "Summer Tires",
+      "winter_tires": "Winter Tires",
+      "history": "History"
     }
   },
   es: {
@@ -221,7 +255,24 @@ const resources = {
       "privacy_desc": "Privacidad:\\nTomamos tu privacidad en serio. Todos los datos se guardan localmente.\\n\\nTérminos:\\nEsta app se ofrece tal cual, sin garantía.",
       "language": "Idioma",
       "information": "Información",
-      "view_edit_car_info": "Ver y editar información del auto"
+      "view_edit_car_info": "Ver y editar información del auto",
+      "wash_history": "Historial de Lavado",
+      "service_history": "Historial de Servicio",
+      "new_service": "Nuevo Servicio",
+      "new_wash": "Nuevo Lavado",
+      "new_tire_set": "Nuevo Set de Neumáticos",
+      "register_service": "Registrar Servicio",
+      "register_wash": "Registrar Lavado",
+      "add_tire_set": "Añadir Set de Neumáticos",
+      "no_service_registered": "Sin servicio registrado",
+      "no_washes_yet": "Sin lavados aún",
+      "no_tire_sets": "Sin sets de neumáticos",
+      "log_service_desc": "Registra el servicio para seguir el mantenimiento",
+      "track_wash_desc": "Lleva un registro de cuándo se lavó el auto",
+      "add_tires_desc": "Añade neumáticos para llevar el registro",
+      "summer_tires": "Neumáticos de Verano",
+      "winter_tires": "Neumáticos de Invierno",
+      "history": "Historial"
     }
   },
   fr: {
@@ -293,7 +344,24 @@ const resources = {
       "privacy_desc": "Confidentialité:\\nVos données sont stockées localement.\\n\\nConditions:\\nApp fournie telle quelle, sans garantie.",
       "language": "Langue",
       "information": "Informations",
-      "view_edit_car_info": "Voir et modifier les informations du véhicule"
+      "view_edit_car_info": "Voir et modifier les informations du véhicule",
+      "wash_history": "Historique de Lavage",
+      "service_history": "Historique de Service",
+      "new_service": "Nouveau Service",
+      "new_wash": "Nouveau Lavage",
+      "new_tire_set": "Nouveau Jeu de Pneus",
+      "register_service": "Enregistrer Service",
+      "register_wash": "Enregistrer Lavage",
+      "add_tire_set": "Ajouter Jeu de Pneus",
+      "no_service_registered": "Aucun service enregistré",
+      "no_washes_yet": "Pas encore de lavages",
+      "no_tire_sets": "Aucun jeu de pneus",
+      "log_service_desc": "Enregistrez le service pour suivre l'entretien",
+      "track_wash_desc": "Gardez une trace des lavages",
+      "add_tires_desc": "Ajoutez des pneus pour suivre",
+      "summer_tires": "Pneus d'Été",
+      "winter_tires": "Pneus d'Hiver",
+      "history": "Historique"
     }
   },
   de: {
@@ -365,7 +433,24 @@ const resources = {
       "privacy_desc": "Datenschutz:\\nWir nehmen Datenschutz ernst. Alle Daten werden lokal gespeichert.\\n\\nBedingungen:\\nApp wird ohne Gewähr bereitgestellt.",
       "language": "Sprache",
       "information": "Informationen",
-      "view_edit_car_info": "Fahrzeuginformationen anzeigen und bearbeiten"
+      "view_edit_car_info": "Fahrzeuginformationen anzeigen und bearbeiten",
+      "wash_history": "Waschhistorie",
+      "service_history": "Servicehistorie",
+      "new_service": "Neuer Service",
+      "new_wash": "Neue Wäsche",
+      "new_tire_set": "Neuer Reifensatz",
+      "register_service": "Service registrieren",
+      "register_wash": "Wäsche registrieren",
+      "add_tire_set": "Reifensatz hinzufügen",
+      "no_service_registered": "Kein Service registriert",
+      "no_washes_yet": "Noch keine Wäschen",
+      "no_tire_sets": "Keine Reifensätze",
+      "log_service_desc": "Service protokollieren für Wartungsübersicht",
+      "track_wash_desc": "Verfolgen Sie wann das Auto gewaschen wurde",
+      "add_tires_desc": "Reifen hinzufügen zur Übersicht",
+      "summer_tires": "Sommerreifen",
+      "winter_tires": "Winterreifen",
+      "history": "Historie"
     }
   },
   zh: {
@@ -437,7 +522,24 @@ const resources = {
       "privacy_desc": "隐私:\\n我们要保护您的隐私。所有数据均存储在本地。\\n\\n条款:\\n按原样提供，不提供担保。",
       "language": "语言",
       "information": "信息",
-      "view_edit_car_info": "查看和编辑车辆信息"
+      "view_edit_car_info": "查看和编辑车辆信息",
+      "wash_history": "洗车历史",
+      "service_history": "保养历史",
+      "new_service": "新保养",
+      "new_wash": "新洗车",
+      "new_tire_set": "新轮胎套装",
+      "register_service": "记录保养",
+      "register_wash": "记录洗车",
+      "add_tire_set": "添加轮胎套装",
+      "no_service_registered": "未注册保养",
+      "no_washes_yet": "还没有洗车记录",
+      "no_tire_sets": "没有轮胎套装",
+      "log_service_desc": "记录保养以跟踪维护",
+      "track_wash_desc": "跟踪洗车时间",
+      "add_tires_desc": "添加轮胎以跟踪",
+      "summer_tires": "夏季轮胎",
+      "winter_tires": "冬季轮胎",
+      "history": "历史"
     }
   },
   pt: {
@@ -509,7 +611,24 @@ const resources = {
       "privacy_desc": "Privacidade:\\nLevamos sua privacidade a sério. Todos os dados são armazenados localmente.\\n\\nTermos:\\nEste app é fornecido como está, sem garantia.",
       "language": "Idioma",
       "information": "Informação",
-      "view_edit_car_info": "Ver e editar informações do veículo"
+      "view_edit_car_info": "Ver e editar informações do veículo",
+      "wash_history": "Histórico de Lavagem",
+      "service_history": "Histórico de Serviço",
+      "new_service": "Novo Serviço",
+      "new_wash": "Nova Lavagem",
+      "new_tire_set": "Novo Conjunto de Pneus",
+      "register_service": "Registrar Serviço",
+      "register_wash": "Registrar Lavagem",
+      "add_tire_set": "Adicionar Conjunto de Pneus",
+      "no_service_registered": "Nenhum serviço registrado",
+      "no_washes_yet": "Nenhuma lavagem ainda",
+      "no_tire_sets": "Sem conjuntos de pneus",
+      "log_service_desc": "Registre serviço para acompanhar manutenção",
+      "track_wash_desc": "Acompanhe quando o carro foi lavado",
+      "add_tires_desc": "Adicione pneus para acompanhar",
+      "summer_tires": "Pneus de Verão",
+      "winter_tires": "Pneus de Inverno",
+      "history": "Histórico"
     }
   }
 };

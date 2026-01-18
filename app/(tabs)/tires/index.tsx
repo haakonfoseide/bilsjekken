@@ -29,11 +29,13 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import { useLocalSearchParams } from "expo-router";
-import Colors from "@/constants/colors";
+import Colors, { typography } from "@/constants/colors";
 
 export default function TiresScreen() {
+  const { t } = useTranslation();
   const { tireSets, addTireSet, deleteTireSet, setActiveTireSet } = useCarData();
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
@@ -254,12 +256,12 @@ export default function TiresScreen() {
             activeOpacity={0.8}
           >
             <Plus size={20} color="#fff" strokeWidth={2.5} />
-            <Text style={styles.addButtonText}>Legg til dekksett</Text>
+            <Text style={styles.addButtonText}>{t('add_tire_set')}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>Nytt dekksett</Text>
+              <Text style={styles.formTitle}>{t('new_tire_set')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -463,8 +465,8 @@ export default function TiresScreen() {
             <View style={styles.emptyIcon}>
               <CircleSlash2 size={32} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-            <Text style={styles.emptyTitle}>Ingen dekksett</Text>
-            <Text style={styles.emptyText}>Legg til dekk for å holde oversikt</Text>
+            <Text style={styles.emptyTitle}>{t('no_tire_sets')}</Text>
+            <Text style={styles.emptyText}>{t('add_tires_desc')}</Text>
           </View>
         ) : (
           <>
@@ -472,7 +474,7 @@ export default function TiresScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Sun size={18} color="#F59E0B" />
-                  <Text style={styles.sectionTitle}>Sommerdekk</Text>
+                  <Text style={styles.sectionTitle}>{t('summer_tires')}</Text>
                   <Text style={styles.sectionCount}>{summerTires.length}</Text>
                 </View>
 
@@ -535,7 +537,7 @@ export default function TiresScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Snowflake size={18} color="#3B82F6" />
-                  <Text style={styles.sectionTitle}>Vinterdekk</Text>
+                  <Text style={styles.sectionTitle}>{t('winter_tires')}</Text>
                   <Text style={styles.sectionCount}>{winterTires.length}</Text>
                 </View>
 
@@ -628,8 +630,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.button,
   },
   formCard: {
     backgroundColor: "#fff",
@@ -649,8 +650,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   formTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
+    ...typography.formTitle,
     color: Colors.text.primary,
   },
   closeButton: {
@@ -669,8 +669,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600" as const,
+    ...typography.label,
     color: Colors.text.secondary,
     marginBottom: 8,
   },
@@ -804,8 +803,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.button,
   },
   emptyState: {
     alignItems: "center",
@@ -822,15 +820,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
+    ...typography.emptyTitle,
     color: Colors.text.primary,
     marginBottom: 6,
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.emptyText,
     color: Colors.text.secondary,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   section: {
     marginBottom: 24,
@@ -842,8 +839,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700" as const,
+    ...typography.sectionTitle,
     color: Colors.text.primary,
     flex: 1,
   },
@@ -882,8 +878,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tireBrand: {
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.cardTitle,
     color: Colors.text.primary,
   },
   tireSize: {

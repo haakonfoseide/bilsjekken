@@ -15,12 +15,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Wrench, Plus, Trash2, Camera, X, Check, FileText } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
-import Colors from "@/constants/colors";
+import Colors, { typography } from "@/constants/colors";
 
 const SERVICE_TYPES = ["Oljeskift", "EU-kontroll", "Dekkskift", "Bremser", "Filter", "Annet"];
 
 export default function ServiceScreen() {
+  const { t, i18n } = useTranslation();
   const { serviceRecords, addServiceRecord, deleteServiceRecord } = useCarData();
   const insets = useSafeAreaInsets();
 
@@ -93,12 +95,12 @@ export default function ServiceScreen() {
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("no-NO", {
+    return date.toLocaleDateString(i18n.language, {
       day: "numeric",
       month: "short",
       year: "numeric",
     });
-  }, []);
+  }, [i18n.language]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -190,12 +192,12 @@ export default function ServiceScreen() {
             activeOpacity={0.8}
           >
             <Plus size={20} color="#fff" strokeWidth={2.5} />
-            <Text style={styles.addButtonText}>Registrer service</Text>
+            <Text style={styles.addButtonText}>{t('register_service')}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>Ny service</Text>
+              <Text style={styles.formTitle}>{t('new_service')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -346,16 +348,16 @@ export default function ServiceScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Servicehistorikk</Text>
+        <Text style={styles.sectionTitle}>{t('service_history')}</Text>
 
         {serviceRecords.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <FileText size={32} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-            <Text style={styles.emptyTitle}>Ingen service registrert</Text>
+            <Text style={styles.emptyTitle}>{t('no_service_registered')}</Text>
             <Text style={styles.emptyText}>
-              Logg service for å holde oversikt over vedlikehold
+              {t('log_service_desc')}
             </Text>
           </View>
         ) : (
@@ -456,8 +458,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.button,
   },
   formCard: {
     backgroundColor: "#fff",
@@ -477,8 +478,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   formTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
+    ...typography.formTitle,
     color: Colors.text.primary,
   },
   closeButton: {
@@ -497,8 +497,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600" as const,
+    ...typography.label,
     color: Colors.text.secondary,
     marginBottom: 8,
   },
@@ -596,12 +595,10 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.button,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700" as const,
+    ...typography.sectionTitle,
     color: Colors.text.primary,
     marginBottom: 14,
   },
@@ -620,15 +617,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
+    ...typography.emptyTitle,
     color: Colors.text.primary,
     marginBottom: 6,
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.emptyText,
     color: Colors.text.secondary,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   recordsList: {
     gap: 12,
@@ -661,8 +657,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recordType: {
-    fontSize: 16,
-    fontWeight: "700" as const,
+    ...typography.cardTitle,
     color: Colors.text.primary,
   },
   recordDate: {
