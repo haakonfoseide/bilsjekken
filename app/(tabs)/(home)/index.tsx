@@ -408,23 +408,38 @@ export default function DashboardScreen() {
             )}
           </>
         ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Car size={48} color={Colors.text.light} strokeWidth={1.5} />
+          <>
+            <View style={[styles.header, { paddingTop: insets.top + 24, paddingBottom: 16 }]}>
+              <Text style={styles.headerTitle}>{t('my_car')}</Text>
+              <View style={styles.headerButtons}>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={() => handlePress("/app-settings")}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Settings size={22} color={Colors.text.secondary} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={styles.emptyTitle}>{t('welcome')}</Text>
-            <Text style={styles.emptyText}>
-              {t('add_car_desc')}
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => handlePress("/add-car")}
-              activeOpacity={0.8}
-            >
-              <Plus size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.emptyButtonText}>{t('add_car')}</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
+                <Car size={48} color={Colors.text.light} strokeWidth={1.5} />
+              </View>
+              <Text style={styles.emptyTitle}>{t('welcome')}</Text>
+              <Text style={styles.emptyText}>
+                {t('add_car_desc')}
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => handlePress("/add-car")}
+                activeOpacity={0.8}
+              >
+                <Plus size={20} color="#fff" strokeWidth={2.5} />
+                <Text style={styles.emptyButtonText}>{t('add_car')}</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
       </ScrollView>
     </View>
