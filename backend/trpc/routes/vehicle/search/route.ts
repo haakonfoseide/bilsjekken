@@ -372,6 +372,19 @@ export default publicProcedure
           nox?: unknown;
           noxUtslipp?: unknown;
           noxUtslippBlandetKjoring?: unknown;
+          partikkelutslippMgPerKm?: unknown;
+          partikkelutslipp?: unknown;
+          partikler?: unknown;
+          drivstofforbrukBlandetKjoring?: unknown;
+          drivstofforbruk?: unknown;
+          forbrukBlandetKjoring?: unknown;
+          forbrukByKjoring?: unknown;
+          forbrukLandeveiskjoring?: unknown;
+          elektriskRekkevidde?: unknown;
+          rekkeviddeElektrisk?: unknown;
+          rekkeviddeKm?: unknown;
+          stromforbrukKWhPer100km?: unknown;
+          stromforbruk?: unknown;
         };
         miljodataNEDC?: {
           co2UtslippBlandetKjoring?: unknown;
@@ -380,13 +393,45 @@ export default publicProcedure
           nox?: unknown;
           noxUtslipp?: unknown;
           noxUtslippBlandetKjoring?: unknown;
+          partikkelutslippMgPerKm?: unknown;
+          partikkelutslipp?: unknown;
+          partikler?: unknown;
+          drivstofforbrukBlandetKjoring?: unknown;
+          drivstofforbruk?: unknown;
+          forbrukBlandetKjoring?: unknown;
+          forbrukByKjoring?: unknown;
+          forbrukLandeveiskjoring?: unknown;
+          elektriskRekkevidde?: unknown;
+          rekkeviddeElektrisk?: unknown;
+          rekkeviddeKm?: unknown;
+          stromforbrukKWhPer100km?: unknown;
+          stromforbruk?: unknown;
         };
         co2UtslippBlandetKjoring?: unknown;
         co2Utslipp?: unknown;
         co2?: unknown;
         nox?: unknown;
         noxUtslipp?: unknown;
+        partikkelutslippMgPerKm?: unknown;
+        partikkelutslipp?: unknown;
+        partikler?: unknown;
+        drivstofforbrukBlandetKjoring?: unknown;
+        drivstofforbruk?: unknown;
+        forbrukBlandetKjoring?: unknown;
+        forbrukByKjoring?: unknown;
+        forbrukLandeveiskjoring?: unknown;
+        elektriskRekkevidde?: unknown;
+        rekkeviddeElektrisk?: unknown;
+        rekkeviddeKm?: unknown;
+        stromforbrukKWhPer100km?: unknown;
+        stromforbruk?: unknown;
         euroKlasse?: { navn?: string } | string;
+        miljoklasse?: { navn?: string } | string;
+        stoynivaDbA?: unknown;
+        stoynivaKjoring?: unknown;
+        stoyniva?: unknown;
+        roykTetthet?: unknown;
+        rokTetthet?: unknown;
       } | undefined;
       const miljoKilde = miljoTyped?.miljodataWLTP ?? miljoTyped?.miljodataNEDC ?? miljoTyped;
       const personOgLastTyped = teknisk?.personOgLast as {
@@ -584,7 +629,21 @@ export default publicProcedure
         nox?: unknown;
         noxUtslipp?: unknown;
         noxUtslippBlandetKjoring?: unknown;
+        partikkelutslippMgPerKm?: unknown;
+        partikkelutslipp?: unknown;
+        partikler?: unknown;
+        drivstofforbrukBlandetKjoring?: unknown;
+        drivstofforbruk?: unknown;
+        forbrukBlandetKjoring?: unknown;
+        forbrukByKjoring?: unknown;
+        forbrukLandeveiskjoring?: unknown;
+        elektriskRekkevidde?: unknown;
+        rekkeviddeElektrisk?: unknown;
+        rekkeviddeKm?: unknown;
+        stromforbrukKWhPer100km?: unknown;
+        stromforbruk?: unknown;
       } | undefined;
+      
       const co2Emission =
         toNumberOrNull(miljoKildeTyped?.co2UtslippBlandetKjoring) ??
         toNumberOrNull(miljoKildeTyped?.co2Utslipp) ??
@@ -597,9 +656,68 @@ export default publicProcedure
         toNumberOrNull(miljoKildeTyped?.nox) ??
         null;
 
+      const particleEmission =
+        toNumberOrNull(miljoKildeTyped?.partikkelutslippMgPerKm) ??
+        toNumberOrNull(miljoKildeTyped?.partikkelutslipp) ??
+        toNumberOrNull(miljoKildeTyped?.partikler) ??
+        toNumberOrNull(miljoTyped?.partikkelutslippMgPerKm) ??
+        toNumberOrNull(miljoTyped?.partikkelutslipp) ??
+        toNumberOrNull(miljoTyped?.partikler) ??
+        null;
+
+      const fuelConsumptionMixed =
+        toNumberOrNull(miljoKildeTyped?.drivstofforbrukBlandetKjoring) ??
+        toNumberOrNull(miljoKildeTyped?.drivstofforbruk) ??
+        toNumberOrNull(miljoKildeTyped?.forbrukBlandetKjoring) ??
+        toNumberOrNull(miljoTyped?.drivstofforbrukBlandetKjoring) ??
+        toNumberOrNull(miljoTyped?.drivstofforbruk) ??
+        toNumberOrNull(miljoTyped?.forbrukBlandetKjoring) ??
+        null;
+
+      const fuelConsumptionCity =
+        toNumberOrNull(miljoKildeTyped?.forbrukByKjoring) ??
+        toNumberOrNull(miljoTyped?.forbrukByKjoring) ??
+        null;
+
+      const fuelConsumptionHighway =
+        toNumberOrNull(miljoKildeTyped?.forbrukLandeveiskjoring) ??
+        toNumberOrNull(miljoTyped?.forbrukLandeveiskjoring) ??
+        null;
+
+      const electricRange =
+        toNumberOrNull(miljoKildeTyped?.elektriskRekkevidde) ??
+        toNumberOrNull(miljoKildeTyped?.rekkeviddeElektrisk) ??
+        toNumberOrNull(miljoKildeTyped?.rekkeviddeKm) ??
+        toNumberOrNull(miljoTyped?.elektriskRekkevidde) ??
+        toNumberOrNull(miljoTyped?.rekkeviddeElektrisk) ??
+        toNumberOrNull(miljoTyped?.rekkeviddeKm) ??
+        null;
+
+      const electricConsumption =
+        toNumberOrNull(miljoKildeTyped?.stromforbrukKWhPer100km) ??
+        toNumberOrNull(miljoKildeTyped?.stromforbruk) ??
+        toNumberOrNull(miljoTyped?.stromforbrukKWhPer100km) ??
+        toNumberOrNull(miljoTyped?.stromforbruk) ??
+        null;
+
+      const noiseLevel =
+        toNumberOrNull(miljoTyped?.stoynivaDbA) ??
+        toNumberOrNull(miljoTyped?.stoynivaKjoring) ??
+        toNumberOrNull(miljoTyped?.stoyniva) ??
+        null;
+
+      const smokeDensity =
+        toNumberOrNull(miljoTyped?.roykTetthet) ??
+        toNumberOrNull(miljoTyped?.rokTetthet) ??
+        null;
+
       const euroClassRaw =
         (typeof miljoTyped?.euroKlasse === "object" ? miljoTyped?.euroKlasse?.navn : miljoTyped?.euroKlasse) ?? null;
       const euroClass = typeof euroClassRaw === "string" ? euroClassRaw : null;
+
+      const miljoClassRaw =
+        (typeof miljoTyped?.miljoklasse === "object" ? miljoTyped?.miljoklasse?.navn : miljoTyped?.miljoklasse) ?? null;
+      const miljoClass = typeof miljoClassRaw === "string" ? miljoClassRaw : null;
 
       const engineDisplacement =
         toNumberOrNull(motor?.slagvolum) ??
@@ -697,9 +815,18 @@ export default publicProcedure
 
       const utslippSection = buildSection("Miljødata", [
         buildField("Drivstoff", extractedFuelType),
-        buildField("CO₂", co2Emission, "g/km"),
-        buildField("NOx", noxEmission, "mg/km"),
+        buildField("CO₂-utslipp", co2Emission, "g/km"),
+        buildField("NOx-utslipp", noxEmission, "mg/km"),
+        buildField("Partikkelutslipp", particleEmission, "mg/km"),
         buildField("Euro-klasse", euroClass),
+        buildField("Miljøklasse", miljoClass),
+        buildField("Forbruk blandet", fuelConsumptionMixed, "l/100km"),
+        buildField("Forbruk by", fuelConsumptionCity, "l/100km"),
+        buildField("Forbruk landevei", fuelConsumptionHighway, "l/100km"),
+        buildField("Elektrisk rekkevidde", electricRange, "km"),
+        buildField("Strømforbruk", electricConsumption, "kWh/100km"),
+        buildField("Støynivå", noiseLevel, "dB(A)"),
+        buildField("Røyktetthet", smokeDensity),
       ]);
 
       const malOgVektSection = buildSection("Mål og vekt", [
@@ -741,6 +868,16 @@ export default publicProcedure
         power: powerKw,
         fuelType: extractedFuelType || "Ukjent",
         co2Emission,
+        noxEmission,
+        particleEmission,
+        fuelConsumptionMixed,
+        fuelConsumptionCity,
+        fuelConsumptionHighway,
+        electricRange,
+        electricConsumption,
+        noiseLevel,
+        smokeDensity,
+        miljoClass,
         engineDisplacement,
         transmission,
         driveType,
@@ -756,7 +893,6 @@ export default publicProcedure
         lengthMm,
         widthMm,
         payload,
-        noxEmission,
         euroClass,
         tireDimensions: {
           front: frontTire,
