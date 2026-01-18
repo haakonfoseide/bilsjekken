@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Alert,
   Keyboard,
+  InputAccessoryView,
 } from "react-native";
 import { Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,7 +25,7 @@ import {
   Gauge,
   Calendar,
   TrendingUp,
-  ChevronDown,
+  Keyboard as KeyboardIcon,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -40,6 +41,7 @@ export default function FuelScreen() {
   const [currentMileage, setCurrentMileage] = useState("");
   const [notes, setNotes] = useState("");
   const [isFullTank, setIsFullTank] = useState(true);
+  const inputAccessoryViewID = "fuel-keyboard-toolbar";
 
   const formatPriceInput = useCallback((value: string) => {
     const cleaned = value.replace(/[^0-9,\.]/g, "").replace(",", ".");
@@ -341,6 +343,7 @@ export default function FuelScreen() {
                     keyboardType="decimal-pad"
                     placeholderTextColor="#94A3B8"
                     returnKeyType="done"
+                    inputAccessoryViewID={Platform.OS === "ios" ? inputAccessoryViewID : undefined}
                   />
                   <Text style={styles.unit}>L</Text>
                 </View>
@@ -359,6 +362,7 @@ export default function FuelScreen() {
                     keyboardType="decimal-pad"
                     placeholderTextColor="#94A3B8"
                     returnKeyType="done"
+                    inputAccessoryViewID={Platform.OS === "ios" ? inputAccessoryViewID : undefined}
                   />
                   <Text style={styles.unit}>kr</Text>
                 </View>
@@ -376,6 +380,7 @@ export default function FuelScreen() {
                     keyboardType="number-pad"
                     placeholderTextColor="#94A3B8"
                     returnKeyType="done"
+                    inputAccessoryViewID={Platform.OS === "ios" ? inputAccessoryViewID : undefined}
                   />
                   <Text style={styles.unit}>km</Text>
                 </View>
@@ -403,11 +408,6 @@ export default function FuelScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity style={styles.hideKeyboardButton} onPress={dismissKeyboard}>
-                <ChevronDown size={18} color={Colors.text.secondary} />
-                <Text style={styles.hideKeyboardText}>Skjul tastatur</Text>
-              </TouchableOpacity>
-
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Notat (valgfri)</Text>
                 <TextInput
@@ -427,6 +427,17 @@ export default function FuelScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {Platform.OS === "ios" && (
+        <InputAccessoryView nativeID={inputAccessoryViewID}>
+          <View style={styles.keyboardToolbar}>
+            <TouchableOpacity style={styles.keyboardDoneButton} onPress={dismissKeyboard}>
+              <KeyboardIcon size={18} color={Colors.primary} />
+              <Text style={styles.keyboardDoneText}>Ferdig</Text>
+            </TouchableOpacity>
+          </View>
+        </InputAccessoryView>
+      )}
     </View>
   );
 }
@@ -715,18 +726,28 @@ const styles = StyleSheet.create({
   toggleOptionTextActive: {
     color: "#fff",
   },
-  hideKeyboardButton: {
+  keyboardToolbar: {
+    backgroundColor: "#F8FAFC",
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  keyboardDoneButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#EEF2FF",
+    borderRadius: 8,
     gap: 6,
   },
-  hideKeyboardText: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    fontWeight: "500" as const,
+  keyboardDoneText: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: Colors.primary,
   },
   saveButton: {
     backgroundColor: Colors.primary,
