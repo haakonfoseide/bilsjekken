@@ -1,7 +1,11 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { getLocales } from 'expo-localization';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'intl-pluralrules';
+
+const LANGUAGE_STORAGE_KEY = '@app_language';
+const SUPPORTED_LANGUAGES = ['nb', 'en', 'de', 'fr', 'es', 'zh', 'pt'];
 
 const resources = {
   nb: {
@@ -70,7 +74,10 @@ const resources = {
       "export_desc": "Denne funksjonen lar deg eksportere all bildata til en fil.",
       "help_desc": "Trenger du hjelp? Ta kontakt på haakon.foseide@gmail.com",
       "contact_desc": "E-post: haakon.foseide@gmail.com\\nTelefon: +47 412 89 330",
-      "privacy_desc": "Personvern:\\nVi tar ditt personvern på alvor. All bildata og vedlikeholdsinformasjon lagres lokalt på enheten din. Vi samler ikke inn personlig informasjon utover det som er nødvendig for appens funksjonalitet.\\n\\nVilkår:\\nDenne appen tilbys som den er, uten noen form for garanti. Ved å bruke appen aksepterer du å ta fullt ansvar for all informasjon som registreres. Appens utvikler er ikke ansvarlig for eventuelle feil eller mangler i data.\\n\\nFor spørsmål, kontakt haakon.foseide@gmail.com"
+      "privacy_desc": "Personvern:\\nVi tar ditt personvern på alvor. All bildata og vedlikeholdsinformasjon lagres lokalt på enheten din. Vi samler ikke inn personlig informasjon utover det som er nødvendig for appens funksjonalitet.\\n\\nVilkår:\\nDenne appen tilbys som den er, uten noen form for garanti. Ved å bruke appen aksepterer du å ta fullt ansvar for all informasjon som registreres. Appens utvikler er ikke ansvarlig for eventuelle feil eller mangler i data.\\n\\nFor spørsmål, kontakt haakon.foseide@gmail.com",
+      "language": "Språk",
+      "information": "Informasjon",
+      "view_edit_car_info": "Se og endre informasjon om bilen"
     }
   },
   en: {
@@ -139,7 +146,10 @@ const resources = {
       "export_desc": "This feature allows you to export all car data to a file.",
       "help_desc": "Need help? Contact at haakon.foseide@gmail.com",
       "contact_desc": "Email: haakon.foseide@gmail.com\\nPhone: +47 412 89 330",
-      "privacy_desc": "Privacy:\\nWe take your privacy seriously. All car data is stored locally on your device.\\n\\nTerms:\\nThis app is provided as is, without warranty. By using the app you accept full responsibility for all information registered.\\n\\nFor questions, contact haakon.foseide@gmail.com"
+      "privacy_desc": "Privacy:\\nWe take your privacy seriously. All car data is stored locally on your device.\\n\\nTerms:\\nThis app is provided as is, without warranty. By using the app you accept full responsibility for all information registered.\\n\\nFor questions, contact haakon.foseide@gmail.com",
+      "language": "Language",
+      "information": "Information",
+      "view_edit_car_info": "View and edit car information"
     }
   },
   es: {
@@ -208,7 +218,10 @@ const resources = {
       "export_desc": "Esta función permite exportar todos los datos del auto a un archivo.",
       "help_desc": "¿Necesitas ayuda? Contacta a haakon.foseide@gmail.com",
       "contact_desc": "Email: haakon.foseide@gmail.com\\nTeléfono: +47 412 89 330",
-      "privacy_desc": "Privacidad:\\nTomamos tu privacidad en serio. Todos los datos se guardan localmente.\\n\\nTérminos:\\nEsta app se ofrece tal cual, sin garantía."
+      "privacy_desc": "Privacidad:\\nTomamos tu privacidad en serio. Todos los datos se guardan localmente.\\n\\nTérminos:\\nEsta app se ofrece tal cual, sin garantía.",
+      "language": "Idioma",
+      "information": "Información",
+      "view_edit_car_info": "Ver y editar información del auto"
     }
   },
   fr: {
@@ -277,7 +290,10 @@ const resources = {
       "export_desc": "Exportez toutes les données de la voiture vers un fichier.",
       "help_desc": "Besoin d'aide ? Contactez haakon.foseide@gmail.com",
       "contact_desc": "Email: haakon.foseide@gmail.com\\nTéléphone: +47 412 89 330",
-      "privacy_desc": "Confidentialité:\\nVos données sont stockées localement.\\n\\nConditions:\\nApp fournie telle quelle, sans garantie."
+      "privacy_desc": "Confidentialité:\\nVos données sont stockées localement.\\n\\nConditions:\\nApp fournie telle quelle, sans garantie.",
+      "language": "Langue",
+      "information": "Informations",
+      "view_edit_car_info": "Voir et modifier les informations du véhicule"
     }
   },
   de: {
@@ -346,7 +362,10 @@ const resources = {
       "export_desc": "Exportieren Sie alle Fahrzeugdaten in eine Datei.",
       "help_desc": "Hilfe benötigt? Kontaktieren Sie haakon.foseide@gmail.com",
       "contact_desc": "E-Mail: haakon.foseide@gmail.com\\nTelefon: +47 412 89 330",
-      "privacy_desc": "Datenschutz:\\nWir nehmen Datenschutz ernst. Alle Daten werden lokal gespeichert.\\n\\nBedingungen:\\nApp wird ohne Gewähr bereitgestellt."
+      "privacy_desc": "Datenschutz:\\nWir nehmen Datenschutz ernst. Alle Daten werden lokal gespeichert.\\n\\nBedingungen:\\nApp wird ohne Gewähr bereitgestellt.",
+      "language": "Sprache",
+      "information": "Informationen",
+      "view_edit_car_info": "Fahrzeuginformationen anzeigen und bearbeiten"
     }
   },
   zh: {
@@ -415,7 +434,10 @@ const resources = {
       "export_desc": "此功能允许您将所有车辆数据导出到文件。",
       "help_desc": "需要帮助？请联系 haakon.foseide@gmail.com",
       "contact_desc": "邮箱: haakon.foseide@gmail.com\\n电话: +47 412 89 330",
-      "privacy_desc": "隐私:\\n我们要保护您的隐私。所有数据均存储在本地。\\n\\n条款:\\n按原样提供，不提供担保。"
+      "privacy_desc": "隐私:\\n我们要保护您的隐私。所有数据均存储在本地。\\n\\n条款:\\n按原样提供，不提供担保。",
+      "language": "语言",
+      "information": "信息",
+      "view_edit_car_info": "查看和编辑车辆信息"
     }
   },
   pt: {
@@ -484,7 +506,10 @@ const resources = {
       "export_desc": "Este recurso permite exportar todos os dados do carro para um arquivo.",
       "help_desc": "Precisa de ajuda? Contate haakon.foseide@gmail.com",
       "contact_desc": "Email: haakon.foseide@gmail.com\\nTelefone: +47 412 89 330",
-      "privacy_desc": "Privacidade:\\nLevamos sua privacidade a sério. Todos os dados são armazenados localmente.\\n\\nTermos:\\nEste app é fornecido como está, sem garantia."
+      "privacy_desc": "Privacidade:\\nLevamos sua privacidade a sério. Todos os dados são armazenados localmente.\\n\\nTermos:\\nEste app é fornecido como está, sem garantia.",
+      "language": "Idioma",
+      "information": "Informação",
+      "view_edit_car_info": "Ver e editar informações do veículo"
     }
   }
 };
@@ -492,16 +517,39 @@ const resources = {
 const locales = getLocales();
 const deviceLanguage = locales?.[0]?.languageCode ?? 'en';
 
+const getInitialLanguage = (): string => {
+  if (SUPPORTED_LANGUAGES.includes(deviceLanguage)) {
+    return deviceLanguage;
+  }
+  return 'en';
+};
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: deviceLanguage, 
+    lng: getInitialLanguage(),
     fallbackLng: 'en',
     compatibilityJSON: 'v4',
     interpolation: {
       escapeValue: false
     }
   });
+
+const loadStoredLanguage = async () => {
+  try {
+    const storedLang = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (storedLang && SUPPORTED_LANGUAGES.includes(storedLang)) {
+      await i18n.changeLanguage(storedLang);
+      console.log('[i18n] Loaded stored language:', storedLang);
+    } else {
+      console.log('[i18n] Using device/default language:', i18n.language);
+    }
+  } catch (error) {
+    console.error('[i18n] Failed to load stored language:', error);
+  }
+};
+
+loadStoredLanguage();
 
 export default i18n;

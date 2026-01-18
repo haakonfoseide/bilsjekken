@@ -61,6 +61,7 @@ function RootLayoutNav() {
       <Stack.Screen name="fuel" options={{ headerShown: true, title: t('fuel') }} />
       <Stack.Screen name="mileage-history" options={{ headerShown: true, title: t('mileage_history') }} />
       <Stack.Screen name="add-car" options={{ headerShown: true, title: t('add_car') }} />
+      <Stack.Screen name="app-settings" options={{ headerShown: true, title: t('settings') }} />
     </Stack>
   );
 }

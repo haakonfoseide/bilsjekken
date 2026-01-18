@@ -26,6 +26,7 @@ import {
   Palette,
   ShieldCheck,
   Info,
+  Settings,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -151,14 +152,24 @@ export default function DashboardScreen() {
           <>
             <View style={[styles.header, { paddingTop: insets.top + 24, paddingBottom: 16 }]}>
               <Text style={styles.headerTitle}>{t('my_car')}</Text>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={() => handlePress("/add-car")}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Plus size={22} color={Colors.primary} strokeWidth={2.5} />
-              </TouchableOpacity>
+              <View style={styles.headerButtons}>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={() => handlePress("/app-settings")}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Settings size={22} color={Colors.text.secondary} strokeWidth={2} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={() => handlePress("/add-car")}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Plus size={22} color={Colors.primary} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {cars.length > 1 && (
@@ -370,9 +381,9 @@ export default function DashboardScreen() {
                       <Info size={20} color={Colors.primary} strokeWidth={2.5} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.vehicleInfoCtaTitle}>Informasjon</Text>
+                      <Text style={styles.vehicleInfoCtaTitle}>{t('information')}</Text>
                       <Text style={styles.vehicleInfoCtaSubtitle} numberOfLines={1}>
-                        Se og endre informasjon om bilen
+                        {t('view_edit_car_info')}
                       </Text>
                     </View>
                   </View>
@@ -444,6 +455,11 @@ const styles = StyleSheet.create({
     fontWeight: "800" as const,
     color: Colors.text.primary,
     letterSpacing: -0.5,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   headerButton: {
     width: 44,
