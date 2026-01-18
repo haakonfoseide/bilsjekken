@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors, { typography } from "@/constants/colors";
+import DatePicker from "@/components/DatePicker";
 
 const SERVICE_TYPES = ["Oljeskift", "EU-kontroll", "Dekkskift", "Bremser", "Filter", "Annet"];
 
@@ -214,14 +215,10 @@ export default function ServiceScreen() {
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={styles.label}>Dato <Text style={styles.required}>*</Text></Text>
-                <TextInput
-                  style={styles.input}
+                <DatePicker
                   value={date}
-                  onChangeText={setDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={Colors.text.light}
-                  returnKeyType="done"
-                  onSubmitEditing={() => Keyboard.dismiss()}
+                  onChange={setDate}
+                  placeholder="Velg dato"
                 />
               </View>
               <View style={[styles.inputGroup, { flex: 1 }]}>

@@ -94,7 +94,20 @@ const resources = {
       "add_tires_desc": "Legg til dekk for å holde oversikt",
       "summer_tires": "Sommerdekk",
       "winter_tires": "Vinterdekk",
-      "history": "Historikk"
+      "history": "Historikk",
+      "notifications": "Varslinger",
+      "wash_reminder": "Påminnelse om vask",
+      "wash_reminder_desc": "Varsle når det er på tide å vaske bilen",
+      "eu_control_reminder": "EU-kontroll påminnelse",
+      "eu_control_reminder_desc": "Varsle før EU-kontroll utløper",
+      "service_reminder": "Service påminnelse",
+      "service_reminder_desc": "Varsle når det er på tide med service",
+      "mileage_reminder": "Kilometerstand påminnelse",
+      "mileage_reminder_desc": "Påminn om å registrere ny kjørelengde",
+      "tire_change_reminder": "Dekkskift påminnelse",
+      "tire_change_reminder_desc": "Varsle når det er sesong for dekkskift",
+      "fuel_reminder": "Drivstoff påminnelse",
+      "fuel_reminder_desc": "Påminn om å registrere drivstoffylling"
     }
   },
   en: {
@@ -183,7 +196,20 @@ const resources = {
       "add_tires_desc": "Add tires to keep track",
       "summer_tires": "Summer Tires",
       "winter_tires": "Winter Tires",
-      "history": "History"
+      "history": "History",
+      "notifications": "Notifications",
+      "wash_reminder": "Wash reminder",
+      "wash_reminder_desc": "Notify when it's time to wash the car",
+      "eu_control_reminder": "EU control reminder",
+      "eu_control_reminder_desc": "Notify before EU control expires",
+      "service_reminder": "Service reminder",
+      "service_reminder_desc": "Notify when it's time for service",
+      "mileage_reminder": "Mileage reminder",
+      "mileage_reminder_desc": "Remind to register new mileage",
+      "tire_change_reminder": "Tire change reminder",
+      "tire_change_reminder_desc": "Notify when it's season for tire change",
+      "fuel_reminder": "Fuel reminder",
+      "fuel_reminder_desc": "Remind to register fuel refills"
     }
   },
   es: {
@@ -272,7 +298,20 @@ const resources = {
       "add_tires_desc": "Añade neumáticos para llevar el registro",
       "summer_tires": "Neumáticos de Verano",
       "winter_tires": "Neumáticos de Invierno",
-      "history": "Historial"
+      "history": "Historial",
+      "notifications": "Notificaciones",
+      "wash_reminder": "Recordatorio de lavado",
+      "wash_reminder_desc": "Avisar cuando es hora de lavar el auto",
+      "eu_control_reminder": "Recordatorio de control",
+      "eu_control_reminder_desc": "Avisar antes de que venza el control",
+      "service_reminder": "Recordatorio de servicio",
+      "service_reminder_desc": "Avisar cuando es hora del servicio",
+      "mileage_reminder": "Recordatorio de kilometraje",
+      "mileage_reminder_desc": "Recordar registrar nuevo kilometraje",
+      "tire_change_reminder": "Recordatorio de cambio de neumáticos",
+      "tire_change_reminder_desc": "Avisar cuando es temporada de cambio",
+      "fuel_reminder": "Recordatorio de combustible",
+      "fuel_reminder_desc": "Recordar registrar repostaje"
     }
   },
   fr: {
@@ -361,7 +400,20 @@ const resources = {
       "add_tires_desc": "Ajoutez des pneus pour suivre",
       "summer_tires": "Pneus d'Été",
       "winter_tires": "Pneus d'Hiver",
-      "history": "Historique"
+      "history": "Historique",
+      "notifications": "Notifications",
+      "wash_reminder": "Rappel de lavage",
+      "wash_reminder_desc": "Alerter quand il est temps de laver",
+      "eu_control_reminder": "Rappel de contrôle technique",
+      "eu_control_reminder_desc": "Alerter avant l'expiration du CT",
+      "service_reminder": "Rappel de service",
+      "service_reminder_desc": "Alerter quand il est temps du service",
+      "mileage_reminder": "Rappel de kilométrage",
+      "mileage_reminder_desc": "Rappeler d'enregistrer le kilométrage",
+      "tire_change_reminder": "Rappel de changement de pneus",
+      "tire_change_reminder_desc": "Alerter quand c'est la saison",
+      "fuel_reminder": "Rappel de carburant",
+      "fuel_reminder_desc": "Rappeler d'enregistrer le plein"
     }
   },
   de: {
@@ -450,7 +502,20 @@ const resources = {
       "add_tires_desc": "Reifen hinzufügen zur Übersicht",
       "summer_tires": "Sommerreifen",
       "winter_tires": "Winterreifen",
-      "history": "Historie"
+      "history": "Historie",
+      "notifications": "Benachrichtigungen",
+      "wash_reminder": "Wascherinnerung",
+      "wash_reminder_desc": "Benachrichtigen wenn Wäsche fällig ist",
+      "eu_control_reminder": "TÜV Erinnerung",
+      "eu_control_reminder_desc": "Vor Ablauf des TÜV benachrichtigen",
+      "service_reminder": "Service Erinnerung",
+      "service_reminder_desc": "Benachrichtigen wenn Service fällig ist",
+      "mileage_reminder": "Kilometerstand Erinnerung",
+      "mileage_reminder_desc": "An Kilometerstand erinnern",
+      "tire_change_reminder": "Reifenwechsel Erinnerung",
+      "tire_change_reminder_desc": "Zur Reifenwechsel-Saison erinnern",
+      "fuel_reminder": "Tanken Erinnerung",
+      "fuel_reminder_desc": "An Tankvorgang erinnern"
     }
   },
   zh: {
@@ -539,7 +604,20 @@ const resources = {
       "add_tires_desc": "添加轮胎以跟踪",
       "summer_tires": "夏季轮胎",
       "winter_tires": "冬季轮胎",
-      "history": "历史"
+      "history": "历史",
+      "notifications": "通知",
+      "wash_reminder": "洗车提醒",
+      "wash_reminder_desc": "提醒该洗车了",
+      "eu_control_reminder": "年检提醒",
+      "eu_control_reminder_desc": "年检到期前提醒",
+      "service_reminder": "保养提醒",
+      "service_reminder_desc": "提醒该保养了",
+      "mileage_reminder": "里程提醒",
+      "mileage_reminder_desc": "提醒记录新里程",
+      "tire_change_reminder": "换胎提醒",
+      "tire_change_reminder_desc": "换胎季节提醒",
+      "fuel_reminder": "加油提醒",
+      "fuel_reminder_desc": "提醒记录加油"
     }
   },
   pt: {
@@ -628,7 +706,20 @@ const resources = {
       "add_tires_desc": "Adicione pneus para acompanhar",
       "summer_tires": "Pneus de Verão",
       "winter_tires": "Pneus de Inverno",
-      "history": "Histórico"
+      "history": "Histórico",
+      "notifications": "Notificações",
+      "wash_reminder": "Lembrete de lavagem",
+      "wash_reminder_desc": "Avisar quando é hora de lavar",
+      "eu_control_reminder": "Lembrete de inspeção",
+      "eu_control_reminder_desc": "Avisar antes da inspeção vencer",
+      "service_reminder": "Lembrete de serviço",
+      "service_reminder_desc": "Avisar quando é hora do serviço",
+      "mileage_reminder": "Lembrete de quilometragem",
+      "mileage_reminder_desc": "Lembrar de registrar quilometragem",
+      "tire_change_reminder": "Lembrete de troca de pneus",
+      "tire_change_reminder_desc": "Avisar na temporada de troca",
+      "fuel_reminder": "Lembrete de combustível",
+      "fuel_reminder_desc": "Lembrar de registrar abastecimento"
     }
   }
 };

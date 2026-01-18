@@ -16,6 +16,7 @@ import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors, { typography } from "@/constants/colors";
+import DatePicker from "@/components/DatePicker";
 
 const WASH_TYPES = ["Håndvask", "Automatvask", "Selvvask", "Polering"];
 
@@ -130,14 +131,10 @@ export default function WashScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Dato</Text>
-              <TextInput
-                style={styles.input}
+              <DatePicker
                 value={date}
-                onChangeText={setDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
+                onChange={setDate}
+                placeholder="Velg dato"
               />
             </View>
 

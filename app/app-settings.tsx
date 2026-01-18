@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  Switch,
 } from "react-native";
 import { Stack } from "expo-router";
+import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ChevronRight,
@@ -18,12 +20,37 @@ import {
   HelpCircle,
   Mail,
   Shield,
+  Droplets,
+  Wrench,
+  ShieldCheck,
+  Gauge,
+  CircleDot,
+  Fuel,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Colors from "@/constants/colors";
 
 const LANGUAGE_STORAGE_KEY = "@app_language";
+const NOTIFICATIONS_STORAGE_KEY = "@notification_settings";
+
+interface NotificationSettings {
+  washReminder: boolean;
+  euControlReminder: boolean;
+  serviceReminder: boolean;
+  mileageReminder: boolean;
+  tireChangeReminder: boolean;
+  fuelReminder: boolean;
+}
+
+const defaultNotifications: NotificationSettings = {
+  washReminder: true,
+  euControlReminder: true,
+  serviceReminder: true,
+  mileageReminder: true,
+  tireChangeReminder: true,
+  fuelReminder: false,
+};
 
 interface LanguageOption {
   code: string;
@@ -43,8 +70,38 @@ const LANGUAGES: LanguageOption[] = [
 export default function AppSettingsScreen() {
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [notifications, setNotifications] = useState<NotificationSettings>(defaultNotifications);
 
   const currentLanguage = i18n.language;
+
+  useEffect(() => {
+    loadNotificationSettings();
+  }, []);
+
+  const loadNotificationSettings = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      if (stored) {
+        setNotifications(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("[AppSettings] Failed to load notification settings:", error);
+    }
+  };
+
+  const toggleNotification = async (key: keyof NotificationSettings) => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    const newSettings = { ...notifications, [key]: !notifications[key] };
+    setNotifications(newSettings);
+    try {
+      await AsyncStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(newSettings));
+      console.log("[AppSettings] Notification settings saved:", newSettings);
+    } catch (error) {
+      console.error("[AppSettings] Failed to save notification settings:", error);
+    }
+  };
 
   const handleLanguageChange = async (langCode: string) => {
     if (Platform.OS !== "web") {
@@ -102,6 +159,116 @@ export default function AppSettingsScreen() {
               </TouchableOpacity>
             );
           })}
+        </View>
+
+        <Text style={styles.sectionHeader}>{t("notifications")}</Text>
+
+        <View style={styles.card}>
+          <View style={styles.notificationRow}>
+            <View style={styles.notificationIcon}>
+              <Droplets size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.notificationContent}>
+              <Text style={styles.notificationTitle}>{t("wash_reminder")}</Text>
+              <Text style={styles.notificationDesc}>{t("wash_reminder_desc")}</Text>
+            </View>
+            <Switch
+              value={notifications.washReminder}
+              onValueChange={() => toggleNotification("washReminder")}
+              trackColor={{ false: "#E2E8F0", true: Colors.primary + "50" }}
+              thumbColor={notifications.washReminder ? Colors.primary : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.notificationRow}>
+            <View style={styles.notificationIcon}>
+              <ShieldCheck size={18} color={Colors.warning} />
+            </View>
+            <View style={styles.notificationContent}>
+              <Text style={styles.notificationTitle}>{t("eu_control_reminder")}</Text>
+              <Text style={styles.notificationDesc}>{t("eu_control_reminder_desc")}</Text>
+            </View>
+            <Switch
+              value={notifications.euControlReminder}
+              onValueChange={() => toggleNotification("euControlReminder")}
+              trackColor={{ false: "#E2E8F0", true: Colors.warning + "50" }}
+              thumbColor={notifications.euControlReminder ? Colors.warning : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.notificationRow}>
+            <View style={styles.notificationIcon}>
+              <Wrench size={18} color={Colors.success} />
+            </View>
+            <View style={styles.notificationContent}>
+              <Text style={styles.notificationTitle}>{t("service_reminder")}</Text>
+              <Text style={styles.notificationDesc}>{t("service_reminder_desc")}</Text>
+            </View>
+            <Switch
+              value={notifications.serviceReminder}
+              onValueChange={() => toggleNotification("serviceReminder")}
+              trackColor={{ false: "#E2E8F0", true: Colors.success + "50" }}
+              thumbColor={notifications.serviceReminder ? Colors.success : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.notificationRow}>
+            <View style={styles.notificationIcon}>
+              <Gauge size={18} color={Colors.text.secondary} />
+            </View>
+            <View style={styles.notificationContent}>
+              <Text style={styles.notificationTitle}>{t("mileage_reminder")}</Text>
+              <Text style={styles.notificationDesc}>{t("mileage_reminder_desc")}</Text>
+            </View>
+            <Switch
+              value={notifications.mileageReminder}
+              onValueChange={() => toggleNotification("mileageReminder")}
+              trackColor={{ false: "#E2E8F0", true: Colors.primary + "50" }}
+              thumbColor={notifications.mileageReminder ? Colors.primary : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.notificationRow}>
+            <View style={styles.notificationIcon}>
+              <CircleDot size={18} color={"#6366F1"} />
+            </View>
+            <View style={styles.notificationContent}>
+              <Text style={styles.notificationTitle}>{t("tire_change_reminder")}</Text>
+              <Text style={styles.notificationDesc}>{t("tire_change_reminder_desc")}</Text>
+            </View>
+            <Switch
+              value={notifications.tireChangeReminder}
+              onValueChange={() => toggleNotification("tireChangeReminder")}
+              trackColor={{ false: "#E2E8F0", true: "#6366F1" + "50" }}
+              thumbColor={notifications.tireChangeReminder ? "#6366F1" : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.notificationRow}>
+            <View style={styles.notificationIcon}>
+              <Fuel size={18} color={Colors.danger} />
+            </View>
+            <View style={styles.notificationContent}>
+              <Text style={styles.notificationTitle}>{t("fuel_reminder")}</Text>
+              <Text style={styles.notificationDesc}>{t("fuel_reminder_desc")}</Text>
+            </View>
+            <Switch
+              value={notifications.fuelReminder}
+              onValueChange={() => toggleNotification("fuelReminder")}
+              trackColor={{ false: "#E2E8F0", true: Colors.danger + "50" }}
+              thumbColor={notifications.fuelReminder ? Colors.danger : "#f4f3f4"}
+            />
+          </View>
         </View>
 
         <Text style={styles.sectionHeader}>{t("app_data")}</Text>
@@ -264,5 +431,32 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.border,
     marginLeft: 52,
+  },
+  notificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 12,
+  },
+  notificationIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
+  },
+  notificationDesc: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+    marginTop: 2,
   },
 });
