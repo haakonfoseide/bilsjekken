@@ -133,16 +133,21 @@ export default function ScanReceiptScreen() {
   const processImage = async (uri: string) => {
     try {
       // Optimize image for iOS and network performance
-      // Resize to max 1024px width/height and compress to jpeg 0.6
+      // Resize to max 600px width (down from 800) and compress to jpeg 0.4 (down from 0.5)
+      // Also request base64 directly to avoid FileSystem read issues
       const manipulatedResult = await ImageManipulator.manipulateAsync(
         uri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+        [{ resize: { width: 600 } }],
+        { 
+          compress: 0.4, 
+          format: ImageManipulator.SaveFormat.JPEG, 
+          base64: true 
+        }
       );
-      return manipulatedResult.uri;
+      return { uri: manipulatedResult.uri, base64: manipulatedResult.base64 };
     } catch (error) {
       console.warn("Image manipulation failed, using original:", error);
-      return uri;
+      return { uri, base64: undefined };
     }
   };
 
@@ -175,8 +180,8 @@ export default function ScanReceiptScreen() {
       }
       
       // Process and analyze
-      const processedUri = await processImage(originalUri);
-      analyzeReceipt(processedUri);
+      const { uri, base64 } = await processImage(originalUri);
+      analyzeReceipt(uri, base64);
     }
   };
 
@@ -207,12 +212,12 @@ export default function ScanReceiptScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      const processedUri = await processImage(originalUri);
-      analyzeReceipt(processedUri);
+      const { uri, base64 } = await processImage(originalUri);
+      analyzeReceipt(uri, base64);
     }
   };
 
-  const analyzeReceipt = async (imageUri: string) => {
+  const analyzeReceipt = async (imageUri: string, providedBase64?: string) => {
     setAnalyzing(true);
     const maxRetries = 2;
     let lastError: unknown = null;
@@ -222,7 +227,10 @@ export default function ScanReceiptScreen() {
         console.log(`[Receipt] Starting analysis (attempt ${attempt + 1}/${maxRetries + 1})...`);
         
         let base64Image = "";
-        if (Platform.OS === "web") {
+        
+        if (providedBase64) {
+          base64Image = `data:image/jpeg;base64,${providedBase64}`;
+        } else if (Platform.OS === "web") {
             base64Image = await fetch(imageUri)
             .then((r) => r.blob())
             .then(
@@ -235,15 +243,15 @@ export default function ScanReceiptScreen() {
                 })
             );
         } else {
-            // Native: Use expo-file-system for better performance and stability
+            // Native: Use expo-file-system as fallback
             const base64 = await FileSystem.readAsStringAsync(imageUri, {
                 encoding: "base64",
             });
-            // Append data URI scheme if not present (usually readAsStringAsync returns just the raw base64)
             base64Image = `data:image/jpeg;base64,${base64}`;
         }
 
         console.log("[Receipt] Image converted to base64, calling AI...");
+        console.log(`[Receipt] Base64 length: ${base64Image.length} chars (~${Math.round(base64Image.length * 0.75 / 1024)} KB)`);
 
         const result = await generateObject({
           messages: [
@@ -312,6 +320,7 @@ export default function ScanReceiptScreen() {
     if (!isMounted.current) return;
 
     let errorMessage = "Kunne ikke analysere kvitteringen etter flere forsøk. Legg til manuelt i riktig kategori.";
+    
     if (errorObj?.message?.includes("JSON Parse") || errorObj?.message?.includes("parse")) {
       errorMessage = "AI-tjenesten returnerte ugyldig data. Dette kan skyldes nettverksproblemer. Prøv igjen senere eller legg til manuelt.";
     } else if (errorObj?.message?.includes("network") || errorObj?.message?.includes("fetch") || errorObj?.message?.includes("NetworkError")) {
@@ -319,12 +328,15 @@ export default function ScanReceiptScreen() {
     } else if (errorObj?.message?.includes("read image")) {
       errorMessage = "Kunne ikke lese bildet. Prøv å ta et nytt bilde.";
     }
+
+    // Append technical error for debugging in TestFlight
+    errorMessage += `\n\nTeknisk feil: ${errorObj?.message || String(lastError) || "Ukjent"}`;
     
     Alert.alert(
       "Analysering feilet", 
       errorMessage,
       [
-        { text: "Prøv igjen", onPress: () => analyzeReceipt(imageUri) },
+        { text: "Prøv igjen", onPress: () => analyzeReceipt(imageUri, providedBase64) },
         { text: "Avbryt", style: "cancel" },
       ]
     );
