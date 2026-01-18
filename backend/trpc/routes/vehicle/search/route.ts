@@ -178,13 +178,31 @@ export default publicProcedure
       } | undefined;
       const generelt = teknisk?.generelt as { merke?: { merke?: string }[]; handelsbetegnelse?: string[] } | undefined;
       const karosseri = teknisk?.karosseriOgLasteplan as {
-        farge?: { kodeNavn?: string }[];
+        farge?: { kodeNavn?: string; kodeBeskrivelse?: string; kodeVerdi?: string; navn?: string }[];
         dorerAntall?: unknown;
         antallDorer?: unknown;
         lengde?: unknown;
         bredde?: unknown;
         hoyde?: unknown;
       } | undefined;
+
+      // Extract color with multiple fallback paths
+      const extractColor = (): string | null => {
+        const fargeArray = karosseri?.farge;
+        if (!fargeArray || !Array.isArray(fargeArray) || fargeArray.length === 0) {
+          console.log("[Vehicle Search] No farge array found", { karosseriKeys: Object.keys(karosseri || {}) });
+          return null;
+        }
+        const fargeObj = fargeArray[0];
+        if (typeof fargeObj === 'string') return fargeObj;
+        if (typeof fargeObj === 'object' && fargeObj) {
+          const colorValue = fargeObj.kodeNavn || fargeObj.kodeBeskrivelse || fargeObj.navn || fargeObj.kodeVerdi || null;
+          console.log("[Vehicle Search] Farge object:", JSON.stringify(fargeObj), "-> extracted:", colorValue);
+          return colorValue;
+        }
+        return null;
+      };
+      const extractedColor = extractColor();
       const godkjenning = (vehicleObj?.godkjenning as { forstegangsGodkjenning?: { forstegangRegistrertDato?: string } } | undefined)?.forstegangsGodkjenning;
       const vekter = teknisk?.vekter as {
         egenvekt?: unknown;
@@ -216,7 +234,7 @@ export default publicProcedure
           slagvolumCm3?: unknown;
           slagvolumcc?: unknown;
           drivstoff?: {
-            drivstoffKode?: { navn?: string };
+            drivstoffKode?: { kodeNavn?: string; kodeBeskrivelse?: string; kodeVerdi?: string; navn?: string };
             maksNettoEffekt?: unknown;
           }[];
         }[];
@@ -232,6 +250,26 @@ export default publicProcedure
       } | undefined;
       const motor = motorOgDrivverkTyped?.motor?.[0];
       const drivstoff = motor?.drivstoff?.[0];
+
+      // Extract fuel type with multiple fallback paths
+      const extractFuelType = (): string | null => {
+        const drivstoffKode = drivstoff?.drivstoffKode;
+        if (!drivstoffKode) {
+          console.log("[Vehicle Search] No drivstoffKode found", { 
+            motorKeys: Object.keys(motor || {}),
+            drivstoffKeys: Object.keys(drivstoff || {})
+          });
+          return null;
+        }
+        if (typeof drivstoffKode === 'string') return drivstoffKode;
+        if (typeof drivstoffKode === 'object') {
+          const fuelValue = drivstoffKode.kodeNavn || drivstoffKode.kodeBeskrivelse || drivstoffKode.navn || drivstoffKode.kodeVerdi || null;
+          console.log("[Vehicle Search] DrivstoffKode object:", JSON.stringify(drivstoffKode), "-> extracted:", fuelValue);
+          return fuelValue;
+        }
+        return null;
+      };
+      const extractedFuelType = extractFuelType();
       const miljoTyped = teknisk?.miljodata as {
         miljodataWLTP?: {
           co2UtslippBlandetKjoring?: unknown;
@@ -556,7 +594,7 @@ export default publicProcedure
         buildField("Førstegangsregistrert", registrationDateRaw),
         buildField("Status", registrationStatusRaw),
         buildField("VIN", kjoretoyId?.understellsnummer || null),
-        buildField("Farge", karosseri?.farge?.[0]?.kodeNavn || null),
+        buildField("Farge", extractedColor),
         buildField(
           "Kjøretøytype",
           godkjenningFull?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || null
@@ -564,7 +602,7 @@ export default publicProcedure
       ]);
 
       const utslippSection = buildSection("Miljødata", [
-        buildField("Drivstoff", drivstoff?.drivstoffKode?.navn || null),
+        buildField("Drivstoff", extractedFuelType),
         buildField("CO₂", co2Emission, "g/km"),
         buildField("NOx", noxEmission, "mg/km"),
         buildField("Euro-klasse", euroClass),
@@ -601,13 +639,13 @@ export default publicProcedure
         model: generelt?.handelsbetegnelse?.[0] || "Ukjent",
         year: godkjenning?.forstegangRegistrertDato?.split("-")[0] || "Ukjent",
         vin: kjoretoyId?.understellsnummer || "",
-        color: karosseri?.farge?.[0]?.kodeNavn || "Ukjent",
+        color: extractedColor || "Ukjent",
         registrationDate: registrationDateRaw ?? null,
         vehicleType: godkjenningFull?.tekniskGodkjenning?.kjoretoyklassifisering?.beskrivelse || "Ukjent",
         weight: typeof vekter?.egenvekt === "number" ? vekter.egenvekt : null,
         totalWeight,
         power: powerKw,
-        fuelType: drivstoff?.drivstoffKode?.navn || "Ukjent",
+        fuelType: extractedFuelType || "Ukjent",
         co2Emission,
         engineDisplacement,
         transmission,
