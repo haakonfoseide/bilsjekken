@@ -433,7 +433,7 @@ export default publicProcedure
         roykTetthet?: unknown;
         rokTetthet?: unknown;
       } | undefined;
-      const miljoKilde = miljoTyped?.miljodataWLTP ?? miljoTyped?.miljodataNEDC ?? miljoTyped;
+
       const personOgLastTyped = teknisk?.personOgLast as {
         sitteplasserAntall?: unknown;
         sitteplasser?: unknown;
@@ -622,102 +622,106 @@ export default publicProcedure
         return out;
       };
 
-      const miljoKildeTyped = miljoKilde as {
-        co2UtslippBlandetKjoring?: unknown;
-        co2Utslipp?: unknown;
-        co2?: unknown;
-        nox?: unknown;
-        noxUtslipp?: unknown;
-        noxUtslippBlandetKjoring?: unknown;
-        partikkelutslippMgPerKm?: unknown;
-        partikkelutslipp?: unknown;
-        partikler?: unknown;
-        drivstofforbrukBlandetKjoring?: unknown;
-        drivstofforbruk?: unknown;
-        forbrukBlandetKjoring?: unknown;
-        forbrukByKjoring?: unknown;
-        forbrukLandeveiskjoring?: unknown;
-        elektriskRekkevidde?: unknown;
-        rekkeviddeElektrisk?: unknown;
-        rekkeviddeKm?: unknown;
-        stromforbrukKWhPer100km?: unknown;
-        stromforbruk?: unknown;
-      } | undefined;
+      const deepSearchNumber = (obj: unknown, keys: string[], maxDepth = 5): number | null => {
+        if (!obj || typeof obj !== 'object' || maxDepth <= 0) return null;
+        const record = obj as Record<string, unknown>;
+        
+        for (const key of keys) {
+          if (key in record) {
+            const val = toNumberOrNull(record[key]);
+            if (val !== null) return val;
+          }
+        }
+        
+        for (const k of Object.keys(record)) {
+          const result = deepSearchNumber(record[k], keys, maxDepth - 1);
+          if (result !== null) return result;
+        }
+        
+        return null;
+      };
+
+      const deepSearchString = (obj: unknown, keys: string[], maxDepth = 5): string | null => {
+        if (!obj || typeof obj !== 'object' || maxDepth <= 0) return null;
+        const record = obj as Record<string, unknown>;
+        
+        for (const key of keys) {
+          if (key in record) {
+            const val = record[key];
+            if (typeof val === 'string' && val.trim()) return val.trim();
+            if (typeof val === 'object' && val) {
+              const valObj = val as Record<string, unknown>;
+              const extracted = valObj.kodeNavn ?? valObj.kodeBeskrivelse ?? valObj.navn;
+              if (typeof extracted === 'string' && extracted.trim()) return extracted.trim();
+            }
+          }
+        }
+        
+        for (const k of Object.keys(record)) {
+          const result = deepSearchString(record[k], keys, maxDepth - 1);
+          if (result !== null) return result;
+        }
+        
+        return null;
+      };
+
+      console.log("[Vehicle Search] Full miljodata structure:", JSON.stringify(miljoTyped, null, 2)?.substring(0, 2000));
       
-      const co2Emission =
-        toNumberOrNull(miljoKildeTyped?.co2UtslippBlandetKjoring) ??
-        toNumberOrNull(miljoKildeTyped?.co2Utslipp) ??
-        toNumberOrNull(miljoKildeTyped?.co2) ??
-        null;
+      const co2Emission = deepSearchNumber(miljoTyped, [
+        'co2UtslippBlandetKjoring', 'co2Utslipp', 'co2', 'CO2', 
+        'co2UtslippBlandetKjoringWltp', 'co2UtslippVeid'
+      ]);
 
-      const noxEmission =
-        toNumberOrNull(miljoKildeTyped?.noxUtslippBlandetKjoring) ??
-        toNumberOrNull(miljoKildeTyped?.noxUtslipp) ??
-        toNumberOrNull(miljoKildeTyped?.nox) ??
-        null;
+      const noxEmission = deepSearchNumber(miljoTyped, [
+        'noxUtslippBlandetKjoring', 'noxUtslipp', 'nox', 'NOx',
+        'noxUtslippMgPerKm'
+      ]);
 
-      const particleEmission =
-        toNumberOrNull(miljoKildeTyped?.partikkelutslippMgPerKm) ??
-        toNumberOrNull(miljoKildeTyped?.partikkelutslipp) ??
-        toNumberOrNull(miljoKildeTyped?.partikler) ??
-        toNumberOrNull(miljoTyped?.partikkelutslippMgPerKm) ??
-        toNumberOrNull(miljoTyped?.partikkelutslipp) ??
-        toNumberOrNull(miljoTyped?.partikler) ??
-        null;
+      const particleEmission = deepSearchNumber(miljoTyped, [
+        'partikkelutslippMgPerKm', 'partikkelutslipp', 'partikler',
+        'partikkelfilter', 'partikkelMgPerKm'
+      ]);
 
-      const fuelConsumptionMixed =
-        toNumberOrNull(miljoKildeTyped?.drivstofforbrukBlandetKjoring) ??
-        toNumberOrNull(miljoKildeTyped?.drivstofforbruk) ??
-        toNumberOrNull(miljoKildeTyped?.forbrukBlandetKjoring) ??
-        toNumberOrNull(miljoTyped?.drivstofforbrukBlandetKjoring) ??
-        toNumberOrNull(miljoTyped?.drivstofforbruk) ??
-        toNumberOrNull(miljoTyped?.forbrukBlandetKjoring) ??
-        null;
+      const fuelConsumptionMixed = deepSearchNumber(miljoTyped, [
+        'drivstofforbrukBlandetKjoring', 'drivstofforbruk', 'forbrukBlandetKjoring',
+        'forbrukBlandet', 'drivstofforbrukBlandetKjoringWltp'
+      ]);
 
-      const fuelConsumptionCity =
-        toNumberOrNull(miljoKildeTyped?.forbrukByKjoring) ??
-        toNumberOrNull(miljoTyped?.forbrukByKjoring) ??
-        null;
+      const fuelConsumptionCity = deepSearchNumber(miljoTyped, [
+        'forbrukByKjoring', 'drivstofforbrukByKjoring', 'forbrukBy',
+        'drivstofforbrukLavtKjoring'
+      ]);
 
-      const fuelConsumptionHighway =
-        toNumberOrNull(miljoKildeTyped?.forbrukLandeveiskjoring) ??
-        toNumberOrNull(miljoTyped?.forbrukLandeveiskjoring) ??
-        null;
+      const fuelConsumptionHighway = deepSearchNumber(miljoTyped, [
+        'forbrukLandeveiskjoring', 'drivstofforbrukLandeveiskjoring', 
+        'forbrukLandevei', 'drivstofforbrukHoytKjoring', 'forbrukHoytKjoring'
+      ]);
 
-      const electricRange =
-        toNumberOrNull(miljoKildeTyped?.elektriskRekkevidde) ??
-        toNumberOrNull(miljoKildeTyped?.rekkeviddeElektrisk) ??
-        toNumberOrNull(miljoKildeTyped?.rekkeviddeKm) ??
-        toNumberOrNull(miljoTyped?.elektriskRekkevidde) ??
-        toNumberOrNull(miljoTyped?.rekkeviddeElektrisk) ??
-        toNumberOrNull(miljoTyped?.rekkeviddeKm) ??
-        null;
+      const electricRange = deepSearchNumber(miljoTyped, [
+        'elektriskRekkevidde', 'rekkeviddeElektrisk', 'rekkeviddeKm',
+        'elektriskRekkeviddeKm', 'rekkeviddeElektriskKm', 'elektriskRekkeviddeWltp'
+      ]);
 
-      const electricConsumption =
-        toNumberOrNull(miljoKildeTyped?.stromforbrukKWhPer100km) ??
-        toNumberOrNull(miljoKildeTyped?.stromforbruk) ??
-        toNumberOrNull(miljoTyped?.stromforbrukKWhPer100km) ??
-        toNumberOrNull(miljoTyped?.stromforbruk) ??
-        null;
+      const electricConsumption = deepSearchNumber(miljoTyped, [
+        'stromforbrukKWhPer100km', 'stromforbruk', 'elektriskForbruk',
+        'stromforbrukBlandetKjoring', 'elforbruk'
+      ]);
 
-      const noiseLevel =
-        toNumberOrNull(miljoTyped?.stoynivaDbA) ??
-        toNumberOrNull(miljoTyped?.stoynivaKjoring) ??
-        toNumberOrNull(miljoTyped?.stoyniva) ??
-        null;
+      const noiseLevel = deepSearchNumber(miljoTyped, [
+        'stoynivaDbA', 'stoynivaKjoring', 'stoyniva', 'lydniva', 'stoynivaStillestaaende'
+      ]) ?? deepSearchNumber(teknisk, ['stoynivaDbA', 'stoyniva']);
 
-      const smokeDensity =
-        toNumberOrNull(miljoTyped?.roykTetthet) ??
-        toNumberOrNull(miljoTyped?.rokTetthet) ??
-        null;
+      const smokeDensity = deepSearchNumber(miljoTyped, [
+        'roykTetthet', 'rokTetthet', 'roykverdi', 'rokverdi'
+      ]);
 
-      const euroClassRaw =
-        (typeof miljoTyped?.euroKlasse === "object" ? miljoTyped?.euroKlasse?.navn : miljoTyped?.euroKlasse) ?? null;
-      const euroClass = typeof euroClassRaw === "string" ? euroClassRaw : null;
+      const euroClass = deepSearchString(miljoTyped, [
+        'euroKlasse', 'euroklasse', 'avgassklasse', 'utslippsklasse'
+      ]) ?? deepSearchString(teknisk, ['euroKlasse', 'euroklasse']);
 
-      const miljoClassRaw =
-        (typeof miljoTyped?.miljoklasse === "object" ? miljoTyped?.miljoklasse?.navn : miljoTyped?.miljoklasse) ?? null;
-      const miljoClass = typeof miljoClassRaw === "string" ? miljoClassRaw : null;
+      const miljoClass = deepSearchString(miljoTyped, [
+        'miljoklasse', 'miljøklasse', 'utslippsklasse'
+      ]);
 
       const engineDisplacement =
         toNumberOrNull(motor?.slagvolum) ??
