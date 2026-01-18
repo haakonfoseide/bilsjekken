@@ -9,6 +9,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Alert,
+  Keyboard,
 } from "react-native";
 import { Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +24,7 @@ import {
   Gauge,
   Calendar,
   TrendingUp,
+  ChevronDown,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
@@ -38,6 +40,24 @@ export default function FuelScreen() {
   const [currentMileage, setCurrentMileage] = useState("");
   const [notes, setNotes] = useState("");
   const [isFullTank, setIsFullTank] = useState(true);
+
+  const formatPriceInput = useCallback((value: string) => {
+    const cleaned = value.replace(/[^0-9,\.]/g, "").replace(",", ".");
+    setPricePerLiter(cleaned);
+  }, []);
+
+  const formatPriceOnBlur = useCallback(() => {
+    if (pricePerLiter) {
+      const num = parseFloat(pricePerLiter.replace(",", "."));
+      if (!isNaN(num)) {
+        setPricePerLiter(num.toFixed(2).replace(".", ","));
+      }
+    }
+  }, [pricePerLiter]);
+
+  const dismissKeyboard = useCallback(() => {
+    Keyboard.dismiss();
+  }, []);
 
   // Sort records by date descending
   const sortedRecords = useMemo(() => {
@@ -320,6 +340,7 @@ export default function FuelScreen() {
                     placeholder="0.0"
                     keyboardType="decimal-pad"
                     placeholderTextColor="#94A3B8"
+                    returnKeyType="done"
                   />
                   <Text style={styles.unit}>L</Text>
                 </View>
@@ -332,10 +353,12 @@ export default function FuelScreen() {
                   <TextInput
                     style={styles.input}
                     value={pricePerLiter}
-                    onChangeText={setPricePerLiter}
-                    placeholder="0.00"
+                    onChangeText={formatPriceInput}
+                    onBlur={formatPriceOnBlur}
+                    placeholder="00,00"
                     keyboardType="decimal-pad"
                     placeholderTextColor="#94A3B8"
+                    returnKeyType="done"
                   />
                   <Text style={styles.unit}>kr</Text>
                 </View>
@@ -352,6 +375,7 @@ export default function FuelScreen() {
                     placeholder="0"
                     keyboardType="number-pad"
                     placeholderTextColor="#94A3B8"
+                    returnKeyType="done"
                   />
                   <Text style={styles.unit}>km</Text>
                 </View>
@@ -359,15 +383,30 @@ export default function FuelScreen() {
 
               <View style={styles.toggleRow}>
                 <Text style={styles.label}>Full tank?</Text>
-                <TouchableOpacity
-                  style={[styles.toggle, isFullTank && styles.toggleActive]}
-                  onPress={() => setIsFullTank(!isFullTank)}
-                >
-                  <Text style={[styles.toggleText, isFullTank && styles.toggleTextActive]}>
-                    {isFullTank ? "JA" : "NEI"}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.toggleContainer}>
+                  <TouchableOpacity
+                    style={[styles.toggleOption, isFullTank && styles.toggleOptionActive]}
+                    onPress={() => setIsFullTank(true)}
+                  >
+                    <Text style={[styles.toggleOptionText, isFullTank && styles.toggleOptionTextActive]}>
+                      JA
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.toggleOption, !isFullTank && styles.toggleOptionActive]}
+                    onPress={() => setIsFullTank(false)}
+                  >
+                    <Text style={[styles.toggleOptionText, !isFullTank && styles.toggleOptionTextActive]}>
+                      NEI
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+
+              <TouchableOpacity style={styles.hideKeyboardButton} onPress={dismissKeyboard}>
+                <ChevronDown size={18} color={Colors.text.secondary} />
+                <Text style={styles.hideKeyboardText}>Skjul tastatur</Text>
+              </TouchableOpacity>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Notat (valgfri)</Text>
@@ -650,24 +689,44 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  toggle: {
+  toggleContainer: {
+    flexDirection: "row",
     backgroundColor: "#F1F5F9",
+    borderRadius: 12,
+    padding: 4,
+  },
+  toggleOption: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 10,
+    minWidth: 60,
+    alignItems: "center",
   },
-  toggleActive: {
+  toggleOptionActive: {
     backgroundColor: Colors.primary,
   },
-  toggleText: {
+  toggleOptionText: {
     fontSize: 14,
     fontWeight: "600" as const,
     color: Colors.text.secondary,
   },
-  toggleTextActive: {
+  toggleOptionTextActive: {
     color: "#fff",
+  },
+  hideKeyboardButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: 6,
+  },
+  hideKeyboardText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    fontWeight: "500" as const,
   },
   saveButton: {
     backgroundColor: Colors.primary,
