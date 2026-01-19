@@ -130,11 +130,13 @@ export default function ScanReceiptScreen() {
     };
   }, []);
 
-  const processImage = async (uri: string) => {
+  const processImage = async (uri: string): Promise<{ uri: string; base64: string | undefined }> => {
     try {
+      console.log("[Receipt] Processing image:", uri.substring(0, 100) + "...");
+      
       // Optimize image for iOS and network performance
-      // Resize to max 600px width (down from 800) and compress to jpeg 0.4 (down from 0.5)
-      // Also request base64 directly to avoid FileSystem read issues
+      // Resize to max 600px width and compress to jpeg 0.4
+      // Request base64 directly to avoid FileSystem read issues on iOS
       const manipulatedResult = await ImageManipulator.manipulateAsync(
         uri,
         [{ resize: { width: 600 } }],
@@ -144,9 +146,17 @@ export default function ScanReceiptScreen() {
           base64: true 
         }
       );
+      
+      console.log("[Receipt] Image processed successfully, base64 length:", manipulatedResult.base64?.length || 0);
+      
+      if (!manipulatedResult.base64) {
+        console.warn("[Receipt] ImageManipulator did not return base64, will try FileSystem fallback");
+      }
+      
       return { uri: manipulatedResult.uri, base64: manipulatedResult.base64 };
     } catch (error) {
-      console.warn("Image manipulation failed, using original:", error);
+      console.error("[Receipt] Image manipulation failed:", error);
+      // Return original URI, will try FileSystem fallback in analyzeReceipt
       return { uri, base64: undefined };
     }
   };
@@ -229,30 +239,45 @@ export default function ScanReceiptScreen() {
         let base64Image = "";
         
         if (providedBase64) {
+          console.log("[Receipt] Using provided base64 from ImageManipulator");
           base64Image = `data:image/jpeg;base64,${providedBase64}`;
         } else if (Platform.OS === "web") {
-            base64Image = await fetch(imageUri)
+          console.log("[Receipt] Web platform: fetching image as blob");
+          base64Image = await fetch(imageUri)
             .then((r) => r.blob())
             .then(
-                (blob) =>
+              (blob) =>
                 new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.onerror = () => reject(new Error("Failed to read image"));
-                    reader.readAsDataURL(blob);
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.onerror = () => reject(new Error("Failed to read image blob"));
+                  reader.readAsDataURL(blob);
                 })
             );
         } else {
-            // Native: Use expo-file-system as fallback
+          // Native iOS/Android: Use expo-file-system as fallback
+          console.log("[Receipt] Native platform: reading file with FileSystem");
+          try {
             const base64 = await FileSystem.readAsStringAsync(imageUri, {
-                encoding: "base64",
+              encoding: "base64",
             });
             base64Image = `data:image/jpeg;base64,${base64}`;
+          } catch (fsError) {
+            console.error("[Receipt] FileSystem read failed:", fsError);
+            throw new Error(`Kunne ikke lese bildefilen: ${fsError instanceof Error ? fsError.message : String(fsError)}`);
+          }
+        }
+        
+        if (!base64Image || base64Image.length < 100) {
+          throw new Error("Ugyldig bildedata - bildet ble ikke lest riktig");
         }
 
         console.log("[Receipt] Image converted to base64, calling AI...");
         console.log(`[Receipt] Base64 length: ${base64Image.length} chars (~${Math.round(base64Image.length * 0.75 / 1024)} KB)`);
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+        
         const result = await generateObject({
           messages: [
             {
@@ -287,6 +312,8 @@ export default function ScanReceiptScreen() {
           ],
           schema: ReceiptSchema,
         });
+        
+        clearTimeout(timeoutId);
 
         console.log("[Receipt] Analysis complete:", result);
         
@@ -321,16 +348,23 @@ export default function ScanReceiptScreen() {
 
     let errorMessage = "Kunne ikke analysere kvitteringen etter flere forsøk. Legg til manuelt i riktig kategori.";
     
-    if (errorObj?.message?.includes("JSON Parse") || errorObj?.message?.includes("parse")) {
+    const errorString = errorObj?.message?.toLowerCase() || "";
+    
+    if (errorString.includes("json parse") || errorString.includes("parse") || errorString.includes("unexpected token")) {
       errorMessage = "AI-tjenesten returnerte ugyldig data. Dette kan skyldes nettverksproblemer. Prøv igjen senere eller legg til manuelt.";
-    } else if (errorObj?.message?.includes("network") || errorObj?.message?.includes("fetch") || errorObj?.message?.includes("NetworkError")) {
+    } else if (errorString.includes("network") || errorString.includes("fetch") || errorString.includes("networkerror") || errorString.includes("failed to fetch")) {
       errorMessage = "Nettverksfeil. Sjekk internettforbindelsen din og prøv igjen.";
-    } else if (errorObj?.message?.includes("read image")) {
+    } else if (errorString.includes("read image") || errorString.includes("bildefil") || errorString.includes("ugyldig bildedata")) {
       errorMessage = "Kunne ikke lese bildet. Prøv å ta et nytt bilde.";
+    } else if (errorString.includes("abort") || errorString.includes("timeout")) {
+      errorMessage = "Forespørselen tok for lang tid. Sjekk internettforbindelsen og prøv igjen.";
+    } else if (errorString.includes("413") || errorString.includes("too large") || errorString.includes("payload")) {
+      errorMessage = "Bildet er for stort. Prøv å ta et nytt bilde nærmere kvitteringen.";
     }
 
-    // Append technical error for debugging in TestFlight
-    errorMessage += `\n\nTeknisk feil: ${errorObj?.message || String(lastError) || "Ukjent"}`;
+    // Append technical error for debugging
+    const techError = errorObj?.message || String(lastError) || "Ukjent feil";
+    errorMessage += `\n\nTeknisk info: ${techError.substring(0, 200)}`;
     
     Alert.alert(
       "Analysering feilet", 
