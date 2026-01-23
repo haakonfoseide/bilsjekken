@@ -10,7 +10,7 @@ import {
   Image,
   Keyboard,
 } from "react-native";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Wrench, Plus, Trash2, Camera, X, Check, FileText } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -114,6 +114,10 @@ export default function ServiceScreen() {
   const handleShowImageOptions = useCallback(() => {
     showImagePickerOptions(takePhoto, pickImage);
   }, [takePhoto, pickImage]);
+
+  const sortedServiceRecords = useMemo(() => {
+    return [...serviceRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [serviceRecords]);
 
   return (
     <View style={styles.container}>
@@ -304,7 +308,7 @@ export default function ServiceScreen() {
           </View>
         ) : (
           <View style={styles.recordsList}>
-            {serviceRecords.map((record) => (
+            {sortedServiceRecords.map((record) => (
               <View key={record.id} style={styles.recordCard}>
                 <View style={styles.recordHeader}>
                   <View style={styles.recordIcon}>

@@ -8,7 +8,7 @@ import {
   Platform,
   Keyboard,
 } from "react-native";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Droplet, Plus, Trash2, X, Check, Sparkles } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -66,6 +66,10 @@ export default function WashScreen() {
     if (days === 1) return t('yesterday');
     return t('days_ago', { count: days });
   }, [t]);
+
+  const sortedWashRecords = useMemo(() => {
+    return [...washRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [washRecords]);
 
   return (
     <View style={styles.container}>
@@ -175,7 +179,7 @@ export default function WashScreen() {
           </View>
         ) : (
           <View style={styles.recordsList}>
-            {washRecords.map((record, index) => (
+            {sortedWashRecords.map((record, index) => (
               <View 
                 key={record.id} 
                 style={[
