@@ -26,6 +26,7 @@ import {
   Check,
   MapPin,
   Clock,
+  Pencil,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
@@ -43,7 +44,7 @@ import {
 
 export default function TiresScreen() {
   const { t } = useTranslation();
-  const { tireSets, addTireSet, deleteTireSet, setActiveTireSet } = useCarData();
+  const { tireSets, addTireSet, deleteTireSet, setActiveTireSet, updateTireSet } = useCarData();
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
 
@@ -58,6 +59,8 @@ export default function TiresScreen() {
   const [receiptImages, setReceiptImages] = useState<string[]>([]);
   const [hasBalancing, setHasBalancing] = useState(false);
   const [hasRemounting, setHasRemounting] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<string | null>(null);
+  const [editingIsActive, setEditingIsActive] = useState(false);
 
   const isMounted = useRef(true);
 
@@ -79,6 +82,8 @@ export default function TiresScreen() {
     setHasBalancing(false);
     setHasRemounting(false);
     setShowAddForm(false);
+    setEditingRecord(null);
+    setEditingIsActive(false);
   }, []);
 
   useEffect(() => {
@@ -143,23 +148,56 @@ export default function TiresScreen() {
       return;
     }
 
-    addTireSet({
-      type: tireType,
-      brand,
-      purchaseDate: new Date(purchaseDate).toISOString(),
-      isAtTireHotel,
-      hotelLocation: isAtTireHotel ? hotelLocation : undefined,
-      size,
-      notes: notes || undefined,
-      receiptImages: receiptImages.length > 0 ? receiptImages : undefined,
-      isActive: tireSets.length === 0,
-      hasBalancing,
-      hasRemounting,
-    });
+    if (editingRecord) {
+      updateTireSet(editingRecord, {
+        type: tireType,
+        brand,
+        purchaseDate: new Date(purchaseDate).toISOString(),
+        isAtTireHotel,
+        hotelLocation: isAtTireHotel ? hotelLocation : undefined,
+        size,
+        notes: notes || undefined,
+        receiptImages: receiptImages.length > 0 ? receiptImages : undefined,
+        isActive: editingIsActive,
+        hasBalancing,
+        hasRemounting,
+      });
+    } else {
+      addTireSet({
+        type: tireType,
+        brand,
+        purchaseDate: new Date(purchaseDate).toISOString(),
+        isAtTireHotel,
+        hotelLocation: isAtTireHotel ? hotelLocation : undefined,
+        size,
+        notes: notes || undefined,
+        receiptImages: receiptImages.length > 0 ? receiptImages : undefined,
+        isActive: tireSets.length === 0,
+        hasBalancing,
+        hasRemounting,
+      });
+    }
 
     hapticFeedback.success();
     resetForm();
-  }, [brand, purchaseDate, size, tireType, isAtTireHotel, hotelLocation, notes, receiptImages, tireSets.length, hasBalancing, hasRemounting, addTireSet, resetForm]);
+  }, [brand, purchaseDate, size, tireType, isAtTireHotel, hotelLocation, notes, receiptImages, tireSets.length, hasBalancing, hasRemounting, editingRecord, editingIsActive, addTireSet, updateTireSet, resetForm]);
+
+  const handleEdit = useCallback((tire: typeof tireSets[0]) => {
+    setEditingRecord(tire.id);
+    setTireType(tire.type);
+    setBrand(tire.brand);
+    setPurchaseDate(new Date(tire.purchaseDate).toISOString().split("T")[0]);
+    setIsAtTireHotel(tire.isAtTireHotel || false);
+    setHotelLocation(tire.hotelLocation || "");
+    setSize(tire.size);
+    setNotes(tire.notes || "");
+    setReceiptImages(tire.receiptImages || []);
+    setHasBalancing(tire.hasBalancing || false);
+    setHasRemounting(tire.hasRemounting || false);
+    setEditingIsActive(tire.isActive || false);
+    setShowAddForm(true);
+    hapticFeedback.light();
+  }, []);
 
   const handleDelete = useCallback((id: string) => {
     confirmDelete("Slett dekksett", "Er du sikker på at du vil slette dette dekksettet?", () => {
@@ -229,7 +267,7 @@ export default function TiresScreen() {
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>{t('new_tire_set')}</Text>
+              <Text style={styles.formTitle}>{editingRecord ? 'Rediger dekksett' : t('new_tire_set')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -417,7 +455,7 @@ export default function TiresScreen() {
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSave} activeOpacity={0.8}>
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>Lagre dekksett</Text>
+              <Text style={styles.submitButtonText}>{editingRecord ? 'Oppdater dekksett' : 'Lagre dekksett'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -460,13 +498,22 @@ export default function TiresScreen() {
                           <Text style={styles.tireBrand}>{tire.brand}</Text>
                           <Text style={styles.tireSize}>{tire.size}</Text>
                         </View>
-                        <TouchableOpacity
-                          onPress={() => handleDelete(tire.id)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          style={styles.deleteBtn}
-                        >
-                          <Trash2 size={18} color={Colors.danger} />
-                        </TouchableOpacity>
+                        <View style={styles.tireActions}>
+                          <TouchableOpacity
+                            onPress={() => handleEdit(tire)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={styles.editBtn}
+                          >
+                            <Pencil size={16} color={Colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDelete(tire.id)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={styles.deleteBtn}
+                          >
+                            <Trash2 size={18} color={Colors.danger} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
 
                       <View style={styles.tireDetails}>
@@ -523,13 +570,22 @@ export default function TiresScreen() {
                           <Text style={styles.tireBrand}>{tire.brand}</Text>
                           <Text style={styles.tireSize}>{tire.size}</Text>
                         </View>
-                        <TouchableOpacity
-                          onPress={() => handleDelete(tire.id)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          style={styles.deleteBtn}
-                        >
-                          <Trash2 size={18} color={Colors.danger} />
-                        </TouchableOpacity>
+                        <View style={styles.tireActions}>
+                          <TouchableOpacity
+                            onPress={() => handleEdit(tire)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={styles.editBtn}
+                          >
+                            <Pencil size={16} color={Colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDelete(tire.id)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={styles.deleteBtn}
+                          >
+                            <Trash2 size={18} color={Colors.danger} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
 
                       <View style={styles.tireDetails}>
@@ -847,6 +903,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
     marginTop: 2,
+  },
+  tireActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  editBtn: {
+    padding: 8,
   },
   deleteBtn: {
     padding: 8,

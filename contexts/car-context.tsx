@@ -269,6 +269,22 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [mutate]
   );
 
+  const updateWashRecord = useCallback(
+    (id: string, record: Omit<WashRecord, "id" | "carId">) => {
+      setData((prev) => {
+        const newData = {
+          ...prev,
+          washRecords: prev.washRecords.map(r => 
+            r.id === id ? { ...r, ...record } : r
+          ),
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [mutate]
+  );
+
   const addServiceRecord = useCallback(
     (record: Omit<ServiceRecord, "id" | "carId">) => {
        if (!activeCarId) return;
@@ -311,6 +327,33 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [mutate]
   );
 
+  const updateServiceRecord = useCallback(
+    (id: string, record: Omit<ServiceRecord, "id" | "carId">) => {
+      setData((prev) => {
+        const currentCar = prev.cars.find(c => c.id === activeCarId);
+        const currentMileage = currentCar?.currentMileage || 0;
+        
+        const shouldUpdateMileage = record.mileage > currentMileage;
+        const newCars = shouldUpdateMileage 
+          ? prev.cars.map(c => c.id === activeCarId 
+              ? { ...c, currentMileage: record.mileage, mileageSource: 'service' as MileageSourceType, mileageSourceDate: record.date } 
+              : c)
+          : prev.cars;
+        
+        const newData = {
+          ...prev,
+          cars: newCars,
+          serviceRecords: prev.serviceRecords.map(r => 
+            r.id === id ? { ...r, ...record } : r
+          ),
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
   const addTireSet = useCallback(
     (record: Omit<TireSet, "id" | "carId">) => {
        if (!activeCarId) return;
@@ -333,6 +376,22 @@ export const [CarProvider, useCarData] = createContextHook(() => {
         const newData = {
             ...prev,
             tireSets: prev.tireSets.filter(r => r.id !== id),
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [mutate]
+  );
+
+  const updateTireSet = useCallback(
+    (id: string, record: Omit<TireSet, "id" | "carId">) => {
+      setData((prev) => {
+        const newData = {
+          ...prev,
+          tireSets: prev.tireSets.map(r => 
+            r.id === id ? { ...r, ...record } : r
+          ),
         };
         mutate(newData);
         return newData;
@@ -530,6 +589,22 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [mutate]
   );
 
+  const updateInsuranceDocument = useCallback(
+    (id: string, document: Omit<InsuranceDocument, "id" | "carId">) => {
+      setData((prev) => {
+        const newData = {
+          ...prev,
+          insuranceDocuments: prev.insuranceDocuments.map(d => 
+            d.id === id ? { ...d, ...document } : d
+          ),
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [mutate]
+  );
+
   // -- GETTERS --
   // Filter by activeCarId
 
@@ -703,11 +778,14 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       
       addWashRecord,
       deleteWashRecord,
+      updateWashRecord,
       addServiceRecord,
       deleteServiceRecord,
+      updateServiceRecord,
       updateTireInfo,
       addTireSet,
       deleteTireSet,
+      updateTireSet,
       setActiveTireSet,
       addMileageRecord,
       updateMileageRecord,
@@ -716,6 +794,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       deleteFuelRecord,
       addInsuranceDocument,
       deleteInsuranceDocument,
+      updateInsuranceDocument,
       insuranceDocuments: filteredInsuranceDocuments,
       
       // Helpers

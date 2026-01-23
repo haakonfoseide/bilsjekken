@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Wrench, Plus, Trash2, Camera, X, Check, FileText } from "lucide-react-native";
+import { Wrench, Plus, Trash2, Camera, X, Check, FileText, Pencil } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors, { typography } from "@/constants/colors";
@@ -30,7 +30,7 @@ const SERVICE_TYPES = ["Oljeskift", "EU-kontroll", "Dekkskift", "Bremser", "Filt
 
 export default function ServiceScreen() {
   const { t, i18n } = useTranslation();
-  const { serviceRecords, addServiceRecord, deleteServiceRecord } = useCarData();
+  const { serviceRecords, addServiceRecord, deleteServiceRecord, updateServiceRecord } = useCarData();
   const insets = useSafeAreaInsets();
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -41,6 +41,7 @@ export default function ServiceScreen() {
   const [cost, setCost] = useState("");
   const [location, setLocation] = useState("");
   const [receiptImages, setReceiptImages] = useState<string[]>([]);
+  const [editingRecord, setEditingRecord] = useState<string | null>(null);
 
   const isMounted = useRef(true);
 
@@ -59,6 +60,7 @@ export default function ServiceScreen() {
     setLocation("");
     setReceiptImages([]);
     setShowAddForm(false);
+    setEditingRecord(null);
   }, []);
 
   const handleAdd = useCallback(() => {
@@ -67,19 +69,44 @@ export default function ServiceScreen() {
       return;
     }
 
-    addServiceRecord({
-      date: new Date(date).toISOString(),
-      mileage: parseInt(mileage),
-      type,
-      description,
-      cost: cost ? parseFloat(cost) : undefined,
-      location: location || undefined,
-      receiptImages: receiptImages.length > 0 ? receiptImages : undefined,
-    });
+    if (editingRecord) {
+      updateServiceRecord(editingRecord, {
+        date: new Date(date).toISOString(),
+        mileage: parseInt(mileage),
+        type,
+        description,
+        cost: cost ? parseFloat(cost) : undefined,
+        location: location || undefined,
+        receiptImages: receiptImages.length > 0 ? receiptImages : undefined,
+      });
+    } else {
+      addServiceRecord({
+        date: new Date(date).toISOString(),
+        mileage: parseInt(mileage),
+        type,
+        description,
+        cost: cost ? parseFloat(cost) : undefined,
+        location: location || undefined,
+        receiptImages: receiptImages.length > 0 ? receiptImages : undefined,
+      });
+    }
 
     resetForm();
     hapticFeedback.success();
-  }, [date, mileage, type, description, cost, location, receiptImages, addServiceRecord, resetForm]);
+  }, [date, mileage, type, description, cost, location, receiptImages, editingRecord, addServiceRecord, updateServiceRecord, resetForm]);
+
+  const handleEdit = useCallback((record: typeof serviceRecords[0]) => {
+    setEditingRecord(record.id);
+    setDate(new Date(record.date).toISOString().split("T")[0]);
+    setMileage(record.mileage.toString());
+    setType(record.type);
+    setDescription(record.description);
+    setCost(record.cost?.toString() || "");
+    setLocation(record.location || "");
+    setReceiptImages(record.receiptImages || []);
+    setShowAddForm(true);
+    hapticFeedback.light();
+  }, []);
 
   const handleDelete = useCallback((id: string) => {
     confirmDelete("Slett service", "Er du sikker på at du vil slette denne servicen?", () => {
@@ -145,7 +172,7 @@ export default function ServiceScreen() {
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>{t('new_service')}</Text>
+              <Text style={styles.formTitle}>{editingRecord ? 'Rediger service' : t('new_service')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -289,7 +316,7 @@ export default function ServiceScreen() {
               activeOpacity={0.8}
             >
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>Lagre service</Text>
+              <Text style={styles.submitButtonText}>{editingRecord ? 'Oppdater service' : 'Lagre service'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -318,13 +345,22 @@ export default function ServiceScreen() {
                     <Text style={styles.recordType}>{record.type}</Text>
                     <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(record.id)}
-                    style={styles.deleteButton}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Trash2 size={18} color={Colors.danger} strokeWidth={2} />
-                  </TouchableOpacity>
+                  <View style={styles.recordActions}>
+                    <TouchableOpacity
+                      onPress={() => handleEdit(record)}
+                      style={styles.editButton}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Pencil size={16} color={Colors.primary} strokeWidth={2} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(record.id)}
+                      style={styles.deleteButton}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Trash2 size={18} color={Colors.danger} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <Text style={styles.recordDescription}>{record.description}</Text>
@@ -610,6 +646,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
     marginTop: 2,
+  },
+  recordActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  editButton: {
+    padding: 8,
   },
   deleteButton: {
     padding: 8,

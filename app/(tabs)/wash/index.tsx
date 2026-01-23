@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useState, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Droplet, Plus, Trash2, X, Check, Sparkles } from "lucide-react-native";
+import { Droplet, Plus, Trash2, X, Check, Sparkles, Pencil } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors, { typography } from "@/constants/colors";
@@ -21,33 +21,52 @@ const WASH_TYPES = ["Håndvask", "Automatvask", "Selvvask", "Polering"];
 
 export default function WashScreen() {
   const { t, i18n } = useTranslation();
-  const { washRecords, addWashRecord, deleteWashRecord } = useCarData();
+  const { washRecords, addWashRecord, deleteWashRecord, updateWashRecord } = useCarData();
   const insets = useSafeAreaInsets();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
+  const [editingRecord, setEditingRecord] = useState<string | null>(null);
 
   const resetForm = useCallback(() => {
     setDate(new Date().toISOString().split("T")[0]);
     setType("");
     setNotes("");
     setShowAddForm(false);
+    setEditingRecord(null);
   }, []);
 
   const handleAdd = useCallback(() => {
     if (!date) return;
 
-    addWashRecord({
-      date: new Date(date).toISOString(),
-      type: type || undefined,
-      notes: notes || undefined,
-    });
+    if (editingRecord) {
+      updateWashRecord(editingRecord, {
+        date: new Date(date).toISOString(),
+        type: type || undefined,
+        notes: notes || undefined,
+      });
+    } else {
+      addWashRecord({
+        date: new Date(date).toISOString(),
+        type: type || undefined,
+        notes: notes || undefined,
+      });
+    }
 
     resetForm();
     hapticFeedback.success();
-  }, [date, type, notes, addWashRecord, resetForm]);
+  }, [date, type, notes, editingRecord, addWashRecord, updateWashRecord, resetForm]);
+
+  const handleEdit = useCallback((record: typeof washRecords[0]) => {
+    setEditingRecord(record.id);
+    setDate(new Date(record.date).toISOString().split("T")[0]);
+    setType(record.type || "");
+    setNotes(record.notes || "");
+    setShowAddForm(true);
+    hapticFeedback.light();
+  }, []);
 
   const handleDelete = useCallback((id: string) => {
     confirmDelete("Slett vask", "Er du sikker på at du vil slette denne vasken?", () => {
@@ -97,7 +116,7 @@ export default function WashScreen() {
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>{t('new_wash')}</Text>
+              <Text style={styles.formTitle}>{editingRecord ? 'Rediger vask' : t('new_wash')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -160,7 +179,7 @@ export default function WashScreen() {
               activeOpacity={0.8}
             >
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>Lagre</Text>
+              <Text style={styles.submitButtonText}>{editingRecord ? 'Oppdater' : 'Lagre'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -204,13 +223,22 @@ export default function WashScreen() {
                     <Text style={styles.recordNotes} numberOfLines={2}>{record.notes}</Text>
                   )}
                 </View>
-                <TouchableOpacity
-                  onPress={() => handleDelete(record.id)}
-                  style={styles.deleteButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Trash2 size={18} color={Colors.danger} strokeWidth={2} />
-                </TouchableOpacity>
+                <View style={styles.recordActions}>
+                  <TouchableOpacity
+                    onPress={() => handleEdit(record)}
+                    style={styles.editButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Pencil size={16} color={Colors.primary} strokeWidth={2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleDelete(record.id)}
+                    style={styles.deleteButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Trash2 size={18} color={Colors.danger} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
           </View>
@@ -438,8 +466,15 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 18,
   },
+  recordActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  editButton: {
+    padding: 8,
+  },
   deleteButton: {
     padding: 8,
-    marginLeft: 4,
   },
 });

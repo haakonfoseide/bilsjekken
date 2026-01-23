@@ -26,6 +26,7 @@ import {
   FileText,
   File,
   StickyNote,
+  Pencil,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
@@ -39,7 +40,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function InsuranceDocumentsScreen() {
   const insets = useSafeAreaInsets();
-  const { carInfo, insuranceDocuments, addInsuranceDocument, deleteInsuranceDocument } = useCarData();
+  const { carInfo, insuranceDocuments, addInsuranceDocument, deleteInsuranceDocument, updateInsuranceDocument } = useCarData();
   
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +49,7 @@ export default function InsuranceDocumentsScreen() {
   const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
+  const [editingDocument, setEditingDocument] = useState<InsuranceDocument | null>(null);
 
   const requestCameraPermission = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -188,22 +190,33 @@ export default function InsuranceDocumentsScreen() {
       return;
     }
 
-    addInsuranceDocument({
-      uri: "", // No URI for notes
-      type: 'note',
-      name: noteTitle || "Notat",
-      notes: noteText,
-      addedDate: new Date().toISOString(),
-    });
+    if (editingDocument) {
+      updateInsuranceDocument(editingDocument.id, {
+        uri: editingDocument.uri,
+        type: editingDocument.type,
+        name: noteTitle || "Notat",
+        notes: noteText,
+        addedDate: editingDocument.addedDate,
+      });
+    } else {
+      addInsuranceDocument({
+        uri: "",
+        type: 'note',
+        name: noteTitle || "Notat",
+        notes: noteText,
+        addedDate: new Date().toISOString(),
+      });
+    }
 
     setNoteText("");
     setNoteTitle("");
+    setEditingDocument(null);
     setIsNoteModalVisible(false);
 
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-  }, [noteText, noteTitle, addInsuranceDocument]);
+  }, [noteText, noteTitle, editingDocument, addInsuranceDocument, updateInsuranceDocument]);
 
   const handleDeleteDocument = useCallback((doc: InsuranceDocument) => {
     Alert.alert(
@@ -241,6 +254,18 @@ export default function InsuranceDocumentsScreen() {
       }
     } else if (doc.type === 'note') {
       Alert.alert(doc.name || "Notat", doc.notes);
+    }
+  }, []);
+
+  const handleEditDocument = useCallback((doc: InsuranceDocument) => {
+    if (doc.type === 'note') {
+      setEditingDocument(doc);
+      setNoteTitle(doc.name || "");
+      setNoteText(doc.notes || "");
+      setIsNoteModalVisible(true);
+    }
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   }, []);
 
@@ -319,7 +344,12 @@ export default function InsuranceDocumentsScreen() {
 
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: "#F0FDF4", borderWidth: 1, borderColor: "#DCFCE7" }]}
-            onPress={() => setIsNoteModalVisible(true)}
+            onPress={() => {
+              setEditingDocument(null);
+              setNoteTitle("");
+              setNoteText("");
+              setIsNoteModalVisible(true);
+            }}
             activeOpacity={0.8}
             disabled={isLoading}
           >
@@ -391,13 +421,24 @@ export default function InsuranceDocumentsScreen() {
                         {formatDate(doc.addedDate)}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleDeleteDocument(doc)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Trash2 size={16} color={Colors.danger} />
-                    </TouchableOpacity>
+                    <View style={styles.actionButtons}>
+                      {doc.type === 'note' && (
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => handleEditDocument(doc)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Pencil size={16} color={Colors.primary} />
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteDocument(doc)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Trash2 size={16} color={Colors.danger} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               ))}
@@ -453,8 +494,13 @@ export default function InsuranceDocumentsScreen() {
         >
           <View style={styles.noteModalContent}>
             <View style={styles.noteModalHeader}>
-              <Text style={styles.noteModalTitle}>Nytt notat</Text>
-              <TouchableOpacity onPress={() => setIsNoteModalVisible(false)}>
+              <Text style={styles.noteModalTitle}>{editingDocument ? "Rediger notat" : "Nytt notat"}</Text>
+              <TouchableOpacity onPress={() => {
+                setIsNoteModalVisible(false);
+                setEditingDocument(null);
+                setNoteTitle("");
+                setNoteText("");
+              }}>
                 <X size={24} color={Colors.text.secondary} />
               </TouchableOpacity>
             </View>
@@ -487,7 +533,7 @@ export default function InsuranceDocumentsScreen() {
               style={styles.saveButton}
               onPress={handleSaveNote}
             >
-              <Text style={styles.saveButtonText}>Lagre notat</Text>
+              <Text style={styles.saveButtonText}>{editingDocument ? "Oppdater notat" : "Lagre notat"}</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -643,6 +689,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.light,
     fontWeight: "500" as const,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  editButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButton: {
     width: 32,
