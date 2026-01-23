@@ -185,7 +185,13 @@ export default function ServiceScreen() {
                     key={serviceType}
                     style={[styles.typeChip, type === serviceType && styles.typeChipActive]}
                     onPress={() => {
-                      setType(type === serviceType ? "" : serviceType);
+                      const newType = type === serviceType ? "" : serviceType;
+                      setType(newType);
+                      if (newType && !description) {
+                        setDescription(newType);
+                      } else if (newType && description === type) {
+                        setDescription(newType);
+                      }
                       hapticFeedback.selection();
                     }}
                   >
