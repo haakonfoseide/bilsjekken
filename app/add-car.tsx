@@ -36,6 +36,7 @@ import * as Haptics from "expo-haptics";
 import * as Network from "expo-network";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
+import DatePicker from "@/components/DatePicker";
 import { trpcClient } from "@/lib/trpc";
 import type { VehicleSearchResult } from "@/lib/api-types";
 
@@ -557,12 +558,10 @@ export default function AddCarScreen() {
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
                 <Text style={styles.inputLabel}>Neste EU-kontroll</Text>
-                <TextInput
-                  style={styles.textInput}
+                <DatePicker
                   value={nextEuControlDate}
-                  onChangeText={setNextEuControlDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={Colors.text.light}
+                  onChange={setNextEuControlDate}
+                  placeholder="Velg dato"
                 />
               </View>
             </View>
@@ -573,12 +572,10 @@ export default function AddCarScreen() {
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
                 <Text style={styles.inputLabel}>Sist godkjent (EU)</Text>
-                <TextInput
-                  style={styles.textInput}
+                <DatePicker
                   value={euControlDate}
-                  onChangeText={setEuControlDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={Colors.text.light}
+                  onChange={setEuControlDate}
+                  placeholder="Velg dato"
                 />
               </View>
             </View>
