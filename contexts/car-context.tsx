@@ -12,6 +12,7 @@ import type {
   MileageRecord,
   InsuranceDocument,
   FuelRecord,
+  MileageSourceType,
 } from "@/types/car";
 import type { VehicleSearchResult } from "@/lib/api-types";
 
@@ -231,8 +232,20 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       if (!activeCarId) return;
       const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
       setData((prev) => {
+        const currentCar = prev.cars.find(c => c.id === activeCarId);
+        const currentMileage = currentCar?.currentMileage || 0;
+        
+        // Update car mileage if wash record has mileage and it's higher
+        const shouldUpdateMileage = record.mileage && record.mileage > currentMileage;
+        const newCars = shouldUpdateMileage 
+          ? prev.cars.map(c => c.id === activeCarId 
+              ? { ...c, currentMileage: record.mileage!, mileageSource: 'wash' as MileageSourceType, mileageSourceDate: record.date } 
+              : c)
+          : prev.cars;
+        
         const newData = {
             ...prev,
+            cars: newCars,
             washRecords: [newRecord, ...prev.washRecords],
         };
         mutate(newData);
@@ -261,8 +274,20 @@ export const [CarProvider, useCarData] = createContextHook(() => {
        if (!activeCarId) return;
        const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
        setData((prev) => {
+        const currentCar = prev.cars.find(c => c.id === activeCarId);
+        const currentMileage = currentCar?.currentMileage || 0;
+        
+        // Update car mileage if service mileage is higher
+        const shouldUpdateMileage = record.mileage > currentMileage;
+        const newCars = shouldUpdateMileage 
+          ? prev.cars.map(c => c.id === activeCarId 
+              ? { ...c, currentMileage: record.mileage, mileageSource: 'service' as MileageSourceType, mileageSourceDate: record.date } 
+              : c)
+          : prev.cars;
+        
         const newData = {
             ...prev,
+            cars: newCars,
             serviceRecords: [newRecord, ...prev.serviceRecords],
         };
         mutate(newData);
@@ -358,9 +383,11 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       setData((prev) => {
          const newMileageRecords = [newRecord, ...prev.mileageRecords];
          
-         // Update car info current mileage
+         // Update car info current mileage with source
          const newCars = prev.cars.map(c => 
-            c.id === activeCarId ? { ...c, currentMileage: record.mileage } : c
+            c.id === activeCarId 
+              ? { ...c, currentMileage: record.mileage, mileageSource: 'manual' as MileageSourceType, mileageSourceDate: record.date } 
+              : c
          );
          
          const newData = {
@@ -436,8 +463,20 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       if (!activeCarId) return;
       const newRecord = { ...record, id: Date.now().toString(), carId: activeCarId };
       setData((prev) => {
+        const currentCar = prev.cars.find(c => c.id === activeCarId);
+        const currentMileage = currentCar?.currentMileage || 0;
+        
+        // Update car mileage if fuel record has mileage and it's higher
+        const shouldUpdateMileage = record.mileage && record.mileage > currentMileage;
+        const newCars = shouldUpdateMileage 
+          ? prev.cars.map(c => c.id === activeCarId 
+              ? { ...c, currentMileage: record.mileage!, mileageSource: 'fuel' as MileageSourceType, mileageSourceDate: record.date } 
+              : c)
+          : prev.cars;
+        
         const newData = {
             ...prev,
+            cars: newCars,
             fuelRecords: [newRecord, ...prev.fuelRecords],
         };
         mutate(newData);

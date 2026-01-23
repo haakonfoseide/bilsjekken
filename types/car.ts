@@ -9,6 +9,8 @@ export interface VehicleSection {
   fields: VehicleField[];
 }
 
+export type MileageSourceType = 'manual' | 'fuel' | 'service' | 'vegvesen' | 'wash';
+
 export interface CarInfo {
   id: string;
   make: string;
@@ -17,6 +19,8 @@ export interface CarInfo {
   licensePlate: string;
   insurance: string;
   currentMileage: number;
+  mileageSource?: MileageSourceType;
+  mileageSourceDate?: string;
 
   vin?: string;
   color?: string;

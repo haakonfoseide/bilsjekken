@@ -272,6 +272,13 @@ export default function DashboardScreen() {
                           ? `${carInfo.currentMileage.toLocaleString(i18n.language)} km`
                           : "—"}
                       </Text>
+                      {carInfo.mileageSource && (
+                        <View style={styles.sourceBadge}>
+                          <Text style={styles.sourceText}>
+                            {t(`mileage_source_${carInfo.mileageSource}`)}
+                          </Text>
+                        </View>
+                      )}
                       {carInfo.registeredMileage && carInfo.registeredMileage > carInfo.currentMileage && (
                         <View style={styles.warningBadge}>
                           <AlertCircle size={10} color={Colors.danger} />
@@ -653,6 +660,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.danger,
     fontWeight: "600" as const,
+  },
+  sourceBadge: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 4,
+    marginTop: 4,
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: "flex-start" as const,
+  },
+  sourceText: {
+    fontSize: 10,
+    color: Colors.primary,
+    fontWeight: "500" as const,
   },
 
   quickActions: {
