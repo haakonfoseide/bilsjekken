@@ -276,6 +276,9 @@ export default function DashboardScreen() {
                         <View style={styles.sourceBadge}>
                           <Text style={styles.sourceText}>
                             {t(`mileage_source_${carInfo.mileageSource}`)}
+                            {carInfo.mileageSourceDate && (
+                              ` • ${new Date(carInfo.mileageSourceDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}`
+                            )}
                           </Text>
                         </View>
                       )}
