@@ -31,6 +31,7 @@ import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import { useLocalSearchParams } from "expo-router";
 import Colors, { typography } from "@/constants/colors";
+import DatePicker from "@/components/DatePicker";
 import {
   hapticFeedback,
   confirmDelete,
@@ -302,14 +303,10 @@ export default function TiresScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Kjøpsdato <Text style={styles.required}>*</Text></Text>
-              <TextInput
-                style={styles.input}
+              <DatePicker
                 value={purchaseDate}
-                onChangeText={setPurchaseDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.text.light}
-                returnKeyType="done"
-                onSubmitEditing={() => Keyboard.dismiss()}
+                onChange={setPurchaseDate}
+                placeholder="Velg dato"
               />
             </View>
 

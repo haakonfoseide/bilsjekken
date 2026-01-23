@@ -30,6 +30,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
+import DatePicker from "@/components/DatePicker";
 
 export default function FuelScreen() {
   const insets = useSafeAreaInsets();
@@ -41,6 +42,7 @@ export default function FuelScreen() {
   const [currentMileage, setCurrentMileage] = useState("");
   const [notes, setNotes] = useState("");
   const [isFullTank, setIsFullTank] = useState(true);
+  const [fuelDate, setFuelDate] = useState(new Date().toISOString().split("T")[0]);
   const inputAccessoryViewID = "fuel-keyboard-toolbar";
 
   const formatPriceInput = useCallback((value: string) => {
@@ -141,7 +143,7 @@ export default function FuelScreen() {
     const totalCost = priceNum ? litersNum * priceNum : undefined;
 
     addFuelRecord({
-      date: new Date().toISOString(),
+      date: new Date(fuelDate).toISOString(),
       liters: litersNum,
       pricePerLiter: priceNum,
       totalCost,
@@ -158,6 +160,7 @@ export default function FuelScreen() {
     setPricePerLiter("");
     setCurrentMileage("");
     setNotes("");
+    setFuelDate(new Date().toISOString().split("T")[0]);
     setIsModalVisible(false);
   }, [liters, pricePerLiter, currentMileage, notes, isFullTank, addFuelRecord]);
 
@@ -331,6 +334,15 @@ export default function FuelScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Dato</Text>
+                <DatePicker
+                  value={fuelDate}
+                  onChange={setFuelDate}
+                  placeholder="Velg dato"
+                />
+              </View>
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Antall liter</Text>
                 <View style={styles.inputContainer}>
