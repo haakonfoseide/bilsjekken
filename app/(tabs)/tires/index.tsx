@@ -122,14 +122,14 @@ export default function TiresScreen() {
         // Build notes with additional info
         let notesText = data.description || "";
         if (data.tireModel) {
-          notesText = notesText ? `${notesText}\nModell: ${data.tireModel}` : `Modell: ${data.tireModel}`;
+          notesText = notesText ? `${notesText}\n${t('model')}: ${data.tireModel}` : `${t('model')}: ${data.tireModel}`;
         }
         if (data.tireQuantity) {
-          notesText = notesText ? `${notesText}\nAntall: ${data.tireQuantity} stk` : `Antall: ${data.tireQuantity} stk`;
+          notesText = notesText ? `${notesText}\n${t('tire_quantity')}: ${data.tireQuantity}` : `${t('tire_quantity')}: ${data.tireQuantity}`;
         }
         if (data.items && data.items.length > 0) {
           const itemsText = data.items.join(", ");
-          notesText = notesText ? `${notesText}\n\nPoster: ${itemsText}` : `Poster: ${itemsText}`;
+          notesText = notesText ? `${notesText}\n\n${t('items')}: ${itemsText}` : `${t('items')}: ${itemsText}`;
         }
         if (notesText) setNotes(notesText);
         
@@ -290,8 +290,8 @@ export default function TiresScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <Sun size={20} color={tireType === "summer" ? "#fff" : "#F59E0B"} />
-                  <Text style={[styles.typeButtonText, tireType === "summer" && styles.typeButtonTextActive]}>
+                  <Sun size={20} color={tireType === "summer" ? "#92400E" : "#F59E0B"} />
+                  <Text style={[styles.typeButtonText, tireType === "summer" && styles.typeButtonTextSummer]}>
                     {t('summer')}
                   </Text>
                 </TouchableOpacity>
@@ -304,8 +304,8 @@ export default function TiresScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <Snowflake size={20} color={tireType === "winter" ? "#fff" : "#3B82F6"} />
-                  <Text style={[styles.typeButtonText, tireType === "winter" && styles.typeButtonTextActive]}>
+                  <Snowflake size={20} color={tireType === "winter" ? "#1E40AF" : "#3B82F6"} />
+                  <Text style={[styles.typeButtonText, tireType === "winter" && styles.typeButtonTextWinter]}>
                     {t('winter')}
                   </Text>
                 </TouchableOpacity>
@@ -319,7 +319,7 @@ export default function TiresScreen() {
                   style={styles.input}
                   value={brand}
                   onChangeText={setBrand}
-                  placeholder="F.eks. Nokian"
+                  placeholder={t('tire_brand_placeholder')}
                   placeholderTextColor={Colors.text.light}
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
@@ -526,7 +526,7 @@ export default function TiresScreen() {
                         {tire.isAtTireHotel && (
                           <View style={styles.tireDetailItem}>
                             <MapPin size={14} color={Colors.primary} />
-                            <Text style={styles.tireDetailText}>{tire.hotelLocation || "Dekkhotell"}</Text>
+                            <Text style={styles.tireDetailText}>{tire.hotelLocation || t('tire_hotel')}</Text>
                           </View>
                         )}
                       </View>
@@ -598,7 +598,7 @@ export default function TiresScreen() {
                         {tire.isAtTireHotel && (
                           <View style={styles.tireDetailItem}>
                             <MapPin size={14} color={Colors.primary} />
-                            <Text style={styles.tireDetailText}>{tire.hotelLocation || "Dekkhotell"}</Text>
+                            <Text style={styles.tireDetailText}>{tire.hotelLocation || t('tire_hotel')}</Text>
                           </View>
                         )}
                       </View>
@@ -736,8 +736,11 @@ const styles = StyleSheet.create({
     fontWeight: "600" as const,
     color: Colors.text.secondary,
   },
-  typeButtonTextActive: {
-    color: "#fff",
+  typeButtonTextSummer: {
+    color: "#92400E",
+  },
+  typeButtonTextWinter: {
+    color: "#1E40AF",
   },
   switchCard: {
     backgroundColor: "#F8FAFC",

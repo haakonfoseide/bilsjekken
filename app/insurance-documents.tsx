@@ -40,7 +40,7 @@ import type { InsuranceDocument } from "@/types/car";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function InsuranceDocumentsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const { carInfo, insuranceDocuments, addInsuranceDocument, deleteInsuranceDocument, updateInsuranceDocument } = useCarData();
   
@@ -196,7 +196,7 @@ export default function InsuranceDocumentsScreen() {
       updateInsuranceDocument(editingDocument.id, {
         uri: editingDocument.uri,
         type: editingDocument.type,
-        name: noteTitle || "Notat",
+        name: noteTitle || t('note_label'),
         notes: noteText,
         addedDate: editingDocument.addedDate,
       });
@@ -204,7 +204,7 @@ export default function InsuranceDocumentsScreen() {
       addInsuranceDocument({
         uri: "",
         type: 'note',
-        name: noteTitle || "Notat",
+        name: noteTitle || t('note_label'),
         notes: noteText,
         addedDate: new Date().toISOString(),
       });
@@ -255,7 +255,10 @@ export default function InsuranceDocumentsScreen() {
         Alert.alert(t('error'), t('could_not_open'));
       }
     } else if (doc.type === 'note') {
-      Alert.alert(doc.name || "Notat", doc.notes);
+      setEditingDocument(doc);
+      setNoteTitle(doc.name || "");
+      setNoteText(doc.notes || "");
+      setIsNoteModalVisible(true);
     }
   }, []);
 
@@ -272,13 +275,14 @@ export default function InsuranceDocumentsScreen() {
   }, []);
 
   const formatDate = useCallback((dateString: string) => {
+    const locale = i18n.language === 'nb' ? 'no-NO' : i18n.language;
     const date = new Date(dateString);
-    return date.toLocaleDateString("no-NO", {
+    return date.toLocaleDateString(locale, {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
-  }, []);
+  }, [i18n.language]);
 
   return (
     <View style={styles.container}>
@@ -412,7 +416,7 @@ export default function InsuranceDocumentsScreen() {
                   <View style={styles.documentInfo}>
                     <View style={{ flex: 1, marginRight: 8 }}>
                       <Text style={styles.documentName} numberOfLines={1}>
-                        {doc.name || (doc.type === 'image' ? 'Bilde' : doc.type === 'pdf' ? 'Dokument' : 'Notat')}
+                        {doc.name || (doc.type === 'image' ? t('image_label') : doc.type === 'pdf' ? 'PDF' : t('note_label'))}
                       </Text>
                       {doc.type === 'note' && doc.notes && (
                          <Text style={styles.notePreview} numberOfLines={2}>
@@ -513,7 +517,7 @@ export default function InsuranceDocumentsScreen() {
                  style={styles.input}
                  value={noteTitle}
                  onChangeText={setNoteTitle}
-                 placeholder="F.eks. Skademelding info"
+                 placeholder={t('note_title_placeholder')}
                  placeholderTextColor="#94A3B8"
                />
             </View>

@@ -292,7 +292,10 @@ const resources = {
       "confident": "{{value}}% sikker",
       "permission_required_title": "Tillatelse påkrevd",
       "camera_receipt_desc": "Vi trenger tilgang til kameraet for å ta bilde av kvitteringen.",
-      "gallery_receipt_desc": "Vi trenger tilgang til bildegalleriet for å velge et bilde."
+      "gallery_receipt_desc": "Vi trenger tilgang til bildegalleriet for å velge et bilde.",
+      "tire_brand_placeholder": "F.eks. Nokian",
+      "tire_quantity": "Antall",
+      "note_title_placeholder": "F.eks. Skademelding info"
     }
   },
   en: {
@@ -579,7 +582,10 @@ const resources = {
       "confident": "{{value}}% confident",
       "permission_required_title": "Permission required",
       "camera_receipt_desc": "We need camera access to take a photo of the receipt.",
-      "gallery_receipt_desc": "We need gallery access to select an image."
+      "gallery_receipt_desc": "We need gallery access to select an image.",
+      "tire_brand_placeholder": "E.g. Nokian",
+      "tire_quantity": "Quantity",
+      "note_title_placeholder": "E.g. Claim info"
     }
   },
   es: {
@@ -704,7 +710,10 @@ const resources = {
       "freq_1_month_before": "1 mes antes del vencimiento",
       "freq_2_months_before": "2 meses antes del vencimiento",
       "freq_3_months_before": "3 meses antes del vencimiento",
-      "freq_6_months_before": "6 meses antes del vencimiento"
+      "freq_6_months_before": "6 meses antes del vencimiento",
+      "tire_brand_placeholder": "Ej. Nokian",
+      "tire_quantity": "Cantidad",
+      "note_title_placeholder": "Ej. Info de siniestro"
     }
   },
   fr: {
@@ -829,7 +838,10 @@ const resources = {
       "freq_1_month_before": "1 mois avant l'échéance",
       "freq_2_months_before": "2 mois avant l'échéance",
       "freq_3_months_before": "3 mois avant l'échéance",
-      "freq_6_months_before": "6 mois avant l'échéance"
+      "freq_6_months_before": "6 mois avant l'échéance",
+      "tire_brand_placeholder": "Ex. Nokian",
+      "tire_quantity": "Quantité",
+      "note_title_placeholder": "Ex. Info sinistre"
     }
   },
   de: {
@@ -954,7 +966,10 @@ const resources = {
       "freq_1_month_before": "1 Monat vor Ablauf",
       "freq_2_months_before": "2 Monate vor Ablauf",
       "freq_3_months_before": "3 Monate vor Ablauf",
-      "freq_6_months_before": "6 Monate vor Ablauf"
+      "freq_6_months_before": "6 Monate vor Ablauf",
+      "tire_brand_placeholder": "Z.B. Nokian",
+      "tire_quantity": "Anzahl",
+      "note_title_placeholder": "Z.B. Schadensinfo"
     }
   },
   zh: {
@@ -1079,7 +1094,10 @@ const resources = {
       "freq_1_month_before": "截止日期前1个月",
       "freq_2_months_before": "截止日期前2个月",
       "freq_3_months_before": "截止日期前3个月",
-      "freq_6_months_before": "截止日期前6个月"
+      "freq_6_months_before": "截止日期前6个月",
+      "tire_brand_placeholder": "例如 Nokian",
+      "tire_quantity": "数量",
+      "note_title_placeholder": "例如 理赔信息"
     }
   },
   pt: {
@@ -1204,7 +1222,10 @@ const resources = {
       "freq_1_month_before": "1 mês antes do prazo",
       "freq_2_months_before": "2 meses antes do prazo",
       "freq_3_months_before": "3 meses antes do prazo",
-      "freq_6_months_before": "6 meses antes do prazo"
+      "freq_6_months_before": "6 meses antes do prazo",
+      "tire_brand_placeholder": "Ex. Nokian",
+      "tire_quantity": "Quantidade",
+      "note_title_placeholder": "Ex. Info de sinistro"
     }
   }
 };

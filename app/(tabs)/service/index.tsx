@@ -26,7 +26,14 @@ import {
   showImagePickerOptions 
 } from "@/lib/utils";
 
-const SERVICE_TYPES = ["Oljeskift", "EU-kontroll", "Dekkskift", "Bremser", "Filter", "Annet"];
+const SERVICE_TYPE_KEYS = [
+  "service_type_oil_change",
+  "service_type_eu_control",
+  "service_type_tire_change",
+  "service_type_brakes",
+  "service_type_filter",
+  "service_type_other",
+] as const;
 
 export default function ServiceScreen() {
   const { t, i18n } = useTranslation();
@@ -65,7 +72,7 @@ export default function ServiceScreen() {
 
   const handleAdd = useCallback(() => {
     if (!date || !mileage || !type || !description) {
-      Alert.alert("Feil", "Vennligst fyll ut alle påkrevde felt");
+      Alert.alert(t('error'), t('required_fields'));
       return;
     }
 
@@ -109,7 +116,7 @@ export default function ServiceScreen() {
   }, []);
 
   const handleDelete = useCallback((id: string) => {
-    confirmDelete("Slett service", "Er du sikker på at du vil slette denne servicen?", () => {
+    confirmDelete(t('delete_service'), t('delete_service_confirm'), () => {
       deleteServiceRecord(id);
       hapticFeedback.success();
     });
@@ -172,7 +179,7 @@ export default function ServiceScreen() {
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>{editingRecord ? 'Rediger service' : t('new_service')}</Text>
+              <Text style={styles.formTitle}>{editingRecord ? t('edit_service') : t('new_service')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -186,15 +193,15 @@ export default function ServiceScreen() {
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Dato <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>{t('date')} <Text style={styles.required}>*</Text></Text>
                 <DatePicker
                   value={date}
                   onChange={setDate}
-                  placeholder="Velg dato"
+                  placeholder={t('select_date')}
                 />
               </View>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Km-stand <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>{t('service_mileage')} <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={mileage}
@@ -209,38 +216,41 @@ export default function ServiceScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Type service <Text style={styles.required}>*</Text></Text>
+              <Text style={styles.label}>{t('service_type_label')} <Text style={styles.required}>*</Text></Text>
               <View style={styles.typeChips}>
-                {SERVICE_TYPES.map((serviceType) => (
-                  <TouchableOpacity
-                    key={serviceType}
-                    style={[styles.typeChip, type === serviceType && styles.typeChipActive]}
-                    onPress={() => {
-                      const newType = type === serviceType ? "" : serviceType;
-                      setType(newType);
-                      if (newType && !description) {
-                        setDescription(newType);
-                      } else if (newType && description === type) {
-                        setDescription(newType);
-                      }
-                      hapticFeedback.selection();
-                    }}
-                  >
-                    <Text style={[styles.typeChipText, type === serviceType && styles.typeChipTextActive]}>
-                      {serviceType}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {SERVICE_TYPE_KEYS.map((typeKey) => {
+                  const label = t(typeKey);
+                  return (
+                    <TouchableOpacity
+                      key={typeKey}
+                      style={[styles.typeChip, type === typeKey && styles.typeChipActive]}
+                      onPress={() => {
+                        const newType = type === typeKey ? "" : typeKey;
+                        setType(newType);
+                        if (newType && !description) {
+                          setDescription(t(newType));
+                        } else if (newType && description === t(type)) {
+                          setDescription(t(newType));
+                        }
+                        hapticFeedback.selection();
+                      }}
+                    >
+                      <Text style={[styles.typeChipText, type === typeKey && styles.typeChipTextActive]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Beskrivelse <Text style={styles.required}>*</Text></Text>
+              <Text style={styles.label}>{t('description')} <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={description}
                 onChangeText={setDescription}
-                placeholder="Hva ble gjort?"
+                placeholder={t('what_was_done')}
                 placeholderTextColor={Colors.text.light}
                 multiline
                 numberOfLines={3}
@@ -252,7 +262,7 @@ export default function ServiceScreen() {
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Kostnad (kr)</Text>
+                <Text style={styles.label}>{t('cost')} (kr)</Text>
                 <TextInput
                   style={styles.input}
                   value={cost}
@@ -265,12 +275,12 @@ export default function ServiceScreen() {
                 />
               </View>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Verksted</Text>
+                <Text style={styles.label}>{t('workshop')}</Text>
                 <TextInput
                   style={styles.input}
                   value={location}
                   onChangeText={setLocation}
-                  placeholder="Sted"
+                  placeholder={t('location')}
                   placeholderTextColor={Colors.text.light}
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
@@ -279,14 +289,14 @@ export default function ServiceScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Kvitteringer</Text>
+              <Text style={styles.label}>{t('receipts')}</Text>
               <TouchableOpacity
                 style={styles.addImageButton}
                 onPress={handleShowImageOptions}
                 activeOpacity={0.8}
               >
                 <Camera size={20} color={Colors.primary} strokeWidth={2} />
-                <Text style={styles.addImageText}>Legg til bilde</Text>
+                <Text style={styles.addImageText}>{t('add_image')}</Text>
               </TouchableOpacity>
 
               {receiptImages.length > 0 && (
@@ -316,7 +326,7 @@ export default function ServiceScreen() {
               activeOpacity={0.8}
             >
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>{editingRecord ? 'Oppdater service' : 'Lagre service'}</Text>
+              <Text style={styles.submitButtonText}>{editingRecord ? t('update_service') : t('save_service')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -342,7 +352,7 @@ export default function ServiceScreen() {
                     <Wrench size={18} color={Colors.success} strokeWidth={2} />
                   </View>
                   <View style={styles.recordMeta}>
-                    <Text style={styles.recordType}>{record.type}</Text>
+                    <Text style={styles.recordType}>{SERVICE_TYPE_KEYS.includes(record.type as any) ? t(record.type) : record.type}</Text>
                     <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
                   </View>
                   <View style={styles.recordActions}>
@@ -369,14 +379,14 @@ export default function ServiceScreen() {
                   <View style={styles.recordDetailItem}>
                     <Text style={styles.recordDetailLabel}>{t('service_mileage')}</Text>
                     <Text style={styles.recordDetailValue}>
-                      {record.mileage.toLocaleString("no-NO")} km
+                      {record.mileage.toLocaleString(i18n.language)} km
                     </Text>
                   </View>
                   {record.cost && (
                     <View style={styles.recordDetailItem}>
                       <Text style={styles.recordDetailLabel}>{t('cost')}</Text>
                       <Text style={[styles.recordDetailValue, { color: Colors.success }]}>
-                        {record.cost.toLocaleString("no-NO")} kr
+                        {record.cost.toLocaleString(i18n.language)} kr
                       </Text>
                     </View>
                   )}
