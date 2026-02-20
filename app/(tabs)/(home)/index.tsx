@@ -51,11 +51,17 @@ export default function DashboardScreen() {
   const nextService = getNextService();
   const tireAge = getTireAge();
 
+  const TAB_ROUTES = ["/wash", "/service", "/tires"];
+
   const handlePress = useCallback((route: string) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    router.push(route as never);
+    if (TAB_ROUTES.includes(route)) {
+      router.navigate(route as never);
+    } else {
+      router.push(route as never);
+    }
   }, [router]);
 
   const formatDate = useCallback((dateString: string) => {

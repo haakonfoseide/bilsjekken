@@ -9,6 +9,7 @@ import {
   Alert,
   Switch,
   Modal,
+  TextInput,
 } from "react-native";
 import { Stack } from "expo-router";
 import { useState, useEffect } from "react";
@@ -642,29 +643,15 @@ export default function AppSettingsScreen() {
                   <View style={styles.customInputWrapper}>
                     <Text style={styles.customInputLabel}>{t("value")}</Text>
                     <View style={styles.customInput}>
-                      <Text 
-                        style={styles.customInputText}
-                        onPress={() => {
-                          Alert.prompt(
-                            t("enter_value"),
-                            t("enter_number_prompt"),
-                            [
-                              { text: t("cancel"), style: "cancel" },
-                              { 
-                                text: "OK", 
-                                onPress: (value?: string) => {
-                                  if (value) setTempCustomValue(value);
-                                }
-                              },
-                            ],
-                            "plain-text",
-                            tempCustomValue,
-                            "numeric"
-                          );
-                        }}
-                      >
-                        {tempCustomValue || "—"}
-                      </Text>
+                      <TextInput
+                        style={styles.customInputField}
+                        value={tempCustomValue}
+                        onChangeText={setTempCustomValue}
+                        placeholder="—"
+                        placeholderTextColor={Colors.text.light}
+                        keyboardType="numeric"
+                        returnKeyType="done"
+                      />
                     </View>
                   </View>
 
@@ -895,10 +882,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  customInputText: {
+  customInputField: {
     fontSize: 16,
     color: Colors.text.primary,
     fontWeight: "500" as const,
+    flex: 1,
+    paddingVertical: 0,
   },
   customButton: {
     backgroundColor: Colors.primary,

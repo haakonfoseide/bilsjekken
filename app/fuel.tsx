@@ -292,7 +292,7 @@ export default function FuelScreen() {
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       style={styles.actionBtn}
                     >
-                      <Trash2 size={16} color={Colors.text.light} />
+                      <Trash2 size={16} color={Colors.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
