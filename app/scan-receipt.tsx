@@ -28,6 +28,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as Haptics from "expo-haptics";
 import { generateObject } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import Colors from "@/constants/colors";
 import { useCarData } from "@/contexts/car-context";
 
@@ -111,6 +112,7 @@ const ReceiptSchema = z.object({
 type ReceiptAnalysis = z.infer<typeof ReceiptSchema>;
 
 export default function ScanReceiptScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {
@@ -155,8 +157,8 @@ export default function ScanReceiptScreen() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Tillatelse påkrevd",
-        "Vi trenger tilgang til kameraet for å ta bilde av kvitteringen."
+        t('permission_required_title'),
+        t('camera_receipt_desc')
       );
       return;
     }
@@ -189,8 +191,8 @@ export default function ScanReceiptScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Tillatelse påkrevd",
-        "Vi trenger tilgang til bildegalleriet for å velge et bilde."
+        t('permission_required_title'),
+        t('gallery_receipt_desc')
       );
       return;
     }
@@ -367,7 +369,7 @@ export default function ScanReceiptScreen() {
           type: analysis.merchant || "Bilvask",
           notes: analysis.description,
         });
-        Alert.alert("Lagt til!", "Vasken er registrert i historikken.", [
+        Alert.alert(t('added_title'), t('wash_added'), [
           { text: "OK", onPress: () => router.back() },
         ]);
         break;
@@ -382,7 +384,7 @@ export default function ScanReceiptScreen() {
           location: analysis.merchant ?? undefined,
           receiptImages: selectedImage ? [selectedImage] : undefined,
         });
-        Alert.alert("Lagt til!", "Servicen er registrert i historikken.", [
+        Alert.alert(t('added_title'), t('service_added'), [
           { text: "OK", onPress: () => router.back() },
         ]);
         break;
@@ -410,7 +412,7 @@ export default function ScanReceiptScreen() {
         router.back();
         setTimeout(() => {
           router.push({
-            pathname: "/tires",
+            pathname: "/tires" as any,
             params: {
               prefillData: JSON.stringify(tireData),
             },
@@ -420,8 +422,8 @@ export default function ScanReceiptScreen() {
 
       case "other":
         Alert.alert(
-          "Ukjent kategori",
-          "Denne kvitteringen ble ikke kategorisert som vask, service eller dekk. Legg den til manuelt i riktig kategori.",
+          t('unknown_category'),
+          t('unknown_category_desc'),
           [{ text: "OK", onPress: () => router.back() }]
         );
         break;
@@ -448,13 +450,13 @@ export default function ScanReceiptScreen() {
   const getCategoryName = (category: string) => {
     switch (category) {
       case "wash":
-        return "Bilvask";
+        return t('car_wash_label');
       case "service":
-        return "Service";
+        return t('service');
       case "tires":
-        return "Dekk";
+        return t('tires');
       default:
-        return "Annet";
+        return t('other_label');
     }
   };
 
@@ -475,7 +477,7 @@ export default function ScanReceiptScreen() {
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <Stack.Screen
         options={{
-          title: "Skann dokument",
+          title: t('scan_document'),
           headerStyle: { backgroundColor: Colors.cardBackground },
           headerShadowVisible: false,
         }}
@@ -491,10 +493,9 @@ export default function ScanReceiptScreen() {
             <View style={styles.iconWrapper}>
               <Camera size={48} color={Colors.primary} strokeWidth={1.5} />
             </View>
-            <Text style={styles.emptyTitle}>Skann kvittering eller servicehefte</Text>
+            <Text style={styles.emptyTitle}>{t('scan_receipt_or_service')}</Text>
             <Text style={styles.emptyText}>
-              Ta et bilde av en kvittering eller en side fra serviceheftet ditt. AI vil
-              analysere dokumentet og hente ut all relevant informasjon om bilen.
+              {t('scan_receipt_desc')}
             </Text>
 
             <View style={styles.buttonGroup}>
@@ -504,7 +505,7 @@ export default function ScanReceiptScreen() {
                 activeOpacity={0.8}
               >
                 <Camera size={20} color="#fff" strokeWidth={2} />
-                <Text style={styles.primaryButtonText}>Ta bilde</Text>
+                <Text style={styles.primaryButtonText}>{t('take_photo')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -513,7 +514,7 @@ export default function ScanReceiptScreen() {
                 activeOpacity={0.8}
               >
                 <Upload size={20} color={Colors.primary} strokeWidth={2} />
-                <Text style={styles.secondaryButtonText}>Last opp bilde</Text>
+                <Text style={styles.secondaryButtonText}>{t('upload_image')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -538,9 +539,9 @@ export default function ScanReceiptScreen() {
             {analyzing ? (
               <View style={styles.analysingCard}>
                 <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={styles.analysingText}>Analyserer kvittering...</Text>
+                <Text style={styles.analysingText}>{t('analyzing_receipt')}</Text>
                 <Text style={styles.analysingSubtext}>
-                  Dette kan ta noen sekunder
+                  {t('may_take_seconds')}
                 </Text>
               </View>
             ) : analysis ? (
@@ -559,17 +560,17 @@ export default function ScanReceiptScreen() {
                   </View>
                   <View style={styles.confidenceBadge}>
                     <Text style={styles.confidenceText}>
-                      {analysis.confidence}% sikker
+                      {t('confident', { value: analysis.confidence })}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.detailsSection}>
-                  <Text style={styles.sectionTitle}>Detaljer</Text>
+                  <Text style={styles.sectionTitle}>{t('details')}</Text>
 
                   {analysis.description && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Beskrivelse</Text>
+                      <Text style={styles.detailLabel}>{t('description')}</Text>
                       <Text style={styles.detailValue}>
                         {analysis.description}
                       </Text>
@@ -578,14 +579,14 @@ export default function ScanReceiptScreen() {
 
                   {analysis.merchant && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Forretning</Text>
+                      <Text style={styles.detailLabel}>{t('merchant')}</Text>
                       <Text style={styles.detailValue}>{analysis.merchant}</Text>
                     </View>
                   )}
 
                   {analysis.amount && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Beløp</Text>
+                      <Text style={styles.detailLabel}>{t('amount')}</Text>
                       <Text style={styles.detailValue}>
                         {analysis.amount.toLocaleString("no-NO")} kr
                       </Text>
@@ -594,7 +595,7 @@ export default function ScanReceiptScreen() {
 
                   {analysis.date && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Dato</Text>
+                      <Text style={styles.detailLabel}>{t('date')}</Text>
                       <Text style={styles.detailValue}>
                         {new Date(analysis.date).toLocaleDateString("no-NO", {
                           day: "numeric",
@@ -613,7 +614,7 @@ export default function ScanReceiptScreen() {
 
                   {analysis.mileage && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Kilometerstand</Text>
+                      <Text style={styles.detailLabel}>{t('mileage')}</Text>
                       <Text style={styles.detailValue}>
                         {analysis.mileage.toLocaleString("no-NO")} km
                       </Text>
@@ -622,7 +623,7 @@ export default function ScanReceiptScreen() {
 
                   {analysis.nextServiceDue && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Neste service ved</Text>
+                      <Text style={styles.detailLabel}>{t('next_service_at')}</Text>
                       <Text style={styles.detailValue}>
                         {analysis.nextServiceDue.toLocaleString("no-NO")} km
                       </Text>
@@ -631,7 +632,7 @@ export default function ScanReceiptScreen() {
 
                   {analysis.items && analysis.items.length > 0 && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Poster</Text>
+                      <Text style={styles.detailLabel}>{t('items')}</Text>
                       <View style={styles.itemsList}>
                         {analysis.items.map((item, index) => (
                           <Text key={index} style={styles.itemText}>
@@ -651,7 +652,7 @@ export default function ScanReceiptScreen() {
                   >
                     <CheckCircle2 size={20} color="#fff" strokeWidth={2} />
                     <Text style={styles.confirmButtonText}>
-                      Bekreft og legg til
+                      {t('confirm_and_add')}
                     </Text>
                   </TouchableOpacity>
 
@@ -663,7 +664,7 @@ export default function ScanReceiptScreen() {
                     }}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.retryButtonText}>Prøv igjen</Text>
+                    <Text style={styles.retryButtonText}>{t('try_again')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

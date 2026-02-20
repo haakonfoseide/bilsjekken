@@ -13,6 +13,7 @@ import {
   InputAccessoryView,
 } from "react-native";
 import { Stack } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useCallback, useMemo } from "react";
 import {
@@ -25,18 +26,22 @@ import {
   Gauge,
   Calendar,
   TrendingUp,
+  Pencil,
   Keyboard as KeyboardIcon,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
+import type { FuelRecord } from "@/types/car";
 
 export default function FuelScreen() {
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { carInfo, fuelRecords, addFuelRecord, deleteFuelRecord } = useCarData();
+  const { carInfo, fuelRecords, addFuelRecord, updateFuelRecord, deleteFuelRecord } = useCarData();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<string | null>(null);
   const [liters, setLiters] = useState("");
   const [pricePerLiter, setPricePerLiter] = useState("");
   const [currentMileage, setCurrentMileage] = useState("");
@@ -44,6 +49,17 @@ export default function FuelScreen() {
   const [isFullTank, setIsFullTank] = useState(true);
   const [fuelDate, setFuelDate] = useState(new Date().toISOString().split("T")[0]);
   const inputAccessoryViewID = "fuel-keyboard-toolbar";
+
+  const resetForm = useCallback(() => {
+    setLiters("");
+    setPricePerLiter("");
+    setCurrentMileage("");
+    setNotes("");
+    setIsFullTank(true);
+    setFuelDate(new Date().toISOString().split("T")[0]);
+    setEditingRecord(null);
+    setIsModalVisible(false);
+  }, []);
 
   const formatPriceInput = useCallback((value: string) => {
     const cleaned = value.replace(/[^0-9,\.]/g, "").replace(",", ".");
@@ -63,23 +79,15 @@ export default function FuelScreen() {
     Keyboard.dismiss();
   }, []);
 
-  // Sort records by date descending
   const sortedRecords = useMemo(() => {
     return [...fuelRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [fuelRecords]);
 
-  // Calculate stats
   const stats = useMemo(() => {
     if (sortedRecords.length < 2) return null;
 
     let totalLiters = 0;
     let totalCost = 0;
-    
-    // We can only calculate consumption between full tanks or consecutive records if we assume logic
-    // Simple approach: Avg consumption over all records where we have distance
-    
-    // Calculate distance between records
-    // We need to iterate from oldest to newest to calc distance
     const chronological = [...sortedRecords].reverse();
     let validConsumptionCount = 0;
     let totalConsumption = 0;
@@ -90,34 +98,27 @@ export default function FuelScreen() {
 
       if (current.mileage && prev.mileage) {
         const dist = current.mileage - prev.mileage;
-        if (dist > 0 && current.fullTank) { // Only count if filled to full for accurate consumption? Or just estimate.
-           // Actually, if I fill 50L now, and drove 500km since last fill.
-           // Consumption is 50L / 500km * 10 = 1.0 L/mil (or *100 for L/100km)
-           // Standard is L/mil in Norway usually or L/100km. Let's do L/mil (liter per 10km) or L/100km.
-           // User asked for "oversikt over forbruket".
-           
-           const consumption = (current.liters / dist) * 10; // Liters per mil (10km)
-           totalConsumption += consumption;
-           validConsumptionCount++;
-           // totalDistance += dist;
+        if (dist > 0 && current.fullTank) {
+          const consumption = (current.liters / dist) * 10;
+          totalConsumption += consumption;
+          validConsumptionCount++;
         }
       }
-      
+
       if (current.liters) totalLiters += current.liters;
       if (current.totalCost) totalCost += current.totalCost;
       else if (current.liters && current.pricePerLiter) totalCost += (current.liters * current.pricePerLiter);
     }
-    
-    // Add first record liters/cost
+
     if (chronological.length > 0) {
-        const first = chronological[0];
-        if (first.liters) totalLiters += first.liters;
-        if (first.totalCost) totalCost += first.totalCost;
-        else if (first.liters && first.pricePerLiter) totalCost += (first.liters * first.pricePerLiter);
+      const first = chronological[0];
+      if (first.liters) totalLiters += first.liters;
+      if (first.totalCost) totalCost += first.totalCost;
+      else if (first.liters && first.pricePerLiter) totalCost += (first.liters * first.pricePerLiter);
     }
 
     const avgConsumption = validConsumptionCount > 0 ? totalConsumption / validConsumptionCount : 0;
-    
+
     return {
       avgConsumption: avgConsumption.toFixed(2),
       totalCost: Math.round(totalCost),
@@ -125,24 +126,24 @@ export default function FuelScreen() {
     };
   }, [sortedRecords]);
 
-  const handleAddFuel = useCallback(() => {
+  const handleSaveFuel = useCallback(() => {
     if (!liters || !currentMileage) {
-      Alert.alert("Mangler info", "Vennligst fyll inn antall liter og kilometerstand.");
+      Alert.alert(t('missing_info'), t('fuel_missing_fields'));
       return;
     }
 
     const litersNum = parseFloat(liters.replace(",", "."));
     const priceNum = pricePerLiter ? parseFloat(pricePerLiter.replace(",", ".")) : undefined;
     const mileageNum = parseInt(currentMileage.replace(/\s/g, ""), 10);
-    
+
     if (isNaN(litersNum) || isNaN(mileageNum)) {
-       Alert.alert("Ugyldig data", "Sjekk at tallene er skrevet riktig.");
-       return;
+      Alert.alert(t('invalid_value'), t('fuel_check_numbers'));
+      return;
     }
 
     const totalCost = priceNum ? litersNum * priceNum : undefined;
 
-    addFuelRecord({
+    const recordData = {
       date: new Date(fuelDate).toISOString(),
       liters: litersNum,
       pricePerLiter: priceNum,
@@ -150,28 +151,43 @@ export default function FuelScreen() {
       mileage: mileageNum,
       fullTank: isFullTank,
       notes: notes.trim() || undefined,
-    });
+    };
+
+    if (editingRecord) {
+      updateFuelRecord(editingRecord, recordData);
+    } else {
+      addFuelRecord(recordData);
+    }
 
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
-    setLiters("");
-    setPricePerLiter("");
-    setCurrentMileage("");
-    setNotes("");
-    setFuelDate(new Date().toISOString().split("T")[0]);
-    setIsModalVisible(false);
-  }, [liters, pricePerLiter, currentMileage, notes, isFullTank, addFuelRecord]);
+    resetForm();
+  }, [liters, pricePerLiter, currentMileage, notes, isFullTank, fuelDate, editingRecord, addFuelRecord, updateFuelRecord, resetForm, t]);
+
+  const handleEdit = useCallback((record: FuelRecord) => {
+    setEditingRecord(record.id);
+    setFuelDate(new Date(record.date).toISOString().split("T")[0]);
+    setLiters(record.liters.toString());
+    setPricePerLiter(record.pricePerLiter?.toString().replace(".", ",") || "");
+    setCurrentMileage(record.mileage?.toString() || "");
+    setNotes(record.notes || "");
+    setIsFullTank(record.fullTank ?? true);
+    setIsModalVisible(true);
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
 
   const handleDelete = useCallback((id: string) => {
     Alert.alert(
-      "Slett fylling",
-      "Er du sikker på at du vil slette denne oppføringen?",
+      t('fuel_delete_title'),
+      t('fuel_delete_confirm'),
       [
-        { text: "Avbryt", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "Slett",
+          text: t('delete'),
           style: "destructive",
           onPress: () => {
             deleteFuelRecord(id);
@@ -182,21 +198,21 @@ export default function FuelScreen() {
         },
       ]
     );
-  }, [deleteFuelRecord]);
+  }, [deleteFuelRecord, t]);
 
   const formatDate = useCallback((dateString: string) => {
-    return new Date(dateString).toLocaleDateString("no-NO", {
+    return new Date(dateString).toLocaleDateString(i18n.language === 'nb' ? 'no-NO' : i18n.language, {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
-  }, []);
+  }, [i18n.language]);
 
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Drivstoff",
+          title: t('fuel'),
           headerStyle: { backgroundColor: "#F8FAFC" },
         }}
       />
@@ -209,7 +225,6 @@ export default function FuelScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats Header */}
         {stats && (
           <View style={styles.statsCard}>
             <View style={styles.statsRow}>
@@ -218,18 +233,18 @@ export default function FuelScreen() {
                   <TrendingUp size={18} color="#0E7490" />
                 </View>
                 <View>
-                  <Text style={styles.statLabel}>Snittforbruk</Text>
+                  <Text style={styles.statLabel}>{t('avg_consumption')}</Text>
                   <Text style={styles.statValue}>{stats.avgConsumption} l/mil</Text>
                 </View>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                 <View style={[styles.statIcon, { backgroundColor: "#ECFDF5" }]}>
+                <View style={[styles.statIcon, { backgroundColor: "#ECFDF5" }]}>
                   <Coins size={18} color="#059669" />
                 </View>
                 <View>
-                  <Text style={styles.statLabel}>Totalkostnad</Text>
-                  <Text style={styles.statValue}>{stats.totalCost.toLocaleString("no-NO")} kr</Text>
+                  <Text style={styles.statLabel}>{t('total_cost')}</Text>
+                  <Text style={styles.statValue}>{stats.totalCost.toLocaleString(i18n.language === 'nb' ? 'no-NO' : i18n.language)} kr</Text>
                 </View>
               </View>
             </View>
@@ -239,87 +254,94 @@ export default function FuelScreen() {
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
-            // Pre-fill mileage if available from car info
             if (carInfo?.currentMileage) {
               setCurrentMileage(carInfo.currentMileage.toString());
             }
+            setFuelDate(new Date().toISOString().split("T")[0]);
             setIsModalVisible(true);
           }}
           activeOpacity={0.8}
         >
           <Plus size={22} color="#fff" strokeWidth={2.5} />
-          <Text style={styles.addButtonText}>Registrer fylling</Text>
+          <Text style={styles.addButtonText}>{t('register_fuel')}</Text>
         </TouchableOpacity>
 
         <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>Historikk</Text>
+          <Text style={styles.listTitle}>{t('history')}</Text>
         </View>
 
         {sortedRecords.length > 0 ? (
           <View style={styles.list}>
             {sortedRecords.map((record) => (
               <View key={record.id} style={styles.recordCard}>
-                 <View style={styles.recordHeader}>
-                    <View style={styles.dateContainer}>
-                      <Calendar size={14} color={Colors.text.light} />
-                      <Text style={styles.dateText}>{formatDate(record.date)}</Text>
-                    </View>
-                    <TouchableOpacity 
+                <View style={styles.recordHeader}>
+                  <View style={styles.dateContainer}>
+                    <Calendar size={14} color={Colors.text.light} />
+                    <Text style={styles.dateText}>{formatDate(record.date)}</Text>
+                  </View>
+                  <View style={styles.recordActions}>
+                    <TouchableOpacity
+                      onPress={() => handleEdit(record)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={styles.actionBtn}
+                    >
+                      <Pencil size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       onPress={() => handleDelete(record.id)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={styles.actionBtn}
                     >
                       <Trash2 size={16} color={Colors.text.light} />
                     </TouchableOpacity>
-                 </View>
-                 
-                 <View style={styles.recordDetails}>
-                    <View style={styles.detailItem}>
-                       <Droplet size={18} color={Colors.primary} />
-                       <Text style={styles.detailValue}>{record.liters} L</Text>
-                    </View>
-                    
-                    {record.pricePerLiter && (
-                       <View style={styles.detailItem}>
-                         <Text style={styles.detailLabel}>Pris/l:</Text>
-                         <Text style={styles.detailValue}>{record.pricePerLiter} kr</Text>
-                       </View>
-                    )}
+                  </View>
+                </View>
 
-                    {record.totalCost && (
-                       <View style={styles.detailItem}>
-                         <Text style={styles.detailValueBold}>{Math.round(record.totalCost)} kr</Text>
-                       </View>
-                    )}
-                 </View>
-                 
-                 {record.mileage && (
-                   <View style={styles.mileageRow}>
-                     <Gauge size={14} color={Colors.text.light} />
-                     <Text style={styles.mileageText}>{record.mileage.toLocaleString("no-NO")} km</Text>
-                   </View>
-                 )}
+                <View style={styles.recordDetails}>
+                  <View style={styles.detailItem}>
+                    <Droplet size={18} color={Colors.primary} />
+                    <Text style={styles.detailValue}>{record.liters} L</Text>
+                  </View>
+
+                  {record.pricePerLiter != null && (
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>{t('price_per_liter_short')}:</Text>
+                      <Text style={styles.detailValue}>{record.pricePerLiter} kr</Text>
+                    </View>
+                  )}
+
+                  {record.totalCost != null && (
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailValueBold}>{Math.round(record.totalCost)} kr</Text>
+                    </View>
+                  )}
+                </View>
+
+                {record.mileage != null && (
+                  <View style={styles.mileageRow}>
+                    <Gauge size={14} color={Colors.text.light} />
+                    <Text style={styles.mileageText}>{record.mileage.toLocaleString(i18n.language === 'nb' ? 'no-NO' : i18n.language)} km</Text>
+                  </View>
+                )}
               </View>
             ))}
           </View>
         ) : (
           <View style={styles.emptyState}>
-             <View style={styles.emptyIcon}>
-                <Fuel size={40} color={Colors.text.light} strokeWidth={1.5} />
-             </View>
-             <Text style={styles.emptyTitle}>Ingen fyllinger</Text>
-             <Text style={styles.emptyText}>
-               Registrer din første fylling for å få oversikt over forbruk og kostnader.
-             </Text>
+            <View style={styles.emptyIcon}>
+              <Fuel size={40} color={Colors.text.light} strokeWidth={1.5} />
+            </View>
+            <Text style={styles.emptyTitle}>{t('no_fuel_records')}</Text>
+            <Text style={styles.emptyText}>{t('no_fuel_desc')}</Text>
           </View>
         )}
       </ScrollView>
 
-      {/* Add Modal */}
       <Modal
         visible={isModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
+        onRequestClose={resetForm}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -327,24 +349,26 @@ export default function FuelScreen() {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ny fylling</Text>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+              <Text style={styles.modalTitle}>
+                {editingRecord ? t('edit_fuel') : t('new_fuel')}
+              </Text>
+              <TouchableOpacity onPress={resetForm}>
                 <X size={24} color={Colors.text.secondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Dato</Text>
+                <Text style={styles.label}>{t('date')}</Text>
                 <DatePicker
                   value={fuelDate}
                   onChange={setFuelDate}
-                  placeholder="Velg dato"
+                  placeholder={t('select_date')}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Antall liter</Text>
+                <Text style={styles.label}>{t('liters')}</Text>
                 <View style={styles.inputContainer}>
                   <Droplet size={20} color={Colors.text.light} style={styles.inputIcon} />
                   <TextInput
@@ -362,7 +386,7 @@ export default function FuelScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Pris per liter (valgfri)</Text>
+                <Text style={styles.label}>{t('price_per_liter')}</Text>
                 <View style={styles.inputContainer}>
                   <Coins size={20} color={Colors.text.light} style={styles.inputIcon} />
                   <TextInput
@@ -381,7 +405,7 @@ export default function FuelScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Kilometerstand</Text>
+                <Text style={styles.label}>{t('mileage')}</Text>
                 <View style={styles.inputContainer}>
                   <Gauge size={20} color={Colors.text.light} style={styles.inputIcon} />
                   <TextInput
@@ -399,14 +423,14 @@ export default function FuelScreen() {
               </View>
 
               <View style={styles.toggleRow}>
-                <Text style={styles.label}>Full tank?</Text>
+                <Text style={styles.label}>{t('full_tank')}</Text>
                 <View style={styles.toggleContainer}>
                   <TouchableOpacity
                     style={[styles.toggleOption, isFullTank && styles.toggleOptionActive]}
                     onPress={() => setIsFullTank(true)}
                   >
                     <Text style={[styles.toggleOptionText, isFullTank && styles.toggleOptionTextActive]}>
-                      JA
+                      {t('yes')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -414,26 +438,28 @@ export default function FuelScreen() {
                     onPress={() => setIsFullTank(false)}
                   >
                     <Text style={[styles.toggleOptionText, !isFullTank && styles.toggleOptionTextActive]}>
-                      NEI
+                      {t('no')}
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Notat (valgfri)</Text>
+                <Text style={styles.label}>{t('notes_optional')}</Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   value={notes}
                   onChangeText={setNotes}
-                  placeholder="F.eks. Sommerferie..."
+                  placeholder={t('fuel_notes_placeholder')}
                   placeholderTextColor="#94A3B8"
                   multiline
                 />
               </View>
 
-              <TouchableOpacity style={styles.saveButton} onPress={handleAddFuel}>
-                <Text style={styles.saveButtonText}>Lagre</Text>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSaveFuel}>
+                <Text style={styles.saveButtonText}>
+                  {editingRecord ? t('update') : t('save')}
+                </Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -445,7 +471,7 @@ export default function FuelScreen() {
           <View style={styles.keyboardToolbar}>
             <TouchableOpacity style={styles.keyboardDoneButton} onPress={dismissKeyboard}>
               <KeyboardIcon size={18} color={Colors.primary} />
-              <Text style={styles.keyboardDoneText}>Ferdig</Text>
+              <Text style={styles.keyboardDoneText}>{t('done')}</Text>
             </TouchableOpacity>
           </View>
         </InputAccessoryView>
@@ -465,7 +491,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
-
   statsCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -510,7 +535,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#E2E8F0",
     marginHorizontal: 16,
   },
-
   addButton: {
     backgroundColor: Colors.primary,
     flexDirection: "row",
@@ -531,7 +555,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700" as const,
   },
-
   listHeader: {
     marginBottom: 12,
   },
@@ -540,7 +563,6 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
     color: Colors.text.primary,
   },
-
   list: {
     gap: 12,
   },
@@ -569,6 +591,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
     fontWeight: "500" as const,
+  },
+  recordActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  actionBtn: {
+    padding: 8,
   },
   recordDetails: {
     flexDirection: "row",
@@ -607,7 +637,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
   },
-
   emptyState: {
     alignItems: "center",
     paddingVertical: 40,
@@ -634,7 +663,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
-
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",

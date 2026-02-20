@@ -144,7 +144,7 @@ export default function TiresScreen() {
 
   const handleSave = useCallback(() => {
     if (!brand || !purchaseDate || !size) {
-      Alert.alert("Feil", "Vennligst fyll ut alle obligatoriske felt");
+      Alert.alert(t('error'), t('required_fields'));
       return;
     }
 
@@ -200,7 +200,7 @@ export default function TiresScreen() {
   }, []);
 
   const handleDelete = useCallback((id: string) => {
-    confirmDelete("Slett dekksett", "Er du sikker på at du vil slette dette dekksettet?", () => {
+    confirmDelete(t('delete_tire_set'), t('delete_tire_set_confirm'), () => {
       deleteTireSet(id);
       hapticFeedback.success();
     });
@@ -267,7 +267,7 @@ export default function TiresScreen() {
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>{editingRecord ? 'Rediger dekksett' : t('new_tire_set')}</Text>
+              <Text style={styles.formTitle}>{editingRecord ? t('edit_tire_set') : t('new_tire_set')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -280,7 +280,7 @@ export default function TiresScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Type <Text style={styles.required}>*</Text></Text>
+              <Text style={styles.label}>{t('tire_type')} <Text style={styles.required}>*</Text></Text>
               <View style={styles.typeSelector}>
                 <TouchableOpacity
                   style={[styles.typeButton, tireType === "summer" && styles.typeButtonSummer]}
@@ -292,7 +292,7 @@ export default function TiresScreen() {
                 >
                   <Sun size={20} color={tireType === "summer" ? "#fff" : "#F59E0B"} />
                   <Text style={[styles.typeButtonText, tireType === "summer" && styles.typeButtonTextActive]}>
-                    Sommer
+                    {t('summer')}
                   </Text>
                 </TouchableOpacity>
 
@@ -306,7 +306,7 @@ export default function TiresScreen() {
                 >
                   <Snowflake size={20} color={tireType === "winter" ? "#fff" : "#3B82F6"} />
                   <Text style={[styles.typeButtonText, tireType === "winter" && styles.typeButtonTextActive]}>
-                    Vinter
+                    {t('winter')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -314,7 +314,7 @@ export default function TiresScreen() {
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Merke <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>{t('tire_brand')} <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={brand}
@@ -326,7 +326,7 @@ export default function TiresScreen() {
                 />
               </View>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Dimensjon <Text style={styles.required}>*</Text></Text>
+                <Text style={styles.label}>{t('tire_dimension')} <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={size}
@@ -340,11 +340,11 @@ export default function TiresScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Kjøpsdato <Text style={styles.required}>*</Text></Text>
+              <Text style={styles.label}>{t('tire_purchase_date')} <Text style={styles.required}>*</Text></Text>
               <DatePicker
                 value={purchaseDate}
                 onChange={setPurchaseDate}
-                placeholder="Velg dato"
+                placeholder={t('select_date')}
               />
             </View>
 
@@ -353,8 +353,8 @@ export default function TiresScreen() {
                 <View style={styles.switchContent}>
                   <MapPin size={18} color={Colors.primary} />
                   <View style={styles.switchText}>
-                    <Text style={styles.switchLabel}>Dekkhotell</Text>
-                    <Text style={styles.switchDesc}>Lagret hos verksted</Text>
+                    <Text style={styles.switchLabel}>{t('tire_hotel')}</Text>
+                    <Text style={styles.switchDesc}>{t('stored_at_workshop')}</Text>
                   </View>
                 </View>
                 <Switch
@@ -373,7 +373,7 @@ export default function TiresScreen() {
                   style={[styles.input, { marginTop: 12 }]}
                   value={hotelLocation}
                   onChangeText={setHotelLocation}
-                  placeholder="Hvor er dekkene lagret?"
+                  placeholder={t('where_stored')}
                   placeholderTextColor={Colors.text.light}
                   returnKeyType="done"
                   onSubmitEditing={() => Keyboard.dismiss()}
@@ -384,7 +384,7 @@ export default function TiresScreen() {
             <View style={styles.switchCard}>
               <View style={styles.switchRow}>
                 <View style={styles.switchContent}>
-                  <Text style={styles.switchLabel}>Avbalansering inkludert</Text>
+                  <Text style={styles.switchLabel}>{t('balancing_included')}</Text>
                 </View>
                 <Switch
                   value={hasBalancing}
@@ -398,7 +398,7 @@ export default function TiresScreen() {
               </View>
               <View style={[styles.switchRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" }]}>
                 <View style={styles.switchContent}>
-                  <Text style={styles.switchLabel}>Omlegging inkludert</Text>
+                  <Text style={styles.switchLabel}>{t('remounting_included')}</Text>
                 </View>
                 <Switch
                   value={hasRemounting}
@@ -413,12 +413,12 @@ export default function TiresScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Notater</Text>
+              <Text style={styles.label}>{t('notes_optional')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Valgfrie notater..."
+                placeholder={t('optional_notes')}
                 placeholderTextColor={Colors.text.light}
                 multiline
                 numberOfLines={2}
@@ -429,14 +429,14 @@ export default function TiresScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Kvitteringer</Text>
+              <Text style={styles.label}>{t('receipts')}</Text>
               <TouchableOpacity
                 style={styles.addImageButton}
                 onPress={handleShowImageOptions}
                 activeOpacity={0.8}
               >
                 <Camera size={20} color={Colors.primary} strokeWidth={2} />
-                <Text style={styles.addImageText}>Legg til bilde</Text>
+                <Text style={styles.addImageText}>{t('add_image')}</Text>
               </TouchableOpacity>
 
               {receiptImages.length > 0 && (
@@ -455,7 +455,7 @@ export default function TiresScreen() {
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSave} activeOpacity={0.8}>
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>{editingRecord ? 'Oppdater dekksett' : 'Lagre dekksett'}</Text>
+              <Text style={styles.submitButtonText}>{editingRecord ? t('update_tire_set') : t('save_tire_set')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -520,7 +520,7 @@ export default function TiresScreen() {
                         <View style={styles.tireDetailItem}>
                           <Clock size={14} color={Colors.text.light} />
                           <Text style={[styles.tireDetailText, isOld && styles.tireDetailWarning]}>
-                            {age.years} år {age.months} mnd
+                            {age.years} {t('years_short')} {age.months} {t('months_short')}
                           </Text>
                         </View>
                         {tire.isAtTireHotel && (
@@ -533,7 +533,7 @@ export default function TiresScreen() {
 
                       {isOld && (
                         <View style={styles.warningBanner}>
-                          <Text style={styles.warningBannerText}>Anbefales å bytte</Text>
+                          <Text style={styles.warningBannerText}>{t('recommend_replace')}</Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -592,7 +592,7 @@ export default function TiresScreen() {
                         <View style={styles.tireDetailItem}>
                           <Clock size={14} color={Colors.text.light} />
                           <Text style={[styles.tireDetailText, isOld && styles.tireDetailWarning]}>
-                            {age.years} år {age.months} mnd
+                            {age.years} {t('years_short')} {age.months} {t('months_short')}
                           </Text>
                         </View>
                         {tire.isAtTireHotel && (
@@ -605,7 +605,7 @@ export default function TiresScreen() {
 
                       {isOld && (
                         <View style={styles.warningBanner}>
-                          <Text style={styles.warningBannerText}>Anbefales å bytte</Text>
+                          <Text style={styles.warningBannerText}>{t('recommend_replace')}</Text>
                         </View>
                       )}
                     </TouchableOpacity>

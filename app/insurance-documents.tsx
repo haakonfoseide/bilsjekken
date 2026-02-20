@@ -32,6 +32,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 import type { InsuranceDocument } from "@/types/car";
@@ -39,6 +40,7 @@ import type { InsuranceDocument } from "@/types/car";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function InsuranceDocumentsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { carInfo, insuranceDocuments, addInsuranceDocument, deleteInsuranceDocument, updateInsuranceDocument } = useCarData();
   
@@ -55,8 +57,8 @@ export default function InsuranceDocumentsScreen() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Tilgang kreves",
-        "Vi trenger tilgang til kameraet for å ta bilder av forsikringsdokumenter.",
+        t('permission_required'),
+        t('camera_permission_desc'),
         [{ text: "OK" }]
       );
       return false;
@@ -68,8 +70,8 @@ export default function InsuranceDocumentsScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Tilgang kreves",
-        "Vi trenger tilgang til bildegalleriet for å velge forsikringsdokumenter.",
+        t('permission_required'),
+        t('gallery_permission_desc'),
         [{ text: "OK" }]
       );
       return false;
@@ -107,7 +109,7 @@ export default function InsuranceDocumentsScreen() {
       }
     } catch (error) {
       console.error("[InsuranceDocuments] Camera error:", error);
-      Alert.alert("Feil", "Kunne ikke ta bilde. Prøv igjen.");
+      Alert.alert(t('error'), t('try_again'));
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +147,7 @@ export default function InsuranceDocumentsScreen() {
       }
     } catch (error) {
       console.error("[InsuranceDocuments] Image picker error:", error);
-      Alert.alert("Feil", "Kunne ikke velge bilder. Prøv igjen.");
+      Alert.alert(t('error'), t('try_again'));
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +180,7 @@ export default function InsuranceDocumentsScreen() {
       }
     } catch (error) {
       console.error("[InsuranceDocuments] PDF picker error:", error);
-      Alert.alert("Feil", "Kunne ikke velge PDF. Prøv igjen.");
+      Alert.alert(t('error'), t('try_again'));
     } finally {
       setIsLoading(false);
     }
@@ -186,7 +188,7 @@ export default function InsuranceDocumentsScreen() {
 
   const handleSaveNote = useCallback(() => {
     if (!noteText.trim()) {
-      Alert.alert("Mangler tekst", "Du må skrive noe i notatet.");
+      Alert.alert(t('missing_text'), t('write_something'));
       return;
     }
 
@@ -220,12 +222,12 @@ export default function InsuranceDocumentsScreen() {
 
   const handleDeleteDocument = useCallback((doc: InsuranceDocument) => {
     Alert.alert(
-      "Slett dokument",
-      "Er du sikker på at du vil slette dette dokumentet?",
+      t('delete_document'),
+      t('delete_document_confirm'),
       [
-        { text: "Avbryt", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "Slett",
+          text: t('delete'),
           style: "destructive",
           onPress: () => {
             deleteInsuranceDocument(doc.id);
@@ -246,11 +248,11 @@ export default function InsuranceDocumentsScreen() {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(doc.uri);
         } else {
-          Alert.alert("Info", "Deling er ikke tilgjengelig på denne enheten.");
+          Alert.alert("Info", t('sharing_unavailable'));
         }
       } catch (error) {
         console.error("Error sharing PDF:", error);
-        Alert.alert("Feil", "Kunne ikke åpne PDF.");
+        Alert.alert(t('error'), t('could_not_open'));
       }
     } else if (doc.type === 'note') {
       Alert.alert(doc.name || "Notat", doc.notes);
@@ -282,7 +284,7 @@ export default function InsuranceDocumentsScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Forsikringsdokumenter",
+          title: t('insurance_documents'),
           headerStyle: { backgroundColor: "#F8FAFC" },
         }}
       />
@@ -301,10 +303,10 @@ export default function InsuranceDocumentsScreen() {
           </View>
           <View style={styles.infoContent}>
             <Text style={styles.infoTitle}>
-              {carInfo?.insurance || "Ingen forsikring registrert"}
+              {carInfo?.insurance || t('no_insurance_registered')}
             </Text>
             <Text style={styles.infoSubtitle}>
-              Last opp forsikringsdokumenter, bilder av skademelding, eller skriv notater.
+              {t('upload_insurance_desc')}
             </Text>
           </View>
         </View>
@@ -317,7 +319,7 @@ export default function InsuranceDocumentsScreen() {
             disabled={isLoading}
           >
             <Camera size={20} color="#fff" strokeWidth={2.5} />
-            <Text style={styles.actionButtonText}>Ta bilde</Text>
+            <Text style={styles.actionButtonText}>{t('take_photo')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -327,7 +329,7 @@ export default function InsuranceDocumentsScreen() {
             disabled={isLoading}
           >
             <ImagePlus size={20} color={Colors.primary} strokeWidth={2.5} />
-            <Text style={[styles.actionButtonText, { color: Colors.primary }]}>Bilde</Text>
+            <Text style={[styles.actionButtonText, { color: Colors.primary }]}>{t('image_label')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -354,21 +356,21 @@ export default function InsuranceDocumentsScreen() {
             disabled={isLoading}
           >
             <StickyNote size={20} color="#16A34A" strokeWidth={2.5} />
-            <Text style={[styles.actionButtonText, { color: "#15803D" }]}>Notat</Text>
+            <Text style={[styles.actionButtonText, { color: "#15803D" }]}>{t('note_label')}</Text>
           </TouchableOpacity>
         </View>
 
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Behandler...</Text>
+            <Text style={styles.loadingText}>{t('processing')}</Text>
           </View>
         )}
 
         {insuranceDocuments.length > 0 ? (
           <View style={styles.documentsSection}>
             <Text style={styles.sectionTitle}>
-              Dokumenter ({insuranceDocuments.length})
+              {t('documents_count', { count: insuranceDocuments.length })}
             </Text>
             <View style={styles.documentsGrid}>
               {insuranceDocuments.map((doc) => (
@@ -449,9 +451,9 @@ export default function InsuranceDocumentsScreen() {
             <View style={styles.emptyIconContainer}>
               <FileText size={40} color={Colors.text.light} strokeWidth={1.5} />
             </View>
-            <Text style={styles.emptyTitle}>Ingen dokumenter</Text>
+            <Text style={styles.emptyTitle}>{t('no_documents')}</Text>
             <Text style={styles.emptyText}>
-              Last opp forsikringsdokumenter for å ha de lett tilgjengelig.
+              {t('upload_documents_desc')}
             </Text>
           </View>
         )}
@@ -494,7 +496,7 @@ export default function InsuranceDocumentsScreen() {
         >
           <View style={styles.noteModalContent}>
             <View style={styles.noteModalHeader}>
-              <Text style={styles.noteModalTitle}>{editingDocument ? "Rediger notat" : "Nytt notat"}</Text>
+              <Text style={styles.noteModalTitle}>{editingDocument ? t('edit_note') : t('new_note')}</Text>
               <TouchableOpacity onPress={() => {
                 setIsNoteModalVisible(false);
                 setEditingDocument(null);
@@ -506,7 +508,7 @@ export default function InsuranceDocumentsScreen() {
             </View>
             
             <View style={styles.inputGroup}>
-               <Text style={styles.label}>Tittel (valgfri)</Text>
+               <Text style={styles.label}>{t('title_optional')}</Text>
                <TextInput
                  style={styles.input}
                  value={noteTitle}
@@ -517,12 +519,12 @@ export default function InsuranceDocumentsScreen() {
             </View>
 
             <View style={[styles.inputGroup, { flex: 1 }]}>
-               <Text style={styles.label}>Innhold</Text>
+               <Text style={styles.label}>{t('content_label')}</Text>
                <TextInput
                  style={[styles.input, styles.textArea]}
                  value={noteText}
                  onChangeText={setNoteText}
-                 placeholder="Skriv notatet her..."
+                 placeholder={t('write_note_here')}
                  placeholderTextColor="#94A3B8"
                  multiline
                  textAlignVertical="top"
@@ -533,7 +535,7 @@ export default function InsuranceDocumentsScreen() {
               style={styles.saveButton}
               onPress={handleSaveNote}
             >
-              <Text style={styles.saveButtonText}>{editingDocument ? "Oppdater notat" : "Lagre notat"}</Text>
+              <Text style={styles.saveButtonText}>{editingDocument ? t('update_note') : t('save_note')}</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

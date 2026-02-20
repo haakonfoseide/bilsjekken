@@ -367,14 +367,14 @@ export default function ServiceScreen() {
 
                 <View style={styles.recordDetails}>
                   <View style={styles.recordDetailItem}>
-                    <Text style={styles.recordDetailLabel}>Km-stand</Text>
+                    <Text style={styles.recordDetailLabel}>{t('service_mileage')}</Text>
                     <Text style={styles.recordDetailValue}>
                       {record.mileage.toLocaleString("no-NO")} km
                     </Text>
                   </View>
                   {record.cost && (
                     <View style={styles.recordDetailItem}>
-                      <Text style={styles.recordDetailLabel}>Kostnad</Text>
+                      <Text style={styles.recordDetailLabel}>{t('cost')}</Text>
                       <Text style={[styles.recordDetailValue, { color: Colors.success }]}>
                         {record.cost.toLocaleString("no-NO")} kr
                       </Text>
@@ -382,7 +382,7 @@ export default function ServiceScreen() {
                   )}
                   {record.location && (
                     <View style={styles.recordDetailItem}>
-                      <Text style={styles.recordDetailLabel}>Verksted</Text>
+                      <Text style={styles.recordDetailLabel}>{t('workshop')}</Text>
                       <Text style={styles.recordDetailValue}>{record.location}</Text>
                     </View>
                   )}

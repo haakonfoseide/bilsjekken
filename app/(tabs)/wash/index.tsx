@@ -17,7 +17,7 @@ import Colors, { typography } from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
 import { hapticFeedback, confirmDelete, formatDateLocalized, getDaysAgo } from "@/lib/utils";
 
-const WASH_TYPES = ["Håndvask", "Automatvask", "Selvvask", "Polering"];
+const WASH_TYPE_KEYS = ["wash_type_handwash", "wash_type_automatic", "wash_type_selfwash", "wash_type_polishing"] as const;
 
 export default function WashScreen() {
   const { t, i18n } = useTranslation();
@@ -69,7 +69,7 @@ export default function WashScreen() {
   }, []);
 
   const handleDelete = useCallback((id: string) => {
-    confirmDelete("Slett vask", "Er du sikker på at du vil slette denne vasken?", () => {
+    confirmDelete(t('delete_wash'), t('delete_wash_confirm'), () => {
       deleteWashRecord(id);
       hapticFeedback.success();
     });
@@ -116,7 +116,7 @@ export default function WashScreen() {
         ) : (
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>{editingRecord ? 'Rediger vask' : t('new_wash')}</Text>
+              <Text style={styles.formTitle}>{editingRecord ? t('edit_wash') : t('new_wash')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -129,41 +129,44 @@ export default function WashScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Dato</Text>
+              <Text style={styles.label}>{t('date')}</Text>
               <DatePicker
                 value={date}
                 onChange={setDate}
-                placeholder="Velg dato"
+                placeholder={t('select_date')}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Type vask</Text>
+              <Text style={styles.label}>{t('wash_type')}</Text>
               <View style={styles.typeChips}>
-                {WASH_TYPES.map((washType) => (
-                  <TouchableOpacity
-                    key={washType}
-                    style={[styles.typeChip, type === washType && styles.typeChipActive]}
-                    onPress={() => {
-                      setType(type === washType ? "" : washType);
-                      hapticFeedback.selection();
-                    }}
-                  >
-                    <Text style={[styles.typeChipText, type === washType && styles.typeChipTextActive]}>
-                      {washType}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {WASH_TYPE_KEYS.map((key) => {
+                  const label = t(key);
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.typeChip, type === label && styles.typeChipActive]}
+                      onPress={() => {
+                        setType(type === label ? "" : label);
+                        hapticFeedback.selection();
+                      }}
+                    >
+                      <Text style={[styles.typeChipText, type === label && styles.typeChipTextActive]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Notater (valgfritt)</Text>
+              <Text style={styles.label}>{t('notes_optional')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="F.eks. brukte nytt vaskemiddel..."
+                placeholder={t('wash_notes_placeholder')}
                 placeholderTextColor={Colors.text.light}
                 multiline
                 numberOfLines={3}
@@ -179,7 +182,7 @@ export default function WashScreen() {
               activeOpacity={0.8}
             >
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>{editingRecord ? 'Oppdater' : 'Lagre'}</Text>
+              <Text style={styles.submitButtonText}>{editingRecord ? t('update') : t('save')}</Text>
             </TouchableOpacity>
           </View>
         )}

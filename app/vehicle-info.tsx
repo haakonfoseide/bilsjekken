@@ -16,6 +16,8 @@ import Colors from "@/constants/colors";
 import { useCarData } from "@/contexts/car-context";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
+import { useTranslation } from "react-i18next";
+import DatePicker from "@/components/DatePicker";
 import type { VehicleSection, CarInfo } from "@/types/car";
 
 const getColorHex = (colorName: string): string => {
@@ -72,6 +74,7 @@ function formatValue(value: string, unit?: string) {
 }
 
 export default function VehicleInfoScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { carInfo, refreshCarInfo, isRefreshing, updateCarInfo, deleteCar, addMileageRecord } = useCarData();
 
@@ -196,16 +199,16 @@ export default function VehicleInfoScreen() {
     if (!carInfo) return;
 
     Alert.alert(
-      "Slett bil",
-      `Er du sikker på at du vil slette ${carInfo.make} ${carInfo.model}?`,
+      t('delete_car'),
+      t('delete_car_confirm', { car: `${carInfo.make} ${carInfo.model}` }),
       [
-        { text: "Avbryt", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "Slett",
+          text: t('delete_car'),
           style: "destructive",
           onPress: () => {
             deleteCar(carInfo.id);
-            router.replace("/");
+            router.replace("/" as any);
             if (Platform.OS !== "web") {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
@@ -230,7 +233,7 @@ export default function VehicleInfoScreen() {
     <View style={styles.container} testID="vehicle-info-screen">
       <Stack.Screen
         options={{
-          title: "Kjøretøydata",
+          title: t('vehicle_info'),
           headerStyle: { backgroundColor: Colors.background },
           headerShadowVisible: false,
           headerLeft: () => (
@@ -247,10 +250,10 @@ export default function VehicleInfoScreen() {
               {isEditing ? (
                 <>
                   <TouchableOpacity onPress={handleCancel} style={styles.headerBtnSecondary}>
-                    <Text style={styles.headerBtnSecondaryText}>Avbryt</Text>
+                    <Text style={styles.headerBtnSecondaryText}>{t('cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={handleSave} style={styles.headerBtnPrimary}>
-                    <Text style={styles.headerBtnPrimaryText}>Lagre</Text>
+                    <Text style={styles.headerBtnPrimaryText}>{t('save')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -261,7 +264,7 @@ export default function VehicleInfoScreen() {
                     disabled={isRefreshing}
                     testID="vehicle-info-refresh"
                   >
-                    <Text style={styles.headerPillText}>{isRefreshing ? "…" : "Oppdater"}</Text>
+                    <Text style={styles.headerPillText}>{isRefreshing ? "…" : t('refresh')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setIsEditing(true)}
@@ -321,7 +324,7 @@ export default function VehicleInfoScreen() {
               onPress={() => handleToggle("generelt")}
               activeOpacity={0.8}
             >
-              <Text style={styles.sectionTitle}>Generell informasjon</Text>
+              <Text style={styles.sectionTitle}>{t('general_info')}</Text>
               {expanded["generelt"] ? (
                 <ChevronUp size={18} color={Colors.text.secondary} />
               ) : (
@@ -332,19 +335,17 @@ export default function VehicleInfoScreen() {
             {expanded["generelt"] && (
               <View style={styles.fields}>
                 {[
-                  { label: "Merke", value: make, onChange: setMake },
-                  { label: "Modell", value: model, onChange: setModel },
-                  { label: "Årsmodell", value: year, onChange: setYear, keyboardType: "numeric" },
-                  { label: "Reg.nr", value: licensePlate, onChange: setLicensePlate, autoCapitalize: "characters" },
-                  { label: "VIN", value: vin, onChange: setVin, autoCapitalize: "characters" },
-                  { label: "Kilometerstand", value: currentMileage, onChange: setCurrentMileage, keyboardType: "numeric", unit: "km" },
-                  { label: "Forsikring", value: insurance, onChange: setInsurance, placeholder: "F.eks. Gjensidige" },
-                  { label: "Farge", value: color, onChange: setColor },
-                  { label: "Drivstoff", value: fuelType, onChange: setFuelType },
-                  { label: "Neste EU-kontroll", value: nextEuControlDate, onChange: setNextEuControlDate, placeholder: "YYYY-MM-DD" },
-                  { label: "Sist godkjent EU", value: euControlDate, onChange: setEuControlDate, placeholder: "YYYY-MM-DD" },
+                  { label: t('make'), value: make, onChange: setMake },
+                  { label: t('model'), value: model, onChange: setModel },
+                  { label: t('year'), value: year, onChange: setYear, keyboardType: "numeric" },
+                  { label: t('license_plate'), value: licensePlate, onChange: setLicensePlate, autoCapitalize: "characters" },
+                  { label: t('vin'), value: vin, onChange: setVin, autoCapitalize: "characters" },
+                  { label: t('mileage'), value: currentMileage, onChange: setCurrentMileage, keyboardType: "numeric", unit: "km" },
+                  { label: t('insurance_company'), value: insurance, onChange: setInsurance },
+                  { label: t('color'), value: color, onChange: setColor },
+                  { label: t('fuel'), value: fuelType, onChange: setFuelType },
                 ].map((field, idx) => (
-                  <View key={field.label} style={[styles.row, idx === 10 && styles.rowLast]}>
+                  <View key={field.label} style={[styles.row, idx === 8 && styles.rowLast]}>
                     <Text style={styles.label}>{field.label}</Text>
                     {isEditing ? (
                       <View style={styles.inputContainer}>
@@ -352,7 +353,7 @@ export default function VehicleInfoScreen() {
                           style={styles.input}
                           value={field.value}
                           onChangeText={field.onChange}
-                          placeholder={field.placeholder || "Verdi"}
+                          placeholder={(field as any).placeholder || t('unknown')}
                           placeholderTextColor={Colors.text.light}
                           keyboardType={field.keyboardType as any}
                           autoCapitalize={field.autoCapitalize as any}
@@ -366,6 +367,40 @@ export default function VehicleInfoScreen() {
                     )}
                   </View>
                 ))}
+
+                <View style={[styles.row]}>
+                  <Text style={styles.label}>{t('next_eu_control')}</Text>
+                  {isEditing ? (
+                    <View style={styles.datePickerContainer}>
+                      <DatePicker
+                        value={nextEuControlDate}
+                        onChange={setNextEuControlDate}
+                        placeholder={t('unknown')}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={styles.value} numberOfLines={2}>
+                      {nextEuControlDate || t('unknown')}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={[styles.row, styles.rowLast]}>
+                  <Text style={styles.label}>{t('last_eu_control')}</Text>
+                  {isEditing ? (
+                    <View style={styles.datePickerContainer}>
+                      <DatePicker
+                        value={euControlDate}
+                        onChange={setEuControlDate}
+                        placeholder={t('unknown')}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={styles.value} numberOfLines={2}>
+                      {euControlDate || t('unknown')}
+                    </Text>
+                  )}
+                </View>
               </View>
             )}
           </View>
@@ -431,8 +466,8 @@ export default function VehicleInfoScreen() {
             <ExternalLink size={20} color={Colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.externalLinkTitle}>Åpne Min side</Text>
-            <Text style={styles.externalLinkSubtitle}>Logg inn hos Vegvesenet for å se flere detaljer</Text>
+            <Text style={styles.externalLinkTitle}>{t('open_my_page')}</Text>
+            <Text style={styles.externalLinkSubtitle}>{t('open_vegvesen_desc')}</Text>
           </View>
         </TouchableOpacity>
 
@@ -442,7 +477,7 @@ export default function VehicleInfoScreen() {
           activeOpacity={0.7}
         >
           <Trash2 size={20} color={Colors.danger} />
-          <Text style={styles.deleteButtonText}>Slett bil</Text>
+          <Text style={styles.deleteButtonText}>{t('delete_car')}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
@@ -698,6 +733,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.secondary,
   },
+  datePickerContainer: {
+    flex: 1,
+  },
   deleteButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -711,6 +749,6 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: Colors.danger,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
 });

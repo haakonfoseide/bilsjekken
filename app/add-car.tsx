@@ -34,6 +34,7 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as Network from "expo-network";
+import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
@@ -47,6 +48,7 @@ if (Platform.OS === 'android') {
 }
 
 export default function AddCarScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { addCar } = useCarData();
   const insets = useSafeAreaInsets();
@@ -121,20 +123,20 @@ export default function AddCarScreen() {
     console.log("[AddCar][VehicleLookup] input.cleaned:", plate);
 
     if (!plate) {
-      setSearchError("Skriv inn registreringsnummer");
+      setSearchError(t('enter_plate'));
       console.log("[AddCar][VehicleLookup] aborted: empty plate");
       return;
     }
 
     if (plate.length < 2) {
-      setSearchError("For kort registreringsnummer");
+      setSearchError(t('plate_too_short'));
       console.log("[AddCar][VehicleLookup] aborted: plate too short");
       return;
     }
 
     if (!isOnline) {
       console.log("[AddCar][VehicleLookup] aborted: offline");
-      Alert.alert("Ingen nettverk", "Du må være på nett for å søke opp kjøretøy.");
+      Alert.alert(t('no_network'), t('no_network_desc'));
       return;
     }
 
@@ -222,18 +224,18 @@ export default function AddCarScreen() {
         stack: errorObj?.stack,
       });
 
-      let msg = "Kunne ikke finne kjøretøyet.";
+      let msg = t('vehicle_lookup_failed');
 
       if (trpcCode === "NOT_FOUND" || errorObj?.message?.includes("NOT_FOUND")) {
-        msg = "Fant ingen kjøretøy med dette nummeret.";
+        msg = t('vehicle_not_found');
       } else if (trpcCode === "UNAUTHORIZED" || errorObj?.message?.includes("UNAUTHORIZED")) {
-        msg = "Tjenesten er midlertidig utilgjengelig (Auth).";
+        msg = t('service_unavailable');
       } else if (httpStatus === 404 || errorObj?.message?.includes("route not found")) {
-        msg = "Backend-ruten ble ikke funnet (404). Se console logg for URL + RequestId.";
+        msg = t('service_unavailable');
       } else if (httpStatus === 401 || httpStatus === 403) {
-        msg = "Vegvesenet API-nøkkel mangler/er ugyldig. Se backend logg.";
+        msg = t('service_unavailable');
       } else if (httpStatus === 429) {
-        msg = "For mange forespørsler. Vent litt og prøv igjen.";
+        msg = t('too_many_requests');
       }
 
       setSearchError(msg);
@@ -250,7 +252,7 @@ export default function AddCarScreen() {
 
   const handleSave = () => {
     if (!make || !model || !licensePlate) {
-      Alert.alert("Mangler info", "Bilmerke, modell og registreringsnummer er påkrevd.");
+      Alert.alert(t('missing_info'), t('missing_info_desc'));
       return;
     }
 
@@ -292,7 +294,7 @@ export default function AddCarScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     
-    Alert.alert("Bil lagt til", `${make} ${model} er nå lagt til i garasjen.`, [
+    Alert.alert(t('car_added'), t('car_added_desc', { car: `${make} ${model}` }), [
       { text: "OK", onPress: () => router.back() }
     ]);
   };
@@ -300,17 +302,17 @@ export default function AddCarScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{
-        title: "Legg til bil",
+        title: t('add_car'),
         headerStyle: { backgroundColor: Colors.background },
         headerShadowVisible: false,
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-            <Text style={styles.headerButtonText}>Avbryt</Text>
+            <Text style={styles.headerButtonText}>{t('cancel')}</Text>
           </TouchableOpacity>
         ),
         headerRight: () => (
           <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-            <Text style={[styles.headerButtonText, styles.headerButtonPrimary]}>Lagre</Text>
+            <Text style={[styles.headerButtonText, styles.headerButtonPrimary]}>{t('save')}</Text>
           </TouchableOpacity>
         ),
       }} />
@@ -334,9 +336,9 @@ export default function AddCarScreen() {
                 <Search size={20} color={Colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Søk opp kjøretøy</Text>
+                <Text style={styles.cardTitle}>{t('search_vehicle')}</Text>
                 <Text style={styles.cardSubtitle}>
-                  Hent info automatisk fra Vegvesenet
+                  {t('search_vehicle_desc')}
                 </Text>
               </View>
             </View>
@@ -389,25 +391,25 @@ export default function AddCarScreen() {
             {searchSuccess && (
               <View style={styles.messageContainer}>
                 <CheckCircle2 size={16} color={Colors.primary} />
-                <Text style={styles.successText}>Bil funnet! Fyll ut resten.</Text>
+                <Text style={styles.successText}>{t('car_found')}</Text>
               </View>
             )}
 
             {!isOnline && (
               <View style={styles.messageContainer}>
                 <WifiOff size={16} color={Colors.text.secondary} />
-                <Text style={styles.offlineText}>Du er offline. Søk er deaktivert.</Text>
+                <Text style={styles.offlineText}>{t('offline_disabled')}</Text>
               </View>
             )}
           </View>
 
-          <Text style={styles.sectionHeader}>Kjøretøyinformasjon</Text>
+          <Text style={styles.sectionHeader}>{t('vehicle_information')}</Text>
 
           <View style={styles.formCard}>
             <View style={styles.inputRow}>
               <CarFront size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Merke</Text>
+                <Text style={styles.inputLabel}>{t('make')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={make}
@@ -423,7 +425,7 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <Hash size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Modell</Text>
+                <Text style={styles.inputLabel}>{t('model')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={model}
@@ -439,7 +441,7 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Årsmodell</Text>
+                <Text style={styles.inputLabel}>{t('year')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={year}
@@ -456,7 +458,7 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <Info size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Registreringsnummer</Text>
+                <Text style={styles.inputLabel}>{t('license_plate')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={licensePlate}
@@ -473,7 +475,7 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <FileKey size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>VIN / Understellsnummer</Text>
+                <Text style={styles.inputLabel}>{t('vin')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={vin}
@@ -490,7 +492,7 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <Palette size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Farge</Text>
+                <Text style={styles.inputLabel}>{t('color')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={color}
@@ -506,7 +508,7 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <Fuel size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Drivstoff</Text>
+                <Text style={styles.inputLabel}>{t('fuel')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={fuelType}
@@ -518,13 +520,13 @@ export default function AddCarScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionHeader}>Tilleggsinformasjon</Text>
+          <Text style={styles.sectionHeader}>{t('additional_info')}</Text>
 
           <View style={styles.formCard}>
             <View style={styles.inputRow}>
               <Gauge size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Nåværende kilometerstand</Text>
+                <Text style={styles.inputLabel}>{t('current_mileage')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={currentMileage}
@@ -541,7 +543,7 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <ShieldCheck size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Forsikringsselskap</Text>
+                <Text style={styles.inputLabel}>{t('insurance_company')}</Text>
                 <TextInput
                   style={styles.textInput}
                   value={insurance}
@@ -557,11 +559,11 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Neste EU-kontroll</Text>
+                <Text style={styles.inputLabel}>{t('next_eu_control')}</Text>
                 <DatePicker
                   value={nextEuControlDate}
                   onChange={setNextEuControlDate}
-                  placeholder="Velg dato"
+                  placeholder={t('select_date')}
                 />
               </View>
             </View>
@@ -571,11 +573,11 @@ export default function AddCarScreen() {
             <View style={styles.inputRow}>
               <Calendar size={20} color={Colors.text.secondary} style={styles.inputIcon} />
               <View style={styles.inputContent}>
-                <Text style={styles.inputLabel}>Sist godkjent (EU)</Text>
+                <Text style={styles.inputLabel}>{t('last_eu_control')}</Text>
                 <DatePicker
                   value={euControlDate}
                   onChange={setEuControlDate}
-                  placeholder="Velg dato"
+                  placeholder={t('select_date')}
                 />
               </View>
             </View>

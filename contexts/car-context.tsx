@@ -545,6 +545,29 @@ export const [CarProvider, useCarData] = createContextHook(() => {
     [activeCarId, mutate]
   );
 
+  const updateFuelRecord = useCallback(
+    (id: string, record: Omit<FuelRecord, "id" | "carId">) => {
+      setData((prev) => {
+        const currentCar = prev.cars.find(c => c.id === activeCarId);
+        const currentMileage = currentCar?.currentMileage || 0;
+        const shouldUpdateMileage = record.mileage && record.mileage > currentMileage;
+        const newCars = shouldUpdateMileage
+          ? prev.cars.map(c => c.id === activeCarId
+              ? { ...c, currentMileage: record.mileage!, mileageSource: 'fuel' as MileageSourceType, mileageSourceDate: record.date }
+              : c)
+          : prev.cars;
+        const newData = {
+          ...prev,
+          cars: newCars,
+          fuelRecords: prev.fuelRecords.map(r => r.id === id ? { ...r, ...record } : r),
+        };
+        mutate(newData);
+        return newData;
+      });
+    },
+    [activeCarId, mutate]
+  );
+
   const deleteFuelRecord = useCallback(
     (id: string) => {
       setData((prev) => {
@@ -791,6 +814,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
       updateMileageRecord,
       deleteMileageRecord,
       addFuelRecord,
+      updateFuelRecord,
       deleteFuelRecord,
       addInsuranceDocument,
       deleteInsuranceDocument,

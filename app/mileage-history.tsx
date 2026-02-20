@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 import { useState, useMemo } from "react";
@@ -55,6 +56,7 @@ LocaleConfig.locales['no'] = {
 LocaleConfig.defaultLocale = 'no';
 
 export default function MileageHistoryScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { carInfo, mileageRecords, addMileageRecord, updateMileageRecord, deleteMileageRecord } = useCarData();
@@ -82,7 +84,7 @@ export default function MileageHistoryScreen() {
   if (!carInfo) {
     return (
       <View style={styles.container}>
-        <Text>Ingen bil valgt</Text>
+        <Text>{t('no_car_selected')}</Text>
       </View>
     );
   }
@@ -115,7 +117,7 @@ export default function MileageHistoryScreen() {
   const handleAddMileage = () => {
     const mileageNum = parseInt(newMileage, 10);
     if (!mileageNum || mileageNum <= 0) {
-      Alert.alert("Feil", "Vennligst skriv inn en gyldig kilometerstand");
+      Alert.alert(t('error'), t('enter_valid_mileage'));
       return;
     }
 
@@ -132,7 +134,7 @@ export default function MileageHistoryScreen() {
 
     const mileageNum = parseInt(newMileage, 10);
     if (!mileageNum || mileageNum <= 0) {
-      Alert.alert("Feil", "Vennligst skriv inn en gyldig kilometerstand");
+      Alert.alert(t('error'), t('enter_valid_mileage'));
       return;
     }
 
@@ -147,12 +149,12 @@ export default function MileageHistoryScreen() {
 
   const handleDeleteMileage = (id: string) => {
     Alert.alert(
-      "Slett kilometerstand",
-      "Er du sikker på at du vil slette denne kilometerstanden?",
+      t('delete_mileage'),
+      t('delete_mileage_confirm'),
       [
-        { text: "Avbryt", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "Slett",
+          text: t('delete'),
           style: "destructive",
           onPress: () => deleteMileageRecord(id),
         },
@@ -182,7 +184,7 @@ export default function MileageHistoryScreen() {
           >
             <ArrowLeft size={24} color={Colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Kilometerstand</Text>
+          <Text style={styles.headerTitle}>{t('mileage')}</Text>
           <TouchableOpacity 
             onPress={openAddModal}
             style={styles.addButton}
@@ -196,7 +198,7 @@ export default function MileageHistoryScreen() {
         <View style={styles.statsCard}>
           <View style={styles.statsRow}>
             <View>
-              <Text style={styles.statsLabel}>Nåværende stand</Text>
+              <Text style={styles.statsLabel}>{t('current_reading')}</Text>
               <Text style={styles.statsValue}>
                 {carInfo.currentMileage?.toLocaleString("no-NO")} km
               </Text>
@@ -209,7 +211,7 @@ export default function MileageHistoryScreen() {
             <View style={styles.statsFooter}>
               <TrendingUp size={14} color={Colors.success} />
               <Text style={styles.statsFooterText}>
-                {allRecords[0].mileage - allRecords[1].mileage} km siden sist
+                {t('km_since_last', { value: allRecords[0].mileage - allRecords[1].mileage })}
               </Text>
             </View>
           )}
@@ -275,8 +277,8 @@ export default function MileageHistoryScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <History size={48} color={Colors.text.light} />
-            <Text style={styles.emptyText}>Ingen kilometerstand registrert</Text>
-            <Text style={styles.emptySubtext}>Trykk på + for å legge til</Text>
+            <Text style={styles.emptyText}>{t('no_mileage_recorded')}</Text>
+            <Text style={styles.emptySubtext}>{t('tap_to_add')}</Text>
           </View>
         }
       />
@@ -298,7 +300,7 @@ export default function MileageHistoryScreen() {
         >
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Legg til kilometerstand</Text>
+              <Text style={styles.modalTitle}>{t('add_mileage')}</Text>
               <TouchableOpacity onPress={closeAddModal}>
                 <X size={24} color={Colors.text.primary} />
               </TouchableOpacity>
@@ -306,7 +308,7 @@ export default function MileageHistoryScreen() {
 
             <View style={styles.modalBody}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Kilometerstand</Text>
+                <Text style={styles.inputLabel}>{t('mileage')}</Text>
                 <TextInput
                   style={styles.input}
                   value={newMileage}
@@ -318,7 +320,7 @@ export default function MileageHistoryScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Dato</Text>
+                <Text style={styles.inputLabel}>{t('date')}</Text>
                 <TouchableOpacity 
                   style={styles.dateInputContainer}
                   onPress={() => {
@@ -362,7 +364,7 @@ export default function MileageHistoryScreen() {
                 style={styles.modalButton}
                 onPress={handleAddMileage}
               >
-                <Text style={styles.modalButtonText}>Legg til</Text>
+                <Text style={styles.modalButtonText}>{t('add_btn')}</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -387,7 +389,7 @@ export default function MileageHistoryScreen() {
         >
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Rediger kilometerstand</Text>
+              <Text style={styles.modalTitle}>{t('edit_mileage')}</Text>
               <TouchableOpacity onPress={closeEditModal}>
                 <X size={24} color={Colors.text.primary} />
               </TouchableOpacity>
@@ -395,7 +397,7 @@ export default function MileageHistoryScreen() {
 
             <View style={styles.modalBody}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Kilometerstand</Text>
+                <Text style={styles.inputLabel}>{t('mileage')}</Text>
                 <TextInput
                   style={styles.input}
                   value={newMileage}
@@ -407,7 +409,7 @@ export default function MileageHistoryScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Dato</Text>
+                <Text style={styles.inputLabel}>{t('date')}</Text>
                 <TouchableOpacity 
                   style={styles.dateInputContainer}
                   onPress={() => {
@@ -451,7 +453,7 @@ export default function MileageHistoryScreen() {
                 style={styles.modalButton}
                 onPress={handleEditMileage}
               >
-                <Text style={styles.modalButtonText}>Lagre</Text>
+                <Text style={styles.modalButtonText}>{t('save')}</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -465,7 +467,7 @@ export default function MileageHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F4F7",
+    backgroundColor: "#F8FAFC",
   },
   header: {
     backgroundColor: "#fff",
