@@ -21,6 +21,8 @@ import {
   Wrench,
   Droplet,
   Disc,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -124,6 +126,8 @@ export default function ScanReceiptScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ReceiptAnalysis | null>(null);
+  const [analysisFailed, setAnalysisFailed] = useState(false);
+  const lastImageRef = useRef<{ uri: string; base64?: string } | null>(null);
   
   const isMounted = useRef(true);
   useEffect(() => {
@@ -164,7 +168,7 @@ export default function ScanReceiptScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'] as ImagePicker.MediaType[],
       quality: 0.8,
       allowsEditing: false,
     });
@@ -174,15 +178,15 @@ export default function ScanReceiptScreen() {
     if (!result.canceled && result.assets && result.assets[0]) {
       const originalUri = result.assets[0].uri;
       
-      // Show local preview immediately
       setSelectedImage(originalUri);
+      setAnalysisFailed(false);
       
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      // Process and analyze
       const { uri, base64 } = await processImage(originalUri);
+      lastImageRef.current = { uri, base64 };
       analyzeReceipt(uri, base64);
     }
   };
@@ -198,7 +202,7 @@ export default function ScanReceiptScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'] as ImagePicker.MediaType[],
       quality: 0.8,
       allowsEditing: false,
     });
@@ -209,18 +213,21 @@ export default function ScanReceiptScreen() {
       const originalUri = result.assets[0].uri;
       
       setSelectedImage(originalUri);
+      setAnalysisFailed(false);
       
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
       const { uri, base64 } = await processImage(originalUri);
+      lastImageRef.current = { uri, base64 };
       analyzeReceipt(uri, base64);
     }
   };
 
   const analyzeReceipt = async (imageUri: string, providedBase64?: string) => {
     setAnalyzing(true);
+    setAnalysisFailed(false);
     const maxRetries = 2;
     let lastError: unknown = null;
 
@@ -351,6 +358,7 @@ export default function ScanReceiptScreen() {
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
+    setAnalysisFailed(true);
     setAnalyzing(false);
   };
 
@@ -527,6 +535,8 @@ export default function ScanReceiptScreen() {
                 onPress={() => {
                   setSelectedImage(null);
                   setAnalysis(null);
+                  setAnalysisFailed(false);
+                  lastImageRef.current = null;
                   if (Platform.OS !== "web") {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }
@@ -543,6 +553,36 @@ export default function ScanReceiptScreen() {
                 <Text style={styles.analysingSubtext}>
                   {t('may_take_seconds')}
                 </Text>
+              </View>
+            ) : analysisFailed ? (
+              <View style={styles.errorCard}>
+                <AlertTriangle size={40} color={Colors.danger} strokeWidth={1.5} />
+                <Text style={styles.errorTitle}>{t('analysis_failed_title') || 'Analysering feilet'}</Text>
+                <Text style={styles.errorSubtext}>{t('analysis_failed_desc') || 'Kunne ikke analysere bildet. Prøv igjen eller legg til manuelt.'}</Text>
+                <TouchableOpacity
+                  style={styles.retryActionButton}
+                  onPress={() => {
+                    if (lastImageRef.current) {
+                      analyzeReceipt(lastImageRef.current.uri, lastImageRef.current.base64);
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <RefreshCw size={18} color="#fff" strokeWidth={2} />
+                  <Text style={styles.retryActionButtonText}>{t('try_again') || 'Prøv igjen'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => {
+                    setSelectedImage(null);
+                    setAnalysis(null);
+                    setAnalysisFailed(false);
+                    lastImageRef.current = null;
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.retryButtonText}>{t('choose_new_image') || 'Velg nytt bilde'}</Text>
+                </TouchableOpacity>
               </View>
             ) : analysis ? (
               <View style={styles.resultCard}>
@@ -933,5 +973,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600" as const,
     color: "#92400e",
+  },
+  errorCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: Colors.text.primary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    textAlign: "center" as const,
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  retryActionButton: {
+    backgroundColor: Colors.primary,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    marginBottom: 12,
+    width: "100%",
+  },
+  retryActionButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700" as const,
   },
 });
