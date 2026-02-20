@@ -333,25 +333,24 @@ export default function ScanReceiptScreen() {
     
     if (!isMounted.current) return;
 
-    let errorMessage = "Kunne ikke analysere kvitteringen etter flere forsøk. Legg til manuelt i riktig kategori.";
+    let errorMessage = t('receipt_error_generic');
     
     if (errorObj?.message?.includes("JSON Parse") || errorObj?.message?.includes("parse")) {
-      errorMessage = "AI-tjenesten returnerte ugyldig data. Dette kan skyldes nettverksproblemer. Prøv igjen senere eller legg til manuelt.";
+      errorMessage = t('receipt_error_parse');
     } else if (errorObj?.message?.includes("network") || errorObj?.message?.includes("fetch") || errorObj?.message?.includes("NetworkError")) {
-      errorMessage = "Nettverksfeil. Sjekk internettforbindelsen din og prøv igjen.";
+      errorMessage = t('receipt_error_network');
     } else if (errorObj?.message?.includes("read image")) {
-      errorMessage = "Kunne ikke lese bildet. Prøv å ta et nytt bilde.";
+      errorMessage = t('receipt_error_image');
     }
 
-    // Append technical error for debugging in TestFlight
-    errorMessage += `\n\nTeknisk feil: ${errorObj?.message || String(lastError) || "Ukjent"}`;
+    errorMessage += `\n\n${t('receipt_error_technical', { error: errorObj?.message || String(lastError) || "Unknown" })}`;
     
     Alert.alert(
-      "Analysering feilet", 
+      t('analysis_failed_title'), 
       errorMessage,
       [
-        { text: "Prøv igjen", onPress: () => analyzeReceipt(imageUri, providedBase64) },
-        { text: "Avbryt", style: "cancel" },
+        { text: t('try_again'), onPress: () => analyzeReceipt(imageUri, providedBase64) },
+        { text: t('cancel'), style: "cancel" },
       ]
     );
     
@@ -557,8 +556,8 @@ export default function ScanReceiptScreen() {
             ) : analysisFailed ? (
               <View style={styles.errorCard}>
                 <AlertTriangle size={40} color={Colors.danger} strokeWidth={1.5} />
-                <Text style={styles.errorTitle}>{t('analysis_failed_title') || 'Analysering feilet'}</Text>
-                <Text style={styles.errorSubtext}>{t('analysis_failed_desc') || 'Kunne ikke analysere bildet. Prøv igjen eller legg til manuelt.'}</Text>
+                <Text style={styles.errorTitle}>{t('analysis_failed_title')}</Text>
+                <Text style={styles.errorSubtext}>{t('analysis_failed_desc')}</Text>
                 <TouchableOpacity
                   style={styles.retryActionButton}
                   onPress={() => {
@@ -569,7 +568,7 @@ export default function ScanReceiptScreen() {
                   activeOpacity={0.8}
                 >
                   <RefreshCw size={18} color="#fff" strokeWidth={2} />
-                  <Text style={styles.retryActionButtonText}>{t('try_again') || 'Prøv igjen'}</Text>
+                  <Text style={styles.retryActionButtonText}>{t('try_again')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.retryButton}
@@ -581,7 +580,7 @@ export default function ScanReceiptScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.retryButtonText}>{t('choose_new_image') || 'Velg nytt bilde'}</Text>
+                  <Text style={styles.retryButtonText}>{t('choose_new_image')}</Text>
                 </TouchableOpacity>
               </View>
             ) : analysis ? (
@@ -648,7 +647,7 @@ export default function ScanReceiptScreen() {
 
                   {analysis.isServiceBooklet && (
                     <View style={styles.serviceBookletBadge}>
-                      <Text style={styles.serviceBookletText}>📖 Servicehefte</Text>
+                      <Text style={styles.serviceBookletText}>📖 {t('service_booklet_label')}</Text>
                     </View>
                   )}
 

@@ -1,6 +1,7 @@
 import { Platform, Alert } from "react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import i18n from "@/lib/i18n";
 
 export const hapticFeedback = {
   light: () => {
@@ -86,14 +87,14 @@ export const pickImagesFromGallery = async (): Promise<ImagePickerResult> => {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") {
     Alert.alert(
-      "Tillatelse påkrevd",
-      "Vi trenger tilgang til bildegalleriet ditt."
+      i18n.t('permission_required'),
+      i18n.t('permission_required_gallery')
     );
     return { images: [], cancelled: true };
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ['images'] as ImagePicker.MediaType[],
     allowsMultipleSelection: true,
     quality: 0.8,
   });
@@ -112,14 +113,14 @@ export const takePhotoWithCamera = async (): Promise<ImagePickerResult> => {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== "granted") {
     Alert.alert(
-      "Tillatelse påkrevd",
-      "Vi trenger tilgang til kameraet ditt."
+      i18n.t('permission_required'),
+      i18n.t('permission_required_camera')
     );
     return { images: [], cancelled: true };
   }
 
   const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ['images'] as ImagePicker.MediaType[],
     quality: 0.8,
   });
 
@@ -137,10 +138,10 @@ export const showImagePickerOptions = (
   onTakePhoto: () => void,
   onPickFromGallery: () => void
 ) => {
-  Alert.alert("Legg til bilde", "Velg et alternativ", [
-    { text: "Ta bilde", onPress: onTakePhoto },
-    { text: "Velg fra galleri", onPress: onPickFromGallery },
-    { text: "Avbryt", style: "cancel" },
+  Alert.alert(i18n.t('add_photo_title'), i18n.t('choose_option'), [
+    { text: i18n.t('take_photo'), onPress: onTakePhoto },
+    { text: i18n.t('pick_from_gallery'), onPress: onPickFromGallery },
+    { text: i18n.t('cancel'), style: "cancel" },
   ]);
 };
 
@@ -150,13 +151,13 @@ export const confirmDelete = (
   onConfirm: () => void
 ) => {
   Alert.alert(title, message, [
-    { text: "Avbryt", style: "cancel" },
-    { text: "Slett", style: "destructive", onPress: onConfirm },
+    { text: i18n.t('cancel'), style: "cancel" },
+    { text: i18n.t('delete'), style: "destructive", onPress: onConfirm },
   ]);
 };
 
 export const generateId = (): string => {
-  return Date.now().toString();
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 };
 
 export const calculateAge = (dateString: string): { years: number; months: number } => {

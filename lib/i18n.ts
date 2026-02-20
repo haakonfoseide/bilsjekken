@@ -298,7 +298,21 @@ const resources = {
       "export_ready": "Dataene dine er klare for eksport.",
       "export_failed": "Eksport feilet. Prøv igjen.",
       "tire_quantity": "Antall",
-      "note_title_placeholder": "F.eks. Skademelding info"
+      "note_title_placeholder": "F.eks. Skademelding info",
+      "permission_required_gallery": "Vi trenger tilgang til bildegalleriet ditt.",
+      "permission_required_camera": "Vi trenger tilgang til kameraet ditt.",
+      "add_photo_title": "Legg til bilde",
+      "choose_option": "Velg et alternativ",
+      "pick_from_gallery": "Velg fra galleri",
+      "receipt_error_generic": "Kunne ikke analysere kvitteringen etter flere forsøk. Legg til manuelt i riktig kategori.",
+      "receipt_error_parse": "AI-tjenesten returnerte ugyldig data. Prøv igjen senere eller legg til manuelt.",
+      "receipt_error_network": "Nettverksfeil. Sjekk internettforbindelsen din og prøv igjen.",
+      "receipt_error_image": "Kunne ikke lese bildet. Prøv å ta et nytt bilde.",
+      "receipt_error_technical": "Teknisk feil: {{error}}",
+      "analysis_failed_title": "Analysering feilet",
+      "analysis_failed_desc": "Kunne ikke analysere bildet. Prøv igjen eller legg til manuelt.",
+      "choose_new_image": "Velg nytt bilde",
+      "service_booklet_label": "Servicehefte"
     }
   },
   en: {
@@ -591,7 +605,21 @@ const resources = {
       "export_ready": "Your data is ready for export.",
       "export_failed": "Export failed. Please try again.",
       "tire_quantity": "Quantity",
-      "note_title_placeholder": "E.g. Claim info"
+      "note_title_placeholder": "E.g. Claim info",
+      "permission_required_gallery": "We need access to your photo gallery.",
+      "permission_required_camera": "We need access to your camera.",
+      "add_photo_title": "Add photo",
+      "choose_option": "Choose an option",
+      "pick_from_gallery": "Pick from gallery",
+      "receipt_error_generic": "Could not analyze the receipt after multiple attempts. Add it manually.",
+      "receipt_error_parse": "AI service returned invalid data. Try again later or add manually.",
+      "receipt_error_network": "Network error. Check your internet connection and try again.",
+      "receipt_error_image": "Could not read the image. Try taking a new photo.",
+      "receipt_error_technical": "Technical error: {{error}}",
+      "analysis_failed_title": "Analysis failed",
+      "analysis_failed_desc": "Could not analyze the image. Try again or add manually.",
+      "choose_new_image": "Choose new image",
+      "service_booklet_label": "Service booklet"
     }
   },
   es: {
@@ -722,7 +750,21 @@ const resources = {
       "export_ready": "Tus datos están listos para exportar.",
       "export_failed": "Error al exportar. Inténtalo de nuevo.",
       "tire_quantity": "Cantidad",
-      "note_title_placeholder": "Ej. Info de siniestro"
+      "note_title_placeholder": "Ej. Info de siniestro",
+      "permission_required_gallery": "Necesitamos acceso a tu galería de fotos.",
+      "permission_required_camera": "Necesitamos acceso a tu cámara.",
+      "add_photo_title": "Añadir foto",
+      "choose_option": "Elige una opción",
+      "pick_from_gallery": "Elegir de la galería",
+      "receipt_error_generic": "No se pudo analizar el recibo después de varios intentos. Añádelo manualmente.",
+      "receipt_error_parse": "El servicio de IA devolvió datos inválidos. Inténtalo más tarde o añádelo manualmente.",
+      "receipt_error_network": "Error de red. Comprueba tu conexión a Internet e inténtalo de nuevo.",
+      "receipt_error_image": "No se pudo leer la imagen. Intenta tomar una nueva foto.",
+      "receipt_error_technical": "Error técnico: {{error}}",
+      "analysis_failed_title": "Análisis fallido",
+      "analysis_failed_desc": "No se pudo analizar la imagen. Inténtalo de nuevo o añádelo manualmente.",
+      "choose_new_image": "Elegir nueva imagen",
+      "service_booklet_label": "Libro de servicio"
     }
   },
   fr: {
@@ -853,7 +895,21 @@ const resources = {
       "export_ready": "Vos données sont prêtes pour l'exportation.",
       "export_failed": "Échec de l'exportation. Réessayez.",
       "tire_quantity": "Quantité",
-      "note_title_placeholder": "Ex. Info sinistre"
+      "note_title_placeholder": "Ex. Info sinistre",
+      "permission_required_gallery": "Nous avons besoin d'accéder à votre galerie photo.",
+      "permission_required_camera": "Nous avons besoin d'accéder à votre caméra.",
+      "add_photo_title": "Ajouter une photo",
+      "choose_option": "Choisir une option",
+      "pick_from_gallery": "Choisir dans la galerie",
+      "receipt_error_generic": "Impossible d'analyser le reçu après plusieurs tentatives. Ajoutez-le manuellement.",
+      "receipt_error_parse": "Le service IA a renvoyé des données invalides. Réessayez plus tard ou ajoutez manuellement.",
+      "receipt_error_network": "Erreur réseau. Vérifiez votre connexion Internet et réessayez.",
+      "receipt_error_image": "Impossible de lire l'image. Essayez de prendre une nouvelle photo.",
+      "receipt_error_technical": "Erreur technique : {{error}}",
+      "analysis_failed_title": "Échec de l'analyse",
+      "analysis_failed_desc": "Impossible d'analyser l'image. Réessayez ou ajoutez manuellement.",
+      "choose_new_image": "Choisir une nouvelle image",
+      "service_booklet_label": "Carnet d'entretien"
     }
   },
   de: {
@@ -984,7 +1040,21 @@ const resources = {
       "export_ready": "Ihre Daten sind bereit für den Export.",
       "export_failed": "Export fehlgeschlagen. Bitte erneut versuchen.",
       "tire_quantity": "Anzahl",
-      "note_title_placeholder": "Z.B. Schadensinfo"
+      "note_title_placeholder": "Z.B. Schadensinfo",
+      "permission_required_gallery": "Wir benötigen Zugriff auf Ihre Fotogalerie.",
+      "permission_required_camera": "Wir benötigen Zugriff auf Ihre Kamera.",
+      "add_photo_title": "Foto hinzufügen",
+      "choose_option": "Option wählen",
+      "pick_from_gallery": "Aus Galerie wählen",
+      "receipt_error_generic": "Beleg konnte nach mehreren Versuchen nicht analysiert werden. Manuell hinzufügen.",
+      "receipt_error_parse": "KI-Dienst hat ungültige Daten zurückgegeben. Später erneut versuchen oder manuell hinzufügen.",
+      "receipt_error_network": "Netzwerkfehler. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+      "receipt_error_image": "Bild konnte nicht gelesen werden. Versuchen Sie ein neues Foto.",
+      "receipt_error_technical": "Technischer Fehler: {{error}}",
+      "analysis_failed_title": "Analyse fehlgeschlagen",
+      "analysis_failed_desc": "Bild konnte nicht analysiert werden. Erneut versuchen oder manuell hinzufügen.",
+      "choose_new_image": "Neues Bild wählen",
+      "service_booklet_label": "Serviceheft"
     }
   },
   zh: {
@@ -1115,7 +1185,21 @@ const resources = {
       "export_ready": "您的数据已准备好导出。",
       "export_failed": "导出失败，请重试。",
       "tire_quantity": "数量",
-      "note_title_placeholder": "例如 理赔信息"
+      "note_title_placeholder": "例如 理赔信息",
+      "permission_required_gallery": "我们需要访问您的相册。",
+      "permission_required_camera": "我们需要访问您的相机。",
+      "add_photo_title": "添加照片",
+      "choose_option": "选择一个选项",
+      "pick_from_gallery": "从相册选择",
+      "receipt_error_generic": "多次尝试后仍无法分析收据。请手动添加。",
+      "receipt_error_parse": "AI 服务返回了无效数据。请稍后重试或手动添加。",
+      "receipt_error_network": "网络错误。请检查网络连接后重试。",
+      "receipt_error_image": "无法读取图片。请尝试拍摄新照片。",
+      "receipt_error_technical": "技术错误：{{error}}",
+      "analysis_failed_title": "分析失败",
+      "analysis_failed_desc": "无法分析图片。请重试或手动添加。",
+      "choose_new_image": "选择新图片",
+      "service_booklet_label": "服务手册"
     }
   },
   pt: {
@@ -1246,7 +1330,21 @@ const resources = {
       "export_ready": "Seus dados estão prontos para exportação.",
       "export_failed": "Falha na exportação. Tente novamente.",
       "tire_quantity": "Quantidade",
-      "note_title_placeholder": "Ex. Info de sinistro"
+      "note_title_placeholder": "Ex. Info de sinistro",
+      "permission_required_gallery": "Precisamos acessar sua galeria de fotos.",
+      "permission_required_camera": "Precisamos acessar sua câmera.",
+      "add_photo_title": "Adicionar foto",
+      "choose_option": "Escolha uma opção",
+      "pick_from_gallery": "Escolher da galeria",
+      "receipt_error_generic": "Não foi possível analisar o recibo após várias tentativas. Adicione manualmente.",
+      "receipt_error_parse": "O serviço de IA retornou dados inválidos. Tente novamente mais tarde ou adicione manualmente.",
+      "receipt_error_network": "Erro de rede. Verifique sua conexão com a Internet e tente novamente.",
+      "receipt_error_image": "Não foi possível ler a imagem. Tente tirar uma nova foto.",
+      "receipt_error_technical": "Erro técnico: {{error}}",
+      "analysis_failed_title": "Análise falhou",
+      "analysis_failed_desc": "Não foi possível analisar a imagem. Tente novamente ou adicione manualmente.",
+      "choose_new_image": "Escolher nova imagem",
+      "service_booklet_label": "Caderneta de serviço"
     }
   }
 };

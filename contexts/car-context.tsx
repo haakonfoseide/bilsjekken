@@ -72,7 +72,21 @@ export const [CarProvider, useCarData] = createContextHook(() => {
           return defaultData;
         }
 
-        const parsed = JSON.parse(stored);
+        let parsed: any;
+        try {
+          parsed = JSON.parse(stored);
+        } catch (parseError) {
+          console.error("[CarContext] JSON parse failed, clearing corrupt data:", parseError);
+          await AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+          return defaultData;
+        }
+        
+        if (!parsed || typeof parsed !== 'object') {
+          console.error("[CarContext] Stored data is not an object, resetting");
+          await AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+          return defaultData;
+        }
+        
         console.log("[CarContext] Successfully loaded data from storage");
         
         if (!parsed.cars && parsed.carInfo) {
@@ -104,7 +118,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
           });
         }
 
-        return parsed;
+        return parsed as CarData;
       } catch (error) {
         console.error("[CarContext] Error loading data:", error);
         try {
@@ -207,6 +221,7 @@ export const [CarProvider, useCarData] = createContextHook(() => {
         tireSets: prev.tireSets.filter(r => r.carId !== carId),
         mileageRecords: prev.mileageRecords.filter(r => r.carId !== carId),
         fuelRecords: prev.fuelRecords.filter(r => r.carId !== carId),
+        insuranceDocuments: prev.insuranceDocuments.filter(d => d.carId !== carId),
         tireInfos: newTireInfos,
       };
       mutate(newData);
