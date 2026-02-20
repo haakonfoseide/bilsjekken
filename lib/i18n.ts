@@ -318,7 +318,10 @@ const resources = {
       "export_file_saved": "Filen er lagret og klar for deling.",
       "consumption_unit_lmil": "l/mil",
       "consumption_unit_l100km": "l/100km",
-      "saving": "Lagrer..."
+      "saving": "Lagrer...",
+      "unsaved_changes_title": "Ulagrede endringer",
+      "unsaved_changes_message": "Du har endringer som ikke er lagret. Vil du forkaste dem?",
+      "discard": "Forkast"
     }
   },
   en: {
@@ -631,7 +634,10 @@ const resources = {
       "export_file_saved": "File saved and ready to share.",
       "consumption_unit_lmil": "l/mil",
       "consumption_unit_l100km": "l/100km",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "unsaved_changes_title": "Unsaved changes",
+      "unsaved_changes_message": "You have unsaved changes. Do you want to discard them?",
+      "discard": "Discard"
     }
   },
   es: {
@@ -782,7 +788,10 @@ const resources = {
       "export_file_saved": "Archivo guardado y listo para compartir.",
       "consumption_unit_lmil": "l/mil",
       "consumption_unit_l100km": "l/100km",
-      "saving": "Guardando..."
+      "saving": "Guardando...",
+      "unsaved_changes_title": "Cambios sin guardar",
+      "unsaved_changes_message": "Tienes cambios sin guardar. ¿Quieres descartarlos?",
+      "discard": "Descartar"
     }
   },
   fr: {
@@ -933,7 +942,10 @@ const resources = {
       "export_file_saved": "Fichier enregistré et prêt à partager.",
       "consumption_unit_lmil": "l/mil",
       "consumption_unit_l100km": "l/100km",
-      "saving": "Enregistrement..."
+      "saving": "Enregistrement...",
+      "unsaved_changes_title": "Modifications non enregistrées",
+      "unsaved_changes_message": "Vous avez des modifications non enregistrées. Voulez-vous les supprimer ?",
+      "discard": "Supprimer"
     }
   },
   de: {
@@ -1084,7 +1096,10 @@ const resources = {
       "export_file_saved": "Datei gespeichert und bereit zum Teilen.",
       "consumption_unit_lmil": "l/mil",
       "consumption_unit_l100km": "l/100km",
-      "saving": "Speichern..."
+      "saving": "Speichern...",
+      "unsaved_changes_title": "Ungespeicherte Änderungen",
+      "unsaved_changes_message": "Sie haben ungespeicherte Änderungen. Möchten Sie sie verwerfen?",
+      "discard": "Verwerfen"
     }
   },
   zh: {
@@ -1235,7 +1250,10 @@ const resources = {
       "export_file_saved": "文件已保存，可以分享。",
       "consumption_unit_lmil": "l/mil",
       "consumption_unit_l100km": "l/100km",
-      "saving": "保存中..."
+      "saving": "保存中...",
+      "unsaved_changes_title": "未保存的更改",
+      "unsaved_changes_message": "您有未保存的更改。要放弃吗？",
+      "discard": "放弃"
     }
   },
   pt: {
@@ -1386,7 +1404,10 @@ const resources = {
       "export_file_saved": "Arquivo salvo e pronto para compartilhar.",
       "consumption_unit_lmil": "l/mil",
       "consumption_unit_l100km": "l/100km",
-      "saving": "Salvando..."
+      "saving": "Salvando...",
+      "unsaved_changes_title": "Alterações não salvas",
+      "unsaved_changes_message": "Você tem alterações não salvas. Deseja descartá-las?",
+      "discard": "Descartar"
     }
   }
 };

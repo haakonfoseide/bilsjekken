@@ -20,19 +20,16 @@ import {
   Plus,
   Snowflake,
   Sun,
-  Trash2,
-  CheckCircle2,
-  Circle,
   Check,
   MapPin,
-  Clock,
-  Pencil,
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import { useLocalSearchParams } from "expo-router";
 import Colors, { typography } from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
+import TireCard from "@/components/TireCard";
+import EmptyState from "@/components/EmptyState";
 import {
   hapticFeedback,
   confirmDelete,
@@ -41,6 +38,7 @@ import {
   takePhotoWithCamera,
   showImagePickerOptions,
 } from "@/lib/utils";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 export default function TiresScreen() {
   const { t } = useTranslation();
@@ -215,10 +213,6 @@ export default function TiresScreen() {
     hapticFeedback.medium();
   }, [setActiveTireSet]);
 
-  const getTireAge = useCallback((purchaseDate: string) => {
-    return calculateAge(purchaseDate);
-  }, []);
-
   const pickImage = useCallback(async () => {
     const result = await pickImagesFromGallery();
     if (!isMounted.current || result.cancelled) return;
@@ -241,6 +235,15 @@ export default function TiresScreen() {
   const handleShowImageOptions = useCallback(() => {
     showImagePickerOptions(takePhoto, pickImage);
   }, [takePhoto, pickImage]);
+
+  const hasFormChanges = useMemo(() => {
+    return brand !== "" || size !== "" || notes !== "" || receiptImages.length > 0;
+  }, [brand, size, notes, receiptImages]);
+
+  const handleCloseForm = useUnsavedChanges(hasFormChanges && !editingRecord, () => {
+    resetForm();
+    hapticFeedback.light();
+  });
 
   const summerTires = useMemo(() => tireSets.filter((t) => t.type === "summer"), [tireSets]);
   const winterTires = useMemo(() => tireSets.filter((t) => t.type === "winter"), [tireSets]);
@@ -274,10 +277,7 @@ export default function TiresScreen() {
               <Text style={styles.formTitle}>{editingRecord ? t('edit_tire_set') : t('new_tire_set')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => {
-                  resetForm();
-                  hapticFeedback.light();
-                }}
+                onPress={handleCloseForm}
               >
                 <X size={20} color={Colors.text.secondary} />
               </TouchableOpacity>
@@ -465,13 +465,11 @@ export default function TiresScreen() {
         )}
 
         {tireSets.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Disc size={32} color={Colors.text.light} strokeWidth={1.5} />
-            </View>
-            <Text style={styles.emptyTitle}>{t('no_tire_sets')}</Text>
-            <Text style={styles.emptyText}>{t('add_tires_desc')}</Text>
-          </View>
+          <EmptyState
+            icon={<Disc size={32} color={Colors.text.light} strokeWidth={1.5} />}
+            title={t('no_tire_sets')}
+            description={t('add_tires_desc')}
+          />
         ) : (
           <>
             {summerTires.length > 0 && (
@@ -482,67 +480,15 @@ export default function TiresScreen() {
                   <Text style={styles.sectionCount}>{summerTires.length}</Text>
                 </View>
 
-                {summerTires.map((tire) => {
-                  const age = getTireAge(tire.purchaseDate);
-                  const isOld = age.years >= 6;
-                  return (
-                    <TouchableOpacity
-                      key={tire.id}
-                      style={[styles.tireCard, tire.isActive && styles.tireCardActive]}
-                      onPress={() => handleSetActive(tire.id)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.tireHeader}>
-                        {tire.isActive ? (
-                          <CheckCircle2 size={22} color={Colors.primary} strokeWidth={2.5} />
-                        ) : (
-                          <Circle size={22} color="#CBD5E1" strokeWidth={2} />
-                        )}
-                        <View style={styles.tireInfo}>
-                          <Text style={styles.tireBrand}>{tire.brand}</Text>
-                          <Text style={styles.tireSize}>{tire.size}</Text>
-                        </View>
-                        <View style={styles.tireActions}>
-                          <TouchableOpacity
-                            onPress={() => handleEdit(tire)}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            style={styles.editBtn}
-                          >
-                            <Pencil size={16} color={Colors.primary} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleDelete(tire.id)}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            style={styles.deleteBtn}
-                          >
-                            <Trash2 size={18} color={Colors.danger} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      <View style={styles.tireDetails}>
-                        <View style={styles.tireDetailItem}>
-                          <Clock size={14} color={Colors.text.light} />
-                          <Text style={[styles.tireDetailText, isOld && styles.tireDetailWarning]}>
-                            {age.years} {t('years_short')} {age.months} {t('months_short')}
-                          </Text>
-                        </View>
-                        {tire.isAtTireHotel && (
-                          <View style={styles.tireDetailItem}>
-                            <MapPin size={14} color={Colors.primary} />
-                            <Text style={styles.tireDetailText}>{tire.hotelLocation || t('tire_hotel')}</Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {isOld && (
-                        <View style={styles.warningBanner}>
-                          <Text style={styles.warningBannerText}>{t('recommend_replace')}</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                {summerTires.map((tire) => (
+                  <TireCard
+                    key={tire.id}
+                    tire={tire}
+                    onSetActive={handleSetActive}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
               </View>
             )}
 
@@ -554,67 +500,15 @@ export default function TiresScreen() {
                   <Text style={styles.sectionCount}>{winterTires.length}</Text>
                 </View>
 
-                {winterTires.map((tire) => {
-                  const age = getTireAge(tire.purchaseDate);
-                  const isOld = age.years >= 6;
-                  return (
-                    <TouchableOpacity
-                      key={tire.id}
-                      style={[styles.tireCard, tire.isActive && styles.tireCardActive]}
-                      onPress={() => handleSetActive(tire.id)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.tireHeader}>
-                        {tire.isActive ? (
-                          <CheckCircle2 size={22} color={Colors.primary} strokeWidth={2.5} />
-                        ) : (
-                          <Circle size={22} color="#CBD5E1" strokeWidth={2} />
-                        )}
-                        <View style={styles.tireInfo}>
-                          <Text style={styles.tireBrand}>{tire.brand}</Text>
-                          <Text style={styles.tireSize}>{tire.size}</Text>
-                        </View>
-                        <View style={styles.tireActions}>
-                          <TouchableOpacity
-                            onPress={() => handleEdit(tire)}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            style={styles.editBtn}
-                          >
-                            <Pencil size={16} color={Colors.primary} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleDelete(tire.id)}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            style={styles.deleteBtn}
-                          >
-                            <Trash2 size={18} color={Colors.danger} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      <View style={styles.tireDetails}>
-                        <View style={styles.tireDetailItem}>
-                          <Clock size={14} color={Colors.text.light} />
-                          <Text style={[styles.tireDetailText, isOld && styles.tireDetailWarning]}>
-                            {age.years} {t('years_short')} {age.months} {t('months_short')}
-                          </Text>
-                        </View>
-                        {tire.isAtTireHotel && (
-                          <View style={styles.tireDetailItem}>
-                            <MapPin size={14} color={Colors.primary} />
-                            <Text style={styles.tireDetailText}>{tire.hotelLocation || t('tire_hotel')}</Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {isOld && (
-                        <View style={styles.warningBanner}>
-                          <Text style={styles.warningBannerText}>{t('recommend_replace')}</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                {winterTires.map((tire) => (
+                  <TireCard
+                    key={tire.id}
+                    tire={tire}
+                    onSetActive={handleSetActive}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
               </View>
             )}
           </>
@@ -830,30 +724,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     ...typography.button,
   },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 48,
-    paddingHorizontal: 20,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    ...typography.emptyTitle,
-    color: Colors.text.primary,
-    marginBottom: 6,
-  },
-  emptyText: {
-    ...typography.emptyText,
-    color: Colors.text.secondary,
-    textAlign: "center" as const,
-  },
   section: {
     marginBottom: 24,
   },
@@ -877,83 +747,5 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
   },
-  tireCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: "transparent",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  tireCardActive: {
-    borderColor: Colors.primary,
-    backgroundColor: "#FAFCFF",
-  },
-  tireHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  tireInfo: {
-    flex: 1,
-  },
-  tireBrand: {
-    ...typography.cardTitle,
-    color: Colors.text.primary,
-  },
-  tireSize: {
-    fontSize: 13,
-    color: Colors.text.secondary,
-    marginTop: 2,
-  },
-  tireActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  editBtn: {
-    padding: 8,
-  },
-  deleteBtn: {
-    padding: 8,
-  },
-  tireDetails: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-  },
-  tireDetailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  tireDetailText: {
-    fontSize: 13,
-    color: Colors.text.secondary,
-  },
-  tireDetailWarning: {
-    color: Colors.warning,
-    fontWeight: "600" as const,
-  },
-  warningBanner: {
-    backgroundColor: "#FEF3C7",
-    marginTop: 12,
-    padding: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  warningBannerText: {
-    fontSize: 12,
-    fontWeight: "600" as const,
-    color: "#D97706",
-  },
+
 });

@@ -33,6 +33,7 @@ import * as Haptics from "expo-haptics";
 import { useCarData } from "@/contexts/car-context";
 import Colors from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
+import EmptyState from "@/components/EmptyState";
 import type { FuelRecord } from "@/types/car";
 
 export default function FuelScreen() {
@@ -330,13 +331,11 @@ export default function FuelScreen() {
             ))}
           </View>
         ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Fuel size={40} color={Colors.text.light} strokeWidth={1.5} />
-            </View>
-            <Text style={styles.emptyTitle}>{t('no_fuel_records')}</Text>
-            <Text style={styles.emptyText}>{t('no_fuel_desc')}</Text>
-          </View>
+          <EmptyState
+            icon={<Fuel size={40} color={Colors.text.light} strokeWidth={1.5} />}
+            title={t('no_fuel_records')}
+            description={t('no_fuel_desc')}
+          />
         )}
       </ScrollView>
 
@@ -639,32 +638,6 @@ const styles = StyleSheet.create({
   mileageText: {
     fontSize: 13,
     color: Colors.text.secondary,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: Colors.text.primary,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    textAlign: "center",
-    lineHeight: 22,
   },
   modalOverlay: {
     flex: 1,

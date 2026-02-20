@@ -212,6 +212,24 @@ export const commonStyles = {
   },
 };
 
+export const palette = {
+  slate50: "#F8FAFC",
+  slate100: "#F1F5F9",
+  slate200: "#E2E8F0",
+  slate300: "#CBD5E1",
+  blue50: "#EFF6FF",
+  blue100: "#DBEAFE",
+  blue400: "#3B82F6",
+  blue800: "#1E40AF",
+  amber50: "#FEF3C7",
+  amber400: "#F59E0B",
+  amber600: "#D97706",
+  amber800: "#92400E",
+  green50: "#ECFDF5",
+  indigo400: "#6366F1",
+  activeCardBg: "#FAFCFF",
+} as const;
+
 export default {
   primary,
   secondary,

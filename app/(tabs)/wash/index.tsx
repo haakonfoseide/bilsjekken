@@ -15,7 +15,9 @@ import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors, { typography } from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
+import EmptyState from "@/components/EmptyState";
 import { hapticFeedback, confirmDelete, formatDateLocalized, getDaysAgo } from "@/lib/utils";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 const WASH_TYPE_KEYS = ["wash_type_handwash", "wash_type_automatic", "wash_type_selfwash", "wash_type_polishing"] as const;
 
@@ -89,6 +91,15 @@ export default function WashScreen() {
     return t('days_ago', { count: days });
   }, [t]);
 
+  const hasFormChanges = useMemo(() => {
+    return type !== "" || notes !== "";
+  }, [type, notes]);
+
+  const handleCloseForm = useUnsavedChanges(hasFormChanges && !editingRecord, () => {
+    resetForm();
+    hapticFeedback.light();
+  });
+
   const sortedWashRecords = useMemo(() => {
     return [...washRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [washRecords]);
@@ -122,10 +133,7 @@ export default function WashScreen() {
               <Text style={styles.formTitle}>{editingRecord ? t('edit_wash') : t('new_wash')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => {
-                  resetForm();
-                  hapticFeedback.light();
-                }}
+                onPress={handleCloseForm}
               >
                 <X size={20} color={Colors.text.secondary} />
               </TouchableOpacity>
@@ -194,15 +202,11 @@ export default function WashScreen() {
         <Text style={styles.sectionTitle}>{t('history')}</Text>
 
         {washRecords.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Sparkles size={32} color={Colors.text.light} strokeWidth={1.5} />
-            </View>
-            <Text style={styles.emptyTitle}>{t('no_washes_yet')}</Text>
-            <Text style={styles.emptyText}>
-              {t('track_wash_desc')}
-            </Text>
-          </View>
+          <EmptyState
+            icon={<Sparkles size={32} color={Colors.text.light} strokeWidth={1.5} />}
+            title={t('no_washes_yet')}
+            description={t('track_wash_desc')}
+          />
         ) : (
           <View style={styles.recordsList}>
             {sortedWashRecords.map((record, index) => (
@@ -379,30 +383,6 @@ const styles = StyleSheet.create({
     ...typography.sectionTitle,
     color: Colors.text.primary,
     marginBottom: 14,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 48,
-    paddingHorizontal: 20,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    ...typography.emptyTitle,
-    color: Colors.text.primary,
-    marginBottom: 6,
-  },
-  emptyText: {
-    ...typography.emptyText,
-    color: Colors.text.secondary,
-    textAlign: "center" as const,
   },
   recordsList: {
     gap: 10,

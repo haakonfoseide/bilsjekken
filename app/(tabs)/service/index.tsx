@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useCarData } from "@/contexts/car-context";
 import Colors, { typography } from "@/constants/colors";
 import DatePicker from "@/components/DatePicker";
+import EmptyState from "@/components/EmptyState";
 import { 
   hapticFeedback, 
   confirmDelete, 
@@ -25,6 +26,7 @@ import {
   takePhotoWithCamera,
   showImagePickerOptions 
 } from "@/lib/utils";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 const SERVICE_TYPE_KEYS = [
   "service_type_oil_change",
@@ -153,6 +155,15 @@ export default function ServiceScreen() {
     showImagePickerOptions(takePhoto, pickImage);
   }, [takePhoto, pickImage]);
 
+  const hasFormChanges = useMemo(() => {
+    return description !== "" || type !== "" || mileage !== "" || cost !== "" || location !== "" || receiptImages.length > 0;
+  }, [description, type, mileage, cost, location, receiptImages]);
+
+  const handleCloseForm = useUnsavedChanges(hasFormChanges && !editingRecord, () => {
+    resetForm();
+    hapticFeedback.light();
+  });
+
   const sortedServiceRecords = useMemo(() => {
     return [...serviceRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [serviceRecords]);
@@ -186,10 +197,7 @@ export default function ServiceScreen() {
               <Text style={styles.formTitle}>{editingRecord ? t('edit_service') : t('new_service')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => {
-                  resetForm();
-                  hapticFeedback.light();
-                }}
+                onPress={handleCloseForm}
               >
                 <X size={20} color={Colors.text.secondary} />
               </TouchableOpacity>
@@ -339,15 +347,11 @@ export default function ServiceScreen() {
         <Text style={styles.sectionTitle}>{t('service_history')}</Text>
 
         {serviceRecords.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <FileText size={32} color={Colors.text.light} strokeWidth={1.5} />
-            </View>
-            <Text style={styles.emptyTitle}>{t('no_service_registered')}</Text>
-            <Text style={styles.emptyText}>
-              {t('log_service_desc')}
-            </Text>
-          </View>
+          <EmptyState
+            icon={<FileText size={32} color={Colors.text.light} strokeWidth={1.5} />}
+            title={t('no_service_registered')}
+            description={t('log_service_desc')}
+          />
         ) : (
           <View style={styles.recordsList}>
             {sortedServiceRecords.map((record) => (
@@ -598,30 +602,6 @@ const styles = StyleSheet.create({
     ...typography.sectionTitle,
     color: Colors.text.primary,
     marginBottom: 14,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 48,
-    paddingHorizontal: 20,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    ...typography.emptyTitle,
-    color: Colors.text.primary,
-    marginBottom: 6,
-  },
-  emptyText: {
-    ...typography.emptyText,
-    color: Colors.text.secondary,
-    textAlign: "center" as const,
   },
   recordsList: {
     gap: 12,
