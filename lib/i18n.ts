@@ -294,6 +294,9 @@ const resources = {
       "camera_receipt_desc": "Vi trenger tilgang til kameraet for å ta bilde av kvitteringen.",
       "gallery_receipt_desc": "Vi trenger tilgang til bildegalleriet for å velge et bilde.",
       "tire_brand_placeholder": "F.eks. Nokian",
+      "mileage_placeholder": "F.eks. 45000",
+      "export_ready": "Dataene dine er klare for eksport.",
+      "export_failed": "Eksport feilet. Prøv igjen.",
       "tire_quantity": "Antall",
       "note_title_placeholder": "F.eks. Skademelding info"
     }
@@ -584,6 +587,9 @@ const resources = {
       "camera_receipt_desc": "We need camera access to take a photo of the receipt.",
       "gallery_receipt_desc": "We need gallery access to select an image.",
       "tire_brand_placeholder": "E.g. Nokian",
+      "mileage_placeholder": "E.g. 45000",
+      "export_ready": "Your data is ready for export.",
+      "export_failed": "Export failed. Please try again.",
       "tire_quantity": "Quantity",
       "note_title_placeholder": "E.g. Claim info"
     }
@@ -712,6 +718,9 @@ const resources = {
       "freq_3_months_before": "3 meses antes del vencimiento",
       "freq_6_months_before": "6 meses antes del vencimiento",
       "tire_brand_placeholder": "Ej. Nokian",
+      "mileage_placeholder": "Ej. 45000",
+      "export_ready": "Tus datos están listos para exportar.",
+      "export_failed": "Error al exportar. Inténtalo de nuevo.",
       "tire_quantity": "Cantidad",
       "note_title_placeholder": "Ej. Info de siniestro"
     }
@@ -840,6 +849,9 @@ const resources = {
       "freq_3_months_before": "3 mois avant l'échéance",
       "freq_6_months_before": "6 mois avant l'échéance",
       "tire_brand_placeholder": "Ex. Nokian",
+      "mileage_placeholder": "Ex. 45000",
+      "export_ready": "Vos données sont prêtes pour l'exportation.",
+      "export_failed": "Échec de l'exportation. Réessayez.",
       "tire_quantity": "Quantité",
       "note_title_placeholder": "Ex. Info sinistre"
     }
@@ -968,6 +980,9 @@ const resources = {
       "freq_3_months_before": "3 Monate vor Ablauf",
       "freq_6_months_before": "6 Monate vor Ablauf",
       "tire_brand_placeholder": "Z.B. Nokian",
+      "mileage_placeholder": "Z.B. 45000",
+      "export_ready": "Ihre Daten sind bereit für den Export.",
+      "export_failed": "Export fehlgeschlagen. Bitte erneut versuchen.",
       "tire_quantity": "Anzahl",
       "note_title_placeholder": "Z.B. Schadensinfo"
     }
@@ -1096,6 +1111,9 @@ const resources = {
       "freq_3_months_before": "截止日期前3个月",
       "freq_6_months_before": "截止日期前6个月",
       "tire_brand_placeholder": "例如 Nokian",
+      "mileage_placeholder": "例如 45000",
+      "export_ready": "您的数据已准备好导出。",
+      "export_failed": "导出失败，请重试。",
       "tire_quantity": "数量",
       "note_title_placeholder": "例如 理赔信息"
     }
@@ -1224,6 +1242,9 @@ const resources = {
       "freq_3_months_before": "3 meses antes do prazo",
       "freq_6_months_before": "6 meses antes do prazo",
       "tire_brand_placeholder": "Ex. Nokian",
+      "mileage_placeholder": "Ex. 45000",
+      "export_ready": "Seus dados estão prontos para exportação.",
+      "export_failed": "Falha na exportação. Tente novamente.",
       "tire_quantity": "Quantidade",
       "note_title_placeholder": "Ex. Info de sinistro"
     }

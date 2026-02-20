@@ -439,7 +439,7 @@ export default function VehicleInfoScreen() {
                             style={styles.input}
                             value={f.value}
                             onChangeText={(text) => handleChangeText(key, idx, text)}
-                            placeholder="Verdi"
+                            placeholder={t('value')}
                             placeholderTextColor={Colors.text.light}
                           />
                           {f.unit && <Text style={styles.unitText}>{f.unit}</Text>}

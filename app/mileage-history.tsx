@@ -56,7 +56,7 @@ LocaleConfig.locales['no'] = {
 LocaleConfig.defaultLocale = 'no';
 
 export default function MileageHistoryScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { carInfo, mileageRecords, addMileageRecord, updateMileageRecord, deleteMileageRecord } = useCarData();
@@ -75,7 +75,7 @@ export default function MileageHistoryScreen() {
       mileage: r.mileage,
       date: r.date,
       source: 'user' as const,
-      type: 'Avlesning',
+      type: 'reading',
     }));
     
     return userRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -90,7 +90,8 @@ export default function MileageHistoryScreen() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("no-NO", {
+    const locale = i18n.language === 'nb' ? 'no-NO' : i18n.language;
+    return new Date(dateString).toLocaleDateString(locale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -200,7 +201,7 @@ export default function MileageHistoryScreen() {
             <View>
               <Text style={styles.statsLabel}>{t('current_reading')}</Text>
               <Text style={styles.statsValue}>
-                {carInfo.currentMileage?.toLocaleString("no-NO")} km
+                {carInfo.currentMileage?.toLocaleString(i18n.language === 'nb' ? 'no-NO' : i18n.language)} km
               </Text>
             </View>
             <View style={styles.statsIcon}>
@@ -262,7 +263,7 @@ export default function MileageHistoryScreen() {
                 </View>
                 
                 <Text style={styles.recordMileage}>
-                  {item.mileage.toLocaleString("no-NO")} km
+                  {item.mileage.toLocaleString(i18n.language === 'nb' ? 'no-NO' : i18n.language)} km
                 </Text>
                 
                 {index < allRecords.length - 1 && (
@@ -313,7 +314,7 @@ export default function MileageHistoryScreen() {
                   style={styles.input}
                   value={newMileage}
                   onChangeText={setNewMileage}
-                  placeholder="F.eks. 45000"
+                  placeholder={t('mileage_placeholder')}
                   keyboardType="numeric"
                   placeholderTextColor={Colors.text.light}
                 />
@@ -402,7 +403,7 @@ export default function MileageHistoryScreen() {
                   style={styles.input}
                   value={newMileage}
                   onChangeText={setNewMileage}
-                  placeholder="F.eks. 45000"
+                  placeholder={t('mileage_placeholder')}
                   keyboardType="numeric"
                   placeholderTextColor={Colors.text.light}
                 />

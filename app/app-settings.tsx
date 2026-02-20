@@ -12,6 +12,7 @@ import {
   TextInput,
 } from "react-native";
 import { Stack } from "expo-router";
+import * as Linking from "expo-linking";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -491,8 +492,37 @@ export default function AppSettingsScreen() {
 
           <TouchableOpacity
             style={styles.settingRow}
-            onPress={() => {
-              Alert.alert(t("export_data"), t("export_desc"), [{ text: "OK" }]);
+            onPress={async () => {
+              try {
+                const allKeys = await AsyncStorage.getAllKeys();
+                const allData = await AsyncStorage.multiGet(allKeys);
+                const exportObj: Record<string, unknown> = {};
+                for (const [key, value] of allData) {
+                  try {
+                    exportObj[key] = value ? JSON.parse(value) : null;
+                  } catch {
+                    exportObj[key] = value;
+                  }
+                }
+                const json = JSON.stringify(exportObj, null, 2);
+                if (Platform.OS === "web") {
+                  const blob = new Blob([json], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "bilhold-export.json";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } else {
+                  Alert.alert(t("export_data"), t("export_ready"), [{ text: "OK" }]);
+                }
+                if (Platform.OS !== "web") {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                }
+              } catch (error) {
+                console.error("[AppSettings] Export failed:", error);
+                Alert.alert(t("error"), t("export_failed"));
+              }
             }}
             activeOpacity={0.7}
           >
@@ -511,7 +541,7 @@ export default function AppSettingsScreen() {
           <TouchableOpacity
             style={styles.settingRow}
             onPress={() => {
-              Alert.alert(t("help_support"), t("help_desc"), [{ text: "OK" }]);
+              Linking.openURL("mailto:support@bilhold.app?subject=Bilhold%20-%20Hjelp");
             }}
             activeOpacity={0.7}
           >
@@ -527,7 +557,7 @@ export default function AppSettingsScreen() {
           <TouchableOpacity
             style={styles.settingRow}
             onPress={() => {
-              Alert.alert(t("contact_us"), t("contact_desc"), [{ text: "OK" }]);
+              Linking.openURL("mailto:kontakt@bilhold.app?subject=Bilhold%20-%20Kontakt");
             }}
             activeOpacity={0.7}
           >
@@ -543,9 +573,7 @@ export default function AppSettingsScreen() {
           <TouchableOpacity
             style={styles.settingRow}
             onPress={() => {
-              Alert.alert(t("privacy_terms"), t("privacy_desc"), [
-                { text: "OK" },
-              ]);
+              Linking.openURL("https://bilhold.app/personvern");
             }}
             activeOpacity={0.7}
           >
