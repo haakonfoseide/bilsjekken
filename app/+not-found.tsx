@@ -1,4 +1,4 @@
-import { Link, Stack } from "expo-router";
+import { Link, Stack, type Href } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import Colors from "@/constants/colors";
 
@@ -9,7 +9,7 @@ export default function NotFoundScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Denne siden finnes ikke</Text>
 
-        <Link href="/" style={styles.link}>
+        <Link href={"/" as Href} style={styles.link}>
           <Text style={styles.linkText}>Gå til oversikt</Text>
         </Link>
       </View>
