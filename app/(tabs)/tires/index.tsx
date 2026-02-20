@@ -61,6 +61,7 @@ export default function TiresScreen() {
   const [hasRemounting, setHasRemounting] = useState(false);
   const [editingRecord, setEditingRecord] = useState<string | null>(null);
   const [editingIsActive, setEditingIsActive] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isMounted = useRef(true);
 
@@ -143,10 +144,12 @@ export default function TiresScreen() {
   }, [params.prefillData]);
 
   const handleSave = useCallback(() => {
+    if (isSaving) return;
     if (!brand || !purchaseDate || !size) {
       Alert.alert(t('error'), t('required_fields'));
       return;
     }
+    setIsSaving(true);
 
     if (editingRecord) {
       updateTireSet(editingRecord, {
@@ -180,7 +183,8 @@ export default function TiresScreen() {
 
     hapticFeedback.success();
     resetForm();
-  }, [brand, purchaseDate, size, tireType, isAtTireHotel, hotelLocation, notes, receiptImages, tireSets.length, hasBalancing, hasRemounting, editingRecord, editingIsActive, addTireSet, updateTireSet, resetForm]);
+    setIsSaving(false);
+  }, [brand, purchaseDate, size, tireType, isAtTireHotel, hotelLocation, notes, receiptImages, tireSets.length, hasBalancing, hasRemounting, editingRecord, editingIsActive, isSaving, addTireSet, updateTireSet, resetForm]);
 
   const handleEdit = useCallback((tire: typeof tireSets[0]) => {
     setEditingRecord(tire.id);
@@ -453,9 +457,9 @@ export default function TiresScreen() {
               )}
             </View>
 
-            <TouchableOpacity style={styles.submitButton} onPress={handleSave} activeOpacity={0.8}>
+            <TouchableOpacity style={[styles.submitButton, isSaving && { opacity: 0.6 }]} onPress={handleSave} activeOpacity={0.8} disabled={isSaving}>
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>{editingRecord ? t('update_tire_set') : t('save_tire_set')}</Text>
+              <Text style={styles.submitButtonText}>{isSaving ? t('saving') : (editingRecord ? t('update_tire_set') : t('save_tire_set'))}</Text>
             </TouchableOpacity>
           </View>
         )}

@@ -49,6 +49,7 @@ export default function ServiceScreen() {
   const [location, setLocation] = useState("");
   const [receiptImages, setReceiptImages] = useState<string[]>([]);
   const [editingRecord, setEditingRecord] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isMounted = useRef(true);
 
@@ -71,10 +72,12 @@ export default function ServiceScreen() {
   }, []);
 
   const handleAdd = useCallback(() => {
+    if (isSaving) return;
     if (!date || !mileage || !type || !description) {
       Alert.alert(t('error'), t('required_fields'));
       return;
     }
+    setIsSaving(true);
 
     if (editingRecord) {
       updateServiceRecord(editingRecord, {
@@ -99,8 +102,9 @@ export default function ServiceScreen() {
     }
 
     resetForm();
+    setIsSaving(false);
     hapticFeedback.success();
-  }, [date, mileage, type, description, cost, location, receiptImages, editingRecord, addServiceRecord, updateServiceRecord, resetForm]);
+  }, [date, mileage, type, description, cost, location, receiptImages, editingRecord, isSaving, addServiceRecord, updateServiceRecord, resetForm]);
 
   const handleEdit = useCallback((record: typeof serviceRecords[0]) => {
     setEditingRecord(record.id);
@@ -321,12 +325,13 @@ export default function ServiceScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, isSaving && { opacity: 0.6 }]}
               onPress={handleAdd}
               activeOpacity={0.8}
+              disabled={isSaving}
             >
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>{editingRecord ? t('update_service') : t('save_service')}</Text>
+              <Text style={styles.submitButtonText}>{isSaving ? t('saving') : (editingRecord ? t('update_service') : t('save_service'))}</Text>
             </TouchableOpacity>
           </View>
         )}

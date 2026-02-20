@@ -312,7 +312,13 @@ const resources = {
       "analysis_failed_title": "Analysering feilet",
       "analysis_failed_desc": "Kunne ikke analysere bildet. Prøv igjen eller legg til manuelt.",
       "choose_new_image": "Velg nytt bilde",
-      "service_booklet_label": "Servicehefte"
+      "service_booklet_label": "Servicehefte",
+      "notifications_coming_soon": "Kommer snart",
+      "export_sharing": "Del bildata",
+      "export_file_saved": "Filen er lagret og klar for deling.",
+      "consumption_unit_lmil": "l/mil",
+      "consumption_unit_l100km": "l/100km",
+      "saving": "Lagrer..."
     }
   },
   en: {
@@ -619,7 +625,13 @@ const resources = {
       "analysis_failed_title": "Analysis failed",
       "analysis_failed_desc": "Could not analyze the image. Try again or add manually.",
       "choose_new_image": "Choose new image",
-      "service_booklet_label": "Service booklet"
+      "service_booklet_label": "Service booklet",
+      "notifications_coming_soon": "Coming soon",
+      "export_sharing": "Share car data",
+      "export_file_saved": "File saved and ready to share.",
+      "consumption_unit_lmil": "l/mil",
+      "consumption_unit_l100km": "l/100km",
+      "saving": "Saving..."
     }
   },
   es: {
@@ -764,7 +776,13 @@ const resources = {
       "analysis_failed_title": "Análisis fallido",
       "analysis_failed_desc": "No se pudo analizar la imagen. Inténtalo de nuevo o añádelo manualmente.",
       "choose_new_image": "Elegir nueva imagen",
-      "service_booklet_label": "Libro de servicio"
+      "service_booklet_label": "Libro de servicio",
+      "notifications_coming_soon": "Próximamente",
+      "export_sharing": "Compartir datos del auto",
+      "export_file_saved": "Archivo guardado y listo para compartir.",
+      "consumption_unit_lmil": "l/mil",
+      "consumption_unit_l100km": "l/100km",
+      "saving": "Guardando..."
     }
   },
   fr: {
@@ -909,7 +927,13 @@ const resources = {
       "analysis_failed_title": "Échec de l'analyse",
       "analysis_failed_desc": "Impossible d'analyser l'image. Réessayez ou ajoutez manuellement.",
       "choose_new_image": "Choisir une nouvelle image",
-      "service_booklet_label": "Carnet d'entretien"
+      "service_booklet_label": "Carnet d'entretien",
+      "notifications_coming_soon": "Bientôt disponible",
+      "export_sharing": "Partager les données",
+      "export_file_saved": "Fichier enregistré et prêt à partager.",
+      "consumption_unit_lmil": "l/mil",
+      "consumption_unit_l100km": "l/100km",
+      "saving": "Enregistrement..."
     }
   },
   de: {
@@ -1054,7 +1078,13 @@ const resources = {
       "analysis_failed_title": "Analyse fehlgeschlagen",
       "analysis_failed_desc": "Bild konnte nicht analysiert werden. Erneut versuchen oder manuell hinzufügen.",
       "choose_new_image": "Neues Bild wählen",
-      "service_booklet_label": "Serviceheft"
+      "service_booklet_label": "Serviceheft",
+      "notifications_coming_soon": "Demnächst verfügbar",
+      "export_sharing": "Fahrzeugdaten teilen",
+      "export_file_saved": "Datei gespeichert und bereit zum Teilen.",
+      "consumption_unit_lmil": "l/mil",
+      "consumption_unit_l100km": "l/100km",
+      "saving": "Speichern..."
     }
   },
   zh: {
@@ -1199,7 +1229,13 @@ const resources = {
       "analysis_failed_title": "分析失败",
       "analysis_failed_desc": "无法分析图片。请重试或手动添加。",
       "choose_new_image": "选择新图片",
-      "service_booklet_label": "服务手册"
+      "service_booklet_label": "服务手册",
+      "notifications_coming_soon": "即将推出",
+      "export_sharing": "分享车辆数据",
+      "export_file_saved": "文件已保存，可以分享。",
+      "consumption_unit_lmil": "l/mil",
+      "consumption_unit_l100km": "l/100km",
+      "saving": "保存中..."
     }
   },
   pt: {
@@ -1344,7 +1380,13 @@ const resources = {
       "analysis_failed_title": "Análise falhou",
       "analysis_failed_desc": "Não foi possível analisar a imagem. Tente novamente ou adicione manualmente.",
       "choose_new_image": "Escolher nova imagem",
-      "service_booklet_label": "Caderneta de serviço"
+      "service_booklet_label": "Caderneta de serviço",
+      "notifications_coming_soon": "Em breve",
+      "export_sharing": "Compartilhar dados do carro",
+      "export_file_saved": "Arquivo salvo e pronto para compartilhar.",
+      "consumption_unit_lmil": "l/mil",
+      "consumption_unit_l100km": "l/100km",
+      "saving": "Salvando..."
     }
   }
 };

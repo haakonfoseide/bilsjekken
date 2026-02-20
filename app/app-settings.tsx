@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { Stack } from "expo-router";
 import * as Linking from "expo-linking";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -319,9 +321,14 @@ export default function AppSettingsScreen() {
           })}
         </View>
 
-        <Text style={styles.sectionHeader}>{t("notifications")}</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeader}>{t("notifications")}</Text>
+          <View style={styles.comingSoonBadge}>
+            <Text style={styles.comingSoonText}>{t("notifications_coming_soon")}</Text>
+          </View>
+        </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { opacity: 0.55 }]} pointerEvents="none">
           <View style={styles.notificationRow}>
             <View style={styles.notificationIcon}>
               <Droplets size={18} color={Colors.primary} />
@@ -514,7 +521,15 @@ export default function AppSettingsScreen() {
                   a.click();
                   URL.revokeObjectURL(url);
                 } else {
-                  Alert.alert(t("export_data"), t("export_ready"), [{ text: "OK" }]);
+                  const file = new File(Paths.cache, "bilhold-export.json");
+                  file.write(json);
+                  const fileUri = file.uri;
+                  const canShare = await Sharing.isAvailableAsync();
+                  if (canShare) {
+                    await Sharing.shareAsync(fileUri, { mimeType: "application/json", dialogTitle: t("export_sharing") });
+                  } else {
+                    Alert.alert(t("export_data"), t("export_ready"), [{ text: "OK" }]);
+                  }
                 }
                 if (Platform.OS !== "web") {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -730,6 +745,23 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 8,
     marginLeft: 4,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+  },
+  comingSoonBadge: {
+    backgroundColor: Colors.primary + "18",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 20,
+  },
+  comingSoonText: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    color: Colors.primary,
   },
   card: {
     backgroundColor: Colors.cardBackground,

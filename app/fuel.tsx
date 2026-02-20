@@ -48,6 +48,7 @@ export default function FuelScreen() {
   const [notes, setNotes] = useState("");
   const [isFullTank, setIsFullTank] = useState(true);
   const [fuelDate, setFuelDate] = useState(new Date().toISOString().split("T")[0]);
+  const [isSaving, setIsSaving] = useState(false);
   const inputAccessoryViewID = "fuel-keyboard-toolbar";
 
   const resetForm = useCallback(() => {
@@ -92,45 +93,46 @@ export default function FuelScreen() {
     let validConsumptionCount = 0;
     let totalConsumption = 0;
 
-    for (let i = 1; i < chronological.length; i++) {
+    for (let i = 0; i < chronological.length; i++) {
       const current = chronological[i];
-      const prev = chronological[i - 1];
-
-      if (current.mileage && prev.mileage) {
-        const dist = current.mileage - prev.mileage;
-        if (dist > 0 && current.fullTank) {
-          const consumption = (current.liters / dist) * 10;
-          totalConsumption += consumption;
-          validConsumptionCount++;
-        }
-      }
 
       if (current.liters) totalLiters += current.liters;
       if (current.totalCost) totalCost += current.totalCost;
       else if (current.liters && current.pricePerLiter) totalCost += (current.liters * current.pricePerLiter);
+
+      if (i > 0) {
+        const prev = chronological[i - 1];
+        if (current.mileage && prev.mileage && current.fullTank) {
+          const dist = current.mileage - prev.mileage;
+          if (dist > 0) {
+            const consumptionPer100km = (current.liters / dist) * 100;
+            totalConsumption += consumptionPer100km;
+            validConsumptionCount++;
+          }
+        }
+      }
     }
 
-    if (chronological.length > 0) {
-      const first = chronological[0];
-      if (first.liters) totalLiters += first.liters;
-      if (first.totalCost) totalCost += first.totalCost;
-      else if (first.liters && first.pricePerLiter) totalCost += (first.liters * first.pricePerLiter);
-    }
-
-    const avgConsumption = validConsumptionCount > 0 ? totalConsumption / validConsumptionCount : 0;
+    const avgConsumptionPer100km = validConsumptionCount > 0 ? totalConsumption / validConsumptionCount : 0;
+    const isNorwegian = i18n.language === 'nb' || i18n.language === 'no';
+    const displayConsumption = isNorwegian ? (avgConsumptionPer100km / 10) : avgConsumptionPer100km;
+    const consumptionUnit = isNorwegian ? t('consumption_unit_lmil') : t('consumption_unit_l100km');
 
     return {
-      avgConsumption: avgConsumption.toFixed(2),
+      avgConsumption: displayConsumption.toFixed(2),
+      consumptionUnit,
       totalCost: Math.round(totalCost),
       totalLiters: Math.round(totalLiters),
     };
-  }, [sortedRecords]);
+  }, [sortedRecords, i18n.language, t]);
 
   const handleSaveFuel = useCallback(() => {
+    if (isSaving) return;
     if (!liters || !currentMileage) {
       Alert.alert(t('missing_info'), t('fuel_missing_fields'));
       return;
     }
+    setIsSaving(true);
 
     const litersNum = parseFloat(liters.replace(",", "."));
     const priceNum = pricePerLiter ? parseFloat(pricePerLiter.replace(",", ".")) : undefined;
@@ -164,7 +166,8 @@ export default function FuelScreen() {
     }
 
     resetForm();
-  }, [liters, pricePerLiter, currentMileage, notes, isFullTank, fuelDate, editingRecord, addFuelRecord, updateFuelRecord, resetForm, t]);
+    setIsSaving(false);
+  }, [liters, pricePerLiter, currentMileage, notes, isFullTank, fuelDate, editingRecord, isSaving, addFuelRecord, updateFuelRecord, resetForm, t]);
 
   const handleEdit = useCallback((record: FuelRecord) => {
     setEditingRecord(record.id);
@@ -234,7 +237,7 @@ export default function FuelScreen() {
                 </View>
                 <View>
                   <Text style={styles.statLabel}>{t('avg_consumption')}</Text>
-                  <Text style={styles.statValue}>{stats.avgConsumption} l/mil</Text>
+                  <Text style={styles.statValue}>{stats.avgConsumption} {stats.consumptionUnit}</Text>
                 </View>
               </View>
               <View style={styles.statDivider} />
@@ -456,9 +459,9 @@ export default function FuelScreen() {
                 />
               </View>
 
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveFuel}>
+              <TouchableOpacity style={[styles.saveButton, isSaving && { opacity: 0.6 }]} onPress={handleSaveFuel} disabled={isSaving}>
                 <Text style={styles.saveButtonText}>
-                  {editingRecord ? t('update') : t('save')}
+                  {isSaving ? t('saving') : (editingRecord ? t('update') : t('save'))}
                 </Text>
               </TouchableOpacity>
             </ScrollView>

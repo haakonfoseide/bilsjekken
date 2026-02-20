@@ -29,6 +29,7 @@ export default function WashScreen() {
   const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
   const [editingRecord, setEditingRecord] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const resetForm = useCallback(() => {
     setDate(new Date().toISOString().split("T")[0]);
@@ -39,7 +40,8 @@ export default function WashScreen() {
   }, []);
 
   const handleAdd = useCallback(() => {
-    if (!date) return;
+    if (!date || isSaving) return;
+    setIsSaving(true);
 
     if (editingRecord) {
       updateWashRecord(editingRecord, {
@@ -56,8 +58,9 @@ export default function WashScreen() {
     }
 
     resetForm();
+    setIsSaving(false);
     hapticFeedback.success();
-  }, [date, type, notes, editingRecord, addWashRecord, updateWashRecord, resetForm]);
+  }, [date, type, notes, editingRecord, isSaving, addWashRecord, updateWashRecord, resetForm]);
 
   const handleEdit = useCallback((record: typeof washRecords[0]) => {
     setEditingRecord(record.id);
@@ -177,12 +180,13 @@ export default function WashScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, isSaving && { opacity: 0.6 }]}
               onPress={handleAdd}
               activeOpacity={0.8}
+              disabled={isSaving}
             >
               <Check size={20} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.submitButtonText}>{editingRecord ? t('update') : t('save')}</Text>
+              <Text style={styles.submitButtonText}>{isSaving ? t('saving') : (editingRecord ? t('update') : t('save'))}</Text>
             </TouchableOpacity>
           </View>
         )}
